@@ -1,0 +1,38 @@
+$Id: README,v 1.2 2004/09/19 19:10:08 karl Exp $
+Public domain.
+
+This is the source for the documentation for MetaPost, consisting of
+"A User's Manual for MetaPost" and "Drawing Graphs with MetaPost",
+written by John D. Hobby.  They were converted to more modern LaTeX by
+Dylan Thurston.  The manual may be freely used and modified, but John
+Hobby makes these requests:
+
+ - I request that it remain clear that I am the author of
+   "A User's Manual for MetaPost" and "Drawing Graphs with MetaPost".
+ - I request to be consulted before significant changes are made.
+
+See the end of mpman.tex or mpgraph.tex for the precise conditions.
+Auxiliary files (and the MetaPost software itself) are public domain,
+including the data (.d) files here, which due to file format limitations
+cannot incorporate a license themselves.
+
+Included files:
+
+README
+agepop91.d
+agepopm.d
+countries.d
+ctabbing.sty
+energy.d
+lead.d
+manfig.mp
+matmul.d
+mpgraph.bib
+mpgraph.mp
+mpgraph.tex
+mpman.bib
+mpman.ist
+mpman.tex
+timepop.d
+
+See the Makefile for the sequence of commands to create the DVI/PS/PDF output.
