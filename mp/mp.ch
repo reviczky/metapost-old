@@ -1,4 +1,4 @@
-% $Id: mp.ch,v 1.9 2005/11/02 08:56:05 taco Exp $
+% $Id: mp.ch,v 1.8 2005/03/18 19:49:05 taco Exp $
 % mp.ch for C compilation with web2c.  Public domain.
 %
 % Derived from mf.ch and John Hobby's mp.ch (the change file for the C
@@ -1823,7 +1823,6 @@ x:=x+4-(x mod 4);
 dump_int(x);dump_things(base_engine[0], x);
 libc_free(base_engine);@/
 dump_int(@$);@/
-dump_int(main_memory);@/
 @<Dump |xord|, |xchr|, and |xprn|@>;
 @z
 
@@ -1855,8 +1854,6 @@ if x<>@$ then begin {check that strings are the same}
   wterm_ln('---! ', stringcast(name_of_file+1), ' doesn''t match ', pool_name);
   goto off_base;
 end;
-undump_int(x);
-if x<>main_memory then goto off_base;
 @<Undump |xord|, |xchr|, and |xprn|@>;
 undump_int(x);
 if x<>mem_min then goto off_base;
