@@ -2,8 +2,8 @@
 
 use strict;
 
-my $cvsdir     = "/home/taco/metapost";
-my $releasedir = "/home/taco/metapost-release";
+my $cvsdir     = "/home/taco/metapost/svn";
+my $releasedir = "/home/taco/metapost/release";
 
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday) = gmtime(time());
 
@@ -14,6 +14,7 @@ my $currentpackage = '';
 # the existance of a separate version in  mpversion.ch indicates that
 # we are building a beta version.
 if ($version = `grep metapost_version== $cvsdir/mp/mpversion.ch`) {
+  $version =~ s/^.+\n\@/\@/g;
   $version =~ s/^.*?=="\s*(.*)"$/$1/;
 } else {
   $version = `grep metapost_version== $cvsdir/mp/mp.web`;
