@@ -79,5 +79,5 @@ system "rm -rf texk/web2c/trapdir";
 system "cp -rf $cvsdir/mp/trapdir texk/web2c";
 
 chdir ($releasedir);
-system ("tar cjvf $currentpackage.tar.bz2 $currentpackage");
+#system ("tar cjvf $currentpackage.tar.bz2 $currentpackage");
 
