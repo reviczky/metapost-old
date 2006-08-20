@@ -52,6 +52,12 @@ cmykcolor_type:print("cmykcolor");
 @z
 
 @x l. 4194
+@d x_part=54 {operation code for \.{xpart}}
+@d y_part=55 {operation code for \.{ypart}}
+@d xx_part=56 {operation code for \.{xxpart}}
+@d xy_part=57 {operation code for \.{xypart}}
+@d yx_part=58 {operation code for \.{yxpart}}
+@d yy_part=59 {operation code for \.{yypart}}
 @d red_part=60 {operation code for \.{redpart}}
 @d green_part=61 {operation code for \.{greenpart}}
 @d blue_part=62 {operation code for \.{bluepart}}
@@ -118,15 +124,21 @@ cmykcolor_type:print("cmykcolor");
 @d arc_time_of=122 {operation code for \.{arctime}}
 @d mp_version=123 {operation code for \.{mpversion}}
 @y
-@d color_model_part=60 {operation code for \.{colormodel}}
+@d color_model_part=54 {operation code for \.{colormodel}}
+@d x_part=55 {operation code for \.{xpart}}
+@d y_part=56 {operation code for \.{ypart}}
+@d xx_part=57 {operation code for \.{xxpart}}
+@d xy_part=58 {operation code for \.{xypart}}
+@d yx_part=59 {operation code for \.{yxpart}}
+@d yy_part=60 {operation code for \.{yypart}}
 @d red_part=61 {operation code for \.{redpart}}
 @d green_part=62 {operation code for \.{greenpart}}
 @d blue_part=63 {operation code for \.{bluepart}}
-@d cyan_part=64 {operation code for \.{bluepart}}
-@d magenta_part=65 {operation code for \.{bluepart}}
-@d yellow_part=66 {operation code for \.{bluepart}}
-@d black_part=67 {operation code for \.{bluepart}}
-@d grey_part=68 {operation code for \.{bluepart}}
+@d cyan_part=64 {operation code for \.{cyanpart}}
+@d magenta_part=65 {operation code for \.{magentapart}}
+@d yellow_part=66 {operation code for \.{yellowpart}}
+@d black_part=67 {operation code for \.{blackpart}}
+@d grey_part=68 {operation code for \.{greypart}}
 @d font_part=69 {operation code for \.{fontpart}}
 @d text_part=70 {operation code for \.{textpart}}
 @d path_part=71 {operation code for \.{pathpart}}
@@ -285,6 +297,12 @@ int_name[default_color_model]:="defaultcolormodel";
 @d transform_node_size=12 {the number of words in a transform node}
 @d color_node_size=6 {the number of words in a color node}
 @d cmykcolor_node_size=8 {the number of words in a color node}
+@z
+
+@x
+@!sector_offset:array[x_part_sector..blue_part_sector] of small_number;
+@y
+@!sector_offset:array[x_part_sector..black_part_sector] of small_number;
 @z
 
 @x l. 5431
