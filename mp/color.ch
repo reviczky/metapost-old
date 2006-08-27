@@ -249,11 +249,11 @@ There is a first state, that is only used for |gs_colormodel|. It flags
 the fact that there has not been any kind of color specification by
 the user so far in the game.
 
-@d no_model=0
-@d grey_model=1
-@d rgb_model=2
-@d cmyk_model=3
-@d uninitialized_model=4
+@d no_model=1
+@d grey_model=3
+@d rgb_model=5
+@d cmyk_model=7
+@d uninitialized_model=9
 
 @<Initialize table entries (done by \.{INIMP} only)@>=
 internal[default_color_model]:=(rgb_model*unity);
@@ -944,13 +944,22 @@ color_model_part: if cur_type=picture_type then take_pict_part(c)
       if has_color(p) then flush_cur_exp(obj_color_part(p+c))
       else goto not_found;
     cyan_part,magenta_part,yellow_part,black_part:
-      if has_color(p) then flush_cur_exp(obj_color_part(p+c+(red_part-cyan_part)))
+      if has_color(p) then 
+        if color_model(p)=uninitialized_model then
+          flush_cur_exp(unity)
+        else 
+          flush_cur_exp(obj_color_part(p+c+(red_part-cyan_part)))
       else goto not_found;
     grey_part:
-      if has_color(p) then flush_cur_exp(obj_color_part(p+c+(red_part-grey_part)))
+      if has_color(p) then 
+          flush_cur_exp(obj_color_part(p+c+(red_part-grey_part)))
       else goto not_found;
     color_model_part:
-      if has_color(p) then flush_cur_exp(color_model(p)*unity)
+      if has_color(p) then 
+        if color_model(p)=uninitialized_model then
+          flush_cur_exp(internal[default_color_model])
+        else
+          flush_cur_exp(color_model(p)*unity)
       else goto not_found;
 @z
 
@@ -1044,11 +1053,11 @@ primitive("withoutcolor",with_option,no_model);@/
 @!@:with_color_}{\&{withoutcolor} primitive@>
 primitive("withgreyscale",with_option,grey_model);@/
 @!@:with_color_}{\&{withgreyscale} primitive@>
-primitive("withcolor",with_option,rgb_model);@/
+primitive("withcolor",with_option,uninitialized_model);@/
 @!@:with_color_}{\&{withcolor} primitive@>
 { \&{withrgbcolor} is an alias for \&{withcolor}}
 primitive("withrgbcolor",with_option,rgb_model);@/
-@!@:with_color_}{\&{withcolor} primitive@>
+@!@:with_color_}{\&{withrgbcolor} primitive@>
 primitive("withcmykcolor",with_option,cmyk_model);@/
 @!@:with_color_}{\&{withcmykcolor} primitive@>
 @z
@@ -1060,7 +1069,8 @@ with_option:if m=pen_type then print("withpen")
 @y
 with_option:if m=pen_type then print("withpen")
   else if m=no_model then print("withoutcolor")
-  else if m=rgb_model then print("withcolor")
+  else if m=rgb_model then print("withrgbcolor")
+  else if m=uninitialized_model then print("withcolor") 
   else if m=cmyk_model then print("withcmykcolor")
   else if m=grey_model then print("withgreyscale")
   else print("dashed");
@@ -1079,10 +1089,20 @@ with_option:if m=pen_type then print("withpen")
   begin t:=cur_mod; 
   get_x_next; 
   if t<>no_model then scan_expression;
-  if ((t=cmyk_model)and(cur_type<>cmykcolor_type))or
-      ((t=rgb_model)and(cur_type<>color_type))or
-      ((t=grey_model)and(cur_type<>known))or
-      ((t>cmyk_model)and(cur_type<>t)) then @<Complain about improper type@>
+  if ((t=uninitialized_model)and
+        ((cur_type<>cmykcolor_type)and(cur_type<>color_type)
+          and(cur_type<>known)and(cur_type<>boolean_type)))or
+     ((t=cmyk_model)and(cur_type<>cmykcolor_type))or
+     ((t=rgb_model)and(cur_type<>color_type))or
+     ((t=grey_model)and(cur_type<>known))or
+     ((t=pen_type)and(cur_type<>t))or
+     ((t=picture_type)and(cur_type<>t)) then @<Complain about improper type@>
+  else if t=uninitialized_model then
+      begin if cp=void then @<Make |cp| a colored object in object list~|p|@>;
+      if cp<>null then
+        @<Transfer a color from the current expression to object~|cp|@>;
+      flush_cur_exp(0);
+      end
   else if t=rgb_model then
       begin if cp=void then @<Make |cp| a rgb colored object in object list~|p|@>;
       if cp<>null then
@@ -1112,8 +1132,10 @@ with_option:if m=pen_type then print("withpen")
 else if t=color_type then
   help_line[1]:="Next time say `withcolor <known color expression>';";
 @y
-else if t=rgb_model then
+else if t=uninitialized_model then
   help_line[1]:="Next time say `withcolor <known color expression>';"
+else if t=rgb_model then
+  help_line[1]:="Next time say `withrgbcolor <known color expression>';"
 else if t=cmyk_model then
   help_line[1]:="Next time say `withcmykcolor <known cmykcolor expression>';"
 else if t=grey_model then
@@ -1134,8 +1156,23 @@ if green_val(cp)>unity then green_val(cp):=unity;
 if blue_val(cp)>unity then blue_val(cp):=unity;
 end
 @y
-@<Transfer a rgbcolor from the current expression to object~|cp|@>=
+@<Transfer a color from the current expression to object~|cp|@>=
+begin if cur_type=color_type then
+   @<Transfer a rgbcolor from the current expression to object~|cp|@>
+else if cur_type=cmykcolor_type then
+   @<Transfer a cmykcolor from the current expression to object~|cp|@>
+else if cur_type=known then
+   @<Transfer a greyscale from the current expression to object~|cp|@>
+else if cur_exp=false_code then
+   @<Transfer a noncolor from the current expression to object~|cp|@>;
+end
+
+@ @<Transfer a rgbcolor from the current expression to object~|cp|@>=
 begin q:=value(cur_exp);
+cyan_val(cp):=0;
+magenta_val(cp):=0;
+yellow_val(cp):=0;
+black_val(cp):=0;
 red_val(cp):=value(red_part_loc(q));
 green_val(cp):=value(green_part_loc(q));
 blue_val(cp):=value(blue_part_loc(q));@/
@@ -1167,6 +1204,10 @@ end
 
 @ @<Transfer a greyscale from the current expression to object~|cp|@>=
 begin q:=cur_exp;
+cyan_val(cp):=0;
+magenta_val(cp):=0;
+yellow_val(cp):=0;
+black_val(cp):=0;
 grey_val(cp):=q;
 color_model(cp):=grey_model;
 if grey_val(cp)<0 then grey_val(cp):=0;
@@ -1174,7 +1215,12 @@ if grey_val(cp)>unity then grey_val(cp):=unity;
 end
 
 @ @<Transfer a noncolor from the current expression to object~|cp|@>=
-begin grey_val(cp):=0;
+begin 
+cyan_val(cp):=0;
+magenta_val(cp):=0;
+yellow_val(cp):=0;
+black_val(cp):=0;
+grey_val(cp):=0;
 color_model(cp):=no_model;
 end
 @z
@@ -1189,16 +1235,25 @@ while cp<>null do
 done:do_nothing;
 end
 @y
-@ It is a bit silly to repeat this action in four different
+@ It is a bit silly to repeat this action in five different
 forms with the only difference being the label. Ah well.
 
-@<Make |cp| a rgb colored object in object list~|p|@>=
+@<Make |cp| a colored object in object list~|p|@>=
 begin cp:=p;
 while cp<>null do
   begin if has_color(cp) then goto done;
   cp:=link(cp);
   end;
 done:do_nothing;
+end
+
+@ @<Make |cp| a rgb colored object in object list~|p|@>=
+begin cp:=p;
+while cp<>null do
+  begin if has_color(cp) then goto done6;
+  cp:=link(cp);
+  end;
+done6:do_nothing;
 end
 
 @ @<Make |cp| a cmyk colored object in object list~|p|@>=
@@ -1251,48 +1306,18 @@ while q<>null do
 end
 @y
 @ @<Copy |cp|'s color into the colored objects linked to~|cp|@>=
-if cp>void then 
-  begin q:=link(cp);
-  while q<>null do
-    begin if has_color(q) then
-      begin red_val(q):=red_val(cp);
-      green_val(q):=green_val(cp);
-      blue_val(q):=blue_val(cp);@/
-      cyan_val(q):=cyan_val(cp);
-      magenta_val(q):=magenta_val(cp);
-      yellow_val(q):=yellow_val(cp);
-      black_val(q):=black_val(cp);@/
-      grey_val(q):=grey_val(cp);@/
-      color_model(q):=color_model(cp);@/
-      end;
-    q:=link(q);
+begin q:=link(cp);
+while q<>null do
+  begin if has_color(q) then
+    begin red_val(q):=red_val(cp);
+    green_val(q):=green_val(cp);
+    blue_val(q):=blue_val(cp);@/
+    black_val(q):=black_val(cp);@/
+    color_model(q):=color_model(cp);@/
     end;
-  end
-else
-  begin q:=p;
-  while q<>null do
-    begin if has_color(q) then
-      begin 
-      color_model(q):=(internal[default_color_model] div unity);
-      case color_model(q) of
-        rgb_model: begin
-          red_val(q):=0;
-          green_val(q):=0;
-          blue_val(q):=0;
-          end;
-        cmyk_model: begin
-          cyan_val(q):=unity;
-          magenta_val(q):=unity;
-          yellow_val(q):=unity;
-          black_val(q):=unity;
-          end;
-        grey_model,no_model:
-          grey_val(q):=0;
-        end;
-      end;
-    q:=link(q);
-    end;
-  end
+  q:=link(q);
+  end;
+end
 @z
 
 @x l. 21570
@@ -1374,9 +1399,10 @@ if (gs_red<>red_val(p))or(gs_green<>green_val(p))or@|
   end;
 @y
 @ @<Make sure \ps\ will use the right color for object~|p|@>=
-begin 
-  if gs_colormodel<>uninitialized_model then
-  if color_model(p)=rgb_model then
+begin
+  if (color_model(p)=rgb_model)or@|
+     ((color_model(p)=uninitialized_model)and
+     ((internal[default_color_model] div unity)=rgb_model)) then
   begin if (gs_colormodel<>color_model(p))or(gs_red<>red_val(p))or@|
       (gs_green<>green_val(p))or(gs_blue<>blue_val(p)) then
     begin gs_red:=red_val(p);
@@ -1392,14 +1418,25 @@ begin
         end;
       end;
     end
-  else if color_model(p)=cmyk_model then
+  else if (color_model(p)=cmyk_model)or@|
+     ((color_model(p)=uninitialized_model)and
+     ((internal[default_color_model] div unity)=cmyk_model)) then
   begin if (gs_red<>cyan_val(p))or(gs_green<>magenta_val(p))or@|
       (gs_blue<>yellow_val(p))or(gs_black<>black_val(p))or@|
       (gs_colormodel<>color_model(p)) then
-    begin gs_red:=cyan_val(p);
-      gs_green:=magenta_val(p);
-      gs_blue:=yellow_val(p);
-      gs_black:=black_val(p);@/
+      begin 
+      if color_model(p)=uninitialized_model then begin
+        gs_red:=unity;
+        gs_green:=unity;
+        gs_blue:=unity;
+        gs_black:=unity;@/
+        end
+      else begin
+        gs_red:=cyan_val(p);
+        gs_green:=magenta_val(p);
+        gs_blue:=yellow_val(p);
+        gs_black:=black_val(p);@/
+        end;
       begin ps_room(45);
         print_char(" ");
         print_scaled(gs_red); print_char(" ");
@@ -1410,7 +1447,9 @@ begin
         end;
       end;
     end    
-  else if color_model(p)=grey_model then
+  else if (color_model(p)=grey_model)or@|
+    ((color_model(p)=uninitialized_model)and
+     ((internal[default_color_model] div unity)=grey_model)) then
   begin if (gs_red<>grey_val(p))or(gs_colormodel<>color_model(p)) then
     begin gs_red := grey_val(p);
       gs_green:= -1;
@@ -1423,6 +1462,7 @@ begin
         end;
       end;
     end;
-  gs_colormodel:=color_model(p);
+  if color_model(p)<>uninitialized_model then
+    gs_colormodel:=color_model(p);
 end
 @z
