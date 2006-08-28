@@ -1403,12 +1403,13 @@ begin
   if (color_model(p)=rgb_model)or@|
      ((color_model(p)=uninitialized_model)and
      ((internal[default_color_model] div unity)=rgb_model)) then
-  begin if (gs_colormodel<>color_model(p))or(gs_red<>red_val(p))or@|
+  begin if (gs_colormodel<>rgb_model)or(gs_red<>red_val(p))or@|
       (gs_green<>green_val(p))or(gs_blue<>blue_val(p)) then
     begin gs_red:=red_val(p);
       gs_green:=green_val(p);
       gs_blue:=blue_val(p);
       gs_black:= -1;@/
+      gs_colormodel:=rgb_model;
       begin ps_room(36);
         print_char(" ");
         print_scaled(gs_red); print_char(" ");
@@ -1423,7 +1424,7 @@ begin
      ((internal[default_color_model] div unity)=cmyk_model)) then
   begin if (gs_red<>cyan_val(p))or(gs_green<>magenta_val(p))or@|
       (gs_blue<>yellow_val(p))or(gs_black<>black_val(p))or@|
-      (gs_colormodel<>color_model(p)) then
+      (gs_colormodel<>cmyk_model) then
       begin 
       if color_model(p)=uninitialized_model then begin
         gs_red:=unity;
@@ -1437,6 +1438,7 @@ begin
         gs_blue:=yellow_val(p);
         gs_black:=black_val(p);@/
         end;
+      gs_colormodel:=cmyk_model;
       begin ps_room(45);
         print_char(" ");
         print_scaled(gs_red); print_char(" ");
@@ -1450,11 +1452,12 @@ begin
   else if (color_model(p)=grey_model)or@|
     ((color_model(p)=uninitialized_model)and
      ((internal[default_color_model] div unity)=grey_model)) then
-  begin if (gs_red<>grey_val(p))or(gs_colormodel<>color_model(p)) then
+  begin if (gs_red<>grey_val(p))or(gs_colormodel<>grey_model) then
     begin gs_red := grey_val(p);
       gs_green:= -1;
       gs_blue:= -1;
       gs_black:= -1;@/
+      gs_colormodel:=grey_model;
       begin ps_room(16);
         print_char(" ");
         print_scaled(gs_red); 
@@ -1462,7 +1465,7 @@ begin
         end;
       end;
     end;
-  if color_model(p)<>uninitialized_model then
-    gs_colormodel:=color_model(p);
+  if color_model(p)=no_model then
+    gs_colormodel:=no_model;
 end
 @z
