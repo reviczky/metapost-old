@@ -1,5 +1,18 @@
 % antepost.ch: Implements withantescript and withpostscript specials
 
+@x l. 1630
+ps_file_only: begin wps(xchr[s]); incr(ps_offset);
+  end;
+@y
+ps_file_only: if s=13 then begin 
+   wps_cr; ps_offset:=0;
+   end
+  else 
+    begin
+    wps(xchr[s]); incr(ps_offset);
+    end;
+@z
+
 @x l. 8102
 @d fill_node_size=8
 @y
@@ -143,7 +156,7 @@ with_option:if m=pen_type then print("withpen")
   else if m=with_post_script then print("withpostscript")
 @z
 
-@x l. 19552
+@x l. 19358
 @!cp,@!pp,@!dp:pointer;
   {objects being updated; |void| initially; |null| to suppress update}
 begin cp:=void; pp:=void; dp:=void;
@@ -156,7 +169,7 @@ begin cp:=void; pp:=void; dp:=void;
 begin cp:=void; pp:=void; dp:=void; ap:=void; bp:=void;
 @z
 
-@x
+@x l. 19363
   if ((t=uninitialized_model)and
 @y
   if ((t=with_ante_script)and(cur_type<>string_type))or
@@ -164,7 +177,7 @@ begin cp:=void; pp:=void; dp:=void; ap:=void; bp:=void;
      ((t=uninitialized_model)and
 @z
 
-@x
+@x l. 19371
       begin if pp=void then @<Make |pp| an object in list~|p| that needs
           a pen@>;
       if pp<>null then
@@ -192,7 +205,7 @@ begin cp:=void; pp:=void; dp:=void; ap:=void; bp:=void;
 	     selector:=new_string;
              str_room(length(ante_script(ap))+length(cur_exp)+2);
 	     print(cur_exp); 
-             append_char(13); append_char(10);  {a forced \ps\ newline }
+             append_char(13);  {a forced \ps\ newline }
              print(ante_script(ap));
              ante_script(ap):=make_string;
              delete_str_ref(s);
@@ -217,7 +230,7 @@ begin cp:=void; pp:=void; dp:=void; ap:=void; bp:=void;
 	     selector:=new_string;
              str_room(length(post_script(bp))+length(cur_exp)+2);
              print(post_script(bp));
-             append_char(13); append_char(10);  {a forced \ps\ newline }
+             append_char(13); {a forced \ps\ newline }
 	     print(cur_exp); 
              post_script(bp):=make_string;
              delete_str_ref(s);
@@ -231,7 +244,7 @@ begin cp:=void; pp:=void; dp:=void; ap:=void; bp:=void;
 @z
 
 
-@x 
+@x l. 19369
 if t=picture_type then
 @y
 if t=with_ante_script then
@@ -241,6 +254,15 @@ else if t=with_post_script then
 else if t=picture_type then
 @z
 
+@x l. 22299
+  begin fix_graphics_state(p);
+@y
+  begin if has_color(p) then
+    if (ante_script(p))<>null then begin
+      print_nl (ante_script(p)); print_ln;
+      end;
+  fix_graphics_state(p);
+@z
 
 @x l. 23011
 fill_code: if pen_p(p)=null then ps_fill_out(path_p(p))
@@ -258,9 +280,6 @@ stroked_code: if pen_is_elliptical(pen_p(p)) then stroke_ellipse(p,false)
     end;
 @y
 fill_code: begin
-  if (ante_script(p))<>null then begin
-    print_nl (ante_script(p)); print_ln;
-    end;
   if pen_p(p)=null then ps_fill_out(path_p(p))
   else if pen_is_elliptical(pen_p(p)) then stroke_ellipse(p,true)
   else begin do_outer_envelope(copy_path(path_p(p)), p);
@@ -271,9 +290,6 @@ fill_code: begin
     end;
   end;
 stroked_code: begin
-  if (ante_script(p))<>null then begin
-    print_nl (ante_script(p)); print_ln;
-    end;
   if pen_is_elliptical(pen_p(p)) then stroke_ellipse(p,false)
   else begin q:=copy_path(path_p(p));
     t:=lcap_val(p);
@@ -303,9 +319,6 @@ text_code: if (font_n(p)<>null_font) and (length(text_p(p))>0) then
   end;
 @y
 text_code: begin
-  if (ante_script(p))<>null then begin
-    print_nl (ante_script(p)); print_ln;
-    end;
   if (font_n(p)<>null_font) and (length(text_p(p))>0) then
   begin if internal[prologues]>0 then
     scf:=choose_scale(p)
