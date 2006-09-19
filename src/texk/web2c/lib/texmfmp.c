@@ -88,7 +88,7 @@
 #define edit_var "MFEDIT"
 #endif /* MF */
 #ifdef MP
-#define BANNER "This is MetaPost, Version 0.641"
+#define BANNER "This is MetaPost, Version 0.902"
 #define COPYRIGHT_HOLDER "AT&T Bell Laboratories"
 #define AUTHOR "John Hobby"
 #define PROGRAM_HELP MPHELP
