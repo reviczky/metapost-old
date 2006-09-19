@@ -1,4 +1,4 @@
-% antepost.ch: Implements withantescript and withpostscript specials
+% antepost.ch: Implements withprescript and withpostscript specials
 
 @x l. 1630
 ps_file_only: begin wps(xchr[s]); incr(ps_offset);
@@ -16,7 +16,7 @@ ps_file_only: if s=13 then begin
 @x l. 8102
 @d fill_node_size=8
 @y
-@d ante_script(#)==mem[#+8].hh.lh
+@d pre_script(#)==mem[#+8].hh.lh
 @d post_script(#)==mem[#+8].hh.rh
 @d fill_node_size=9
 @z
@@ -25,7 +25,7 @@ ps_file_only: if s=13 then begin
   color_model(t):=uninitialized_model;
 @y
   color_model(t):=uninitialized_model;
-  ante_script(t):=null;
+  pre_script(t):=null;
   post_script(t):=null;
 @z
 
@@ -51,7 +51,7 @@ ps_file_only: if s=13 then begin
   color_model(t):=uninitialized_model;
 @y
   color_model(t):=uninitialized_model;
-  ante_script(t):=null;
+  pre_script(t):=null;
   post_script(t):=null;
 @z
 
@@ -89,7 +89,7 @@ ps_file_only: if s=13 then begin
   color_model(t):=uninitialized_model;
 @y
   color_model(t):=uninitialized_model;
-  ante_script(t):=null;
+  pre_script(t):=null;
   post_script(t):=null;
 @z
 
@@ -109,18 +109,18 @@ text_code: delete_str_ref(text_p(p));
 case type(p) of
 fill_code: begin toss_knot_list(path_p(p));
   if pen_p(p)<>null then toss_knot_list(pen_p(p));
-  if ante_script(p)<>null then delete_str_ref(ante_script(p));
+  if pre_script(p)<>null then delete_str_ref(pre_script(p));
   if post_script(p)<>null then delete_str_ref(post_script(p));
   end;
 stroked_code: begin toss_knot_list(path_p(p));
   if pen_p(p)<>null then toss_knot_list(pen_p(p));
-  if ante_script(p)<>null then delete_str_ref(ante_script(p));
+  if pre_script(p)<>null then delete_str_ref(pre_script(p));
   if post_script(p)<>null then delete_str_ref(post_script(p));
   e:=dash_p(p);
   end;
 text_code: begin 
   delete_str_ref(text_p(p));
-  if ante_script(p)<>null then delete_str_ref(ante_script(p));
+  if pre_script(p)<>null then delete_str_ref(pre_script(p));
   if post_script(p)<>null then delete_str_ref(post_script(p));
   end;
 @z
@@ -130,9 +130,9 @@ text_code: begin
 @y
 @d also_code=2 {command modifier for `\&{also}'}
 
-@ Ante and postscripts need two new identifiers:
+@ Pre and postscripts need two new identifiers:
 
-@d with_ante_script=11
+@d with_pre_script=11
 @d with_post_script=13
 @z
 
@@ -142,8 +142,8 @@ primitive("dashed",with_option,picture_type);@/
 @y
 primitive("dashed",with_option,picture_type);@/
 @!@:dashed_}{\&{dashed} primitive@>
-primitive("withantescript",with_option,with_ante_script);@/
-@!@:with_ante_script_}{\&{withantescript} primitive@>
+primitive("withprescript",with_option,with_pre_script);@/
+@!@:with_pre_script_}{\&{withprescript} primitive@>
 primitive("withpostscript",with_option,with_post_script);@/
 @!@:with_post_script_}{\&{withpostscript} primitive@>
 @z
@@ -152,7 +152,7 @@ primitive("withpostscript",with_option,with_post_script);@/
 with_option:if m=pen_type then print("withpen")
 @y
 with_option:if m=pen_type then print("withpen")
-  else if m=with_ante_script then print("withantescript")
+  else if m=with_pre_script then print("withprescript")
   else if m=with_post_script then print("withpostscript")
 @z
 
@@ -172,7 +172,7 @@ begin cp:=void; pp:=void; dp:=void; ap:=void; bp:=void;
 @x l. 19363
   if ((t=uninitialized_model)and
 @y
-  if ((t=with_ante_script)and(cur_type<>string_type))or
+  if ((t=with_pre_script)and(cur_type<>string_type))or
      ((t=with_post_script)and(cur_type<>string_type))or
      ((t=uninitialized_model)and
 @z
@@ -193,26 +193,26 @@ begin cp:=void; pp:=void; dp:=void; ap:=void; bp:=void;
         pen_p(pp):=cur_exp; cur_type:=vacuous;
         end;
       end
-    else if t=with_ante_script then
+    else if t=with_pre_script then
        begin if ap=void then
          ap:=p;
          while (ap<>null)and(not has_color(ap)) do
             ap:=link(ap);
          if ap<>null then
-           begin if ante_script(ap)<>null then begin { build a new,combined string }
-             s:=ante_script(ap);
+           begin if pre_script(ap)<>null then begin { build a new,combined string }
+             s:=pre_script(ap);
              old_setting:=selector; 
 	     selector:=new_string;
-             str_room(length(ante_script(ap))+length(cur_exp)+2);
+             str_room(length(pre_script(ap))+length(cur_exp)+2);
 	     print(cur_exp); 
              append_char(13);  {a forced \ps\ newline }
-             print(ante_script(ap));
-             ante_script(ap):=make_string;
+             print(pre_script(ap));
+             pre_script(ap):=make_string;
              delete_str_ref(s);
              selector:=old_setting;
              end 
            else
-             ante_script(ap):=cur_exp;
+             pre_script(ap):=cur_exp;
            cur_type:=vacuous;
            end;
          end
@@ -247,8 +247,8 @@ begin cp:=void; pp:=void; dp:=void; ap:=void; bp:=void;
 @x l. 19369
 if t=picture_type then
 @y
-if t=with_ante_script then
-  help_line[1]:="Next time say `withantescript <known string expression>';"
+if t=with_pre_script then
+  help_line[1]:="Next time say `withprescript <known string expression>';"
 else if t=with_post_script then
   help_line[1]:="Next time say `withpostscript <known string expression>';"
 else if t=picture_type then
@@ -258,8 +258,8 @@ else if t=picture_type then
   begin fix_graphics_state(p);
 @y
   begin if has_color(p) then
-    if (ante_script(p))<>null then begin
-      print_nl (ante_script(p)); print_ln;
+    if (pre_script(p))<>null then begin
+      print_nl (pre_script(p)); print_ln;
       end;
   fix_graphics_state(p);
 @z
