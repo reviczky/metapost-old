@@ -10,7 +10,7 @@
 #define TEXFONTS ".:/usr/lib/tex/fonts/tfm"
 
 /* Where dmp looks for troff font tables */
-#define TRFONTS "/usr/lib/font/devpost"
+#define TRFONTS "/usr/share/groff/current/font/devps"
 
 /* Where dmp looks for font map data and spec chars */
 #define MPPOOL ".:/usr/lib/mp"
@@ -60,12 +60,6 @@ FILE *fsearch(char *nam, char *ext, int path_type)
 	  path = tfmpath;
 	} else if (path_type == DB_TYPE) {
 	  path = dbpath;
-	} else if (path_type == CHARLIB_TYPE) {
-	  path = charpath;
-	  /* somewhat sneaky trick to unify 'fsearch' API with
-		 the smallest possible code impact */
-	  ext = nam;
-	  nam = "charlib/";
 	} else if (path_type == TRFONTS_TYPE) {
 	  path = trpath;
 	}

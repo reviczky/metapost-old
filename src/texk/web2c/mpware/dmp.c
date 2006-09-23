@@ -26,6 +26,7 @@
 char *banner="% Written by DMP, Version 0.902";	/* first line of output */
 char *term_banner="This is DMP, Version 0.902";
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <ctype.h>
@@ -42,13 +43,11 @@ char *term_banner="This is DMP, Version 0.902";
 
 #define POOLMAX	65000	/* total characters in all font and char names */
 #define FCOUNT	100	/* maximum number of fonts */
-#define SHIFTS	100	/* maximum number of characters with special shifts */
 #define line_length 79	/* maximum output line length (must be at least 60) */
-#define Hprime	307	/* much bigger than max(chars/font,fonts/job) */
-#define MAXCHARS 256	/* character codes fall in the range 0..MAXCHARS-1 */
+#define Hprime	2459	/* much bigger than max(chars/font,fonts/job) */
+#define MAXCHARS 2048	/* character codes fall in the range 0..MAXCHARS-1 */
 #define LLENGTH 1024	/* one more than maximum line length for troff output */
 
-#define is_specchar(c)	(c<=2)	/* does charcode c identify a special char? */
 #define LWscale	0.03	/* line width for graphics as a fraction of pointsize */
 #define YCORR 12.0	/* V coordinate of reference point in (big) points */
 
@@ -62,10 +61,6 @@ struct hcell *charcodes[FCOUNT];/* hash tables for translating char names */
 int next_specfnt[FCOUNT];	/* used to link special fonts together */
 float charwd[FCOUNT][MAXCHARS];	/* width/ptsize indexed [font num][char code] */
 int nfonts;			/* no. of internal font nums (texname indices)*/
-int shiftchar[SHIFTS];		/* charcode of character to shift, else -1 */
-float shifth[SHIFTS],shiftv[SHIFTS];	/* shift vals/fontsize (y is upward) */
-int shiftptr = 0;		/* number of entries in shift tables */
-int shiftbase[FCOUNT];		/* initial index into shifth,shiftv,shiftchar */
 int specfnt = FCOUNT;		/* int. num. of first special font (or FCOUNT)*/
 int *specf_tail = &specfnt;	/* tail of specfnt list (*specf_tail==FCOUNT) */
 FILE *trf;			/* the input file (troff output) */
@@ -78,7 +73,6 @@ int curfont;			/* internal number for current font */
 float Xslant;			/* degrees additional slant for all fonts */
 float Xheight;			/* yscale fonts to this height if nonzero */
 char *dbname = "trfonts.map";	/* file for table of troff & TFM font names */
-char *adjname = "trchars.adj";	/* file for character shift amounts */
 int lnno = 0;			/* line num. in troff output file (our input) */
 
 void quit(char *msg1, char *msg2, char *msg3) 
@@ -307,50 +301,6 @@ void read_fmap( char *dbase)
 	font_num[nfonts] = -1;		/* indicate font is not mounted */
 	nfonts++;
     }
-    fclose(fin);
-}
-
-
-/* Some characters need their coordinates shifted in order to agree with
-   troff's view of the world.  Logically, this information belongs in the
-   font description files but it actually resides in a PostScript prolog
-   that the troff output processor dpost reads.  Since that file is in
-   PostScript and subject to change, we read the same information from
-   a small auxiliary file that gives shift amounts relative to the font
-   size with y upward.
-*/
-/* GROFF NOTE:
-   The PostScript prologue in GNU groff's font directory does not
-   contain any character shift information, so the following function
-   becomes redundant.  Simply keeping an empty "trchars.adj" file
-   around will do fine without requiring any changes to this program.
-*/
-void read_char_adj(char *adjfile)
-{
-    FILE* fin;
-    char buf[200];
-    int i;
-
-    fin = fsearch(adjfile, "", DB_TYPE);
-    for (i=0; i<nfonts; i++)
-	shiftbase[i] = 0;
-    while (fgets(buf,200,fin)!=NULL) {
-	if (shiftptr==SHIFTS-1) quit("Need to increase SHIFTS","","");
-	if (buf[0]!=' ' && buf[0]!='\t') {
-	    for (i=0; buf[i]!='\0'; i++)
-		if (buf[i]=='\n') buf[i]='\0';
-	    shiftchar[shiftptr++] = -1;
-	    shiftbase[*hfind(buf,trfonts)] = shiftptr;
-	    if (!hfound()) quit(adjfile," refers to unknown font ",buf);
-	} else {
-	    shiftchar[shiftptr] = get_int(buf);
-	    shifth[shiftptr] = get_float(arg_tail);
-	    shiftv[shiftptr] = -get_float(arg_tail);
-	    if (arg_tail==NULL) quit("Bad shift entry : \"",buf,"\"");
-	    shiftptr++;
-	}
-    }
-    shiftchar[shiftptr++] = -1;
     fclose(fin);
 }
 
@@ -654,19 +604,7 @@ void finish_last_char(void)
 */
 void set_num_char(int f,int c)
 {
-    float hh, vv;		/* corrected versions of h, v */
-    int i;
-
-    hh = h;
-    vv = v;
-    for (i=shiftbase[f]; shiftchar[i]>=0; i++)
-	if (shiftchar[i]==c) {
-	    hh += (cursize/unit)*shifth[i];
-	    vv += (cursize/unit)*shiftv[i];
-	    break;
-	}
-    if (c==0) quit("attempt to typeset an invalid character","","");
-    if (hh-str_h2>=1.0 || str_h2-hh>=1.0 || vv-str_v>=1.0 || str_v-vv>=1.0
+    if (h-str_h2>=1.0 || str_h2-h>=1.0 || v-str_v>=1.0 || str_v-v>=1.0
 	    || f!=str_f || cursize!=str_size) {
 	if (str_f>=0) finish_last_char();
 	else if (!fonts_used)
@@ -675,11 +613,11 @@ void set_num_char(int f,int c)
 	    first_use(f);	/* first use of font f on this page */
 	fprintf(mpxf,"s((");
 	print_col = 3;
-	str_f=f; str_v=vv; str_h1=hh;
+	str_f=f; str_v=v; str_h1=h;
 	str_size = cursize;
     }
     print_char(c);
-    str_h2 = hh + cursize*charwd[f][c];
+    str_h2 = h + cursize*charwd[f][c];
 }
 
 /* Output a string. */
@@ -690,10 +628,10 @@ void set_string (char *cname)
     if (!*cname) return;
     hh = h;
     set_num_char(curfont,*cname);
-    hh+= cursize*charwd[curfont][*cname];
+    hh+= cursize*charwd[curfont][(int)*cname];
     while (*++cname){
        print_char(*cname);
-       hh += cursize*charwd[curfont][*cname];
+       hh += cursize*charwd[curfont][(int)*cname];
     }
     h = rint(hh);
     finish_last_char();
@@ -718,56 +656,13 @@ void stop_picture(void)
 }
 
 
-
-/**************************************************************
-			Special Characters
-***************************************************************/
-
-/* Given the troff name of a special character, this routine finds its
-   definition and copies it to the MPX file.  It also finds the name of
-   the vardef macro, puts it in the string pool, and index where the
-   string starts.  The name should be C.<something>.
-*/
-char specintro[] = "vardef ";		/* MetaPost name follows this */
-#define speci 7				/* length of the above string */
-
-int copy_spec_char(char *cname)
-{
-    int k = 0;				/* how much of specintro so far */
-    FILE *deff;
-    int c, s;
-
-    deff = fsearch(cname, "", CHARLIB_TYPE);
-    while (k<speci) {
-	if ((c=getc(deff))==EOF)
-	    quit("No vardef in charlib/",cname,"");
-	putc(c, mpxf);
-	if (c==specintro[k]) k++; else k=0;
-    }
-    s = poolsize;
-    while ((c=getc(deff))!='(') {
-	if (c==EOF) quit("vardef in charlib/",cname," has no arguments");
-	putc(c, mpxf);
-	add_to_pool(c);
-    }
-    putc(c, mpxf);
-    add_to_pool('\0');
-    while ((c=getc(deff))!=EOF)
-	putc(c, mpxf);
-    return s;
-}
-
-
-/* When given a character name instead of a number, we need to check if
-   it is a special character and download the definition if necessary.
-   If the character is not in the current font we have to search the special
+/* If the character is not in the current font we have to search the special
    fonts.
 */
-Hcell *spec_tab = (Hcell*)0;
 
 void set_char(char *cname)
 {
-    int f, c, *flagp;
+    int f, c;
 
     if (*cname==' '||*cname=='\t') return;
     f = curfont;
@@ -779,21 +674,7 @@ void set_char(char *cname)
 	}
 	quit("There is no character ",cname,"");
     }
-out:if (!is_specchar(c)) set_num_char(f,c);
-    else {
-	if (str_f>=0) finish_last_char();
-	if (!fonts_used) prepare_font_use();
-	if (!font_used[f]) first_use(f);
-	if (spec_tab==(Hcell*)0)
-	    spec_tab = new_htab;
-	flagp = hfind(cname, spec_tab);
-	if (*flagp==0)
-	    *flagp = copy_spec_char(cname);	/* this won't be zero */
-	fprintf(mpxf, "s(%s(n%d)", &strpool[*flagp], font_num[f]);
-	slant_and_ht();
-	fprintf(mpxf, ",%.5f,%.4f,%.4f);\n",
-	    cursize/font_design_size[f], h*unit, YCORR-v*unit);
-    }
+out: set_num_char(f,c);
 }
 
 
@@ -1283,7 +1164,6 @@ Primary author of dmp: John Hobby.\n", stdout);
     }
     fprintf(mpxf, "%s\n", banner);
     read_fmap(dbname);
-    read_char_adj(adjname);
     if (do_page()) {
 	do {
 	    h=0; v=0;

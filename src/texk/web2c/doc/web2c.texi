@@ -2277,7 +2277,7 @@ supported) and a number of other subsidiary programs, described below.
 * Initial MetaPost::            Making mems.
 * makempx invocation::          Create MPX files for labels.
 * dvitomp invocation::          DVI-to-MPX translation.
-* dmp invocation::              Ditroff-to-MPX translation.
+* dmp invocation::              Troff-to-MPX translation.
 * mpto invocation::             Extracting labels from MetaPost programs.
 * newer invocation::            Is one file newer than another?
 @end menu
@@ -2377,10 +2377,7 @@ enviroment variable @code{TEX} to @samp{latex} (@pxref{makempx
 invocation}).
 
 @var{tex-input} need not be specifically @TeX{} input; it could also be
-Troff.  In that case, you will need the @samp{-m pictures} Troff macro
-package (unfortunately absent from many Troff implementations), or an
-equivalent such as the @samp{-m pspic} macros from GNU groff described
-in grops(1).
+Troff.  
 
 Other typesetters can be supported with no change to MetaPost itself;
 only MakeMPX needs to be updated.
@@ -2552,7 +2549,7 @@ is prepended to the input from the MetaPost file.
 @item
 @cindex DVItoMP, invoked by MakeMPX
 @cindex DMP, invoked by MakeMPX
-The typesetter output (a DVI file in the case of @TeX{}, Ditroff output
+The typesetter output (a DVI file in the case of @TeX{}, troff output
 for Troff) is translated back to MetaPost, by DVItoMP (@pxref{dvitomp
 invocation}) or DMP (@pxref{dmp invocation}) respectively.
 @end enumerate
@@ -2613,10 +2610,10 @@ If you use @LaTeX{}, set this to @code{latex}, and supply an appropriate
 @code{verbatimtex} header in the MP source (@pxref{mpost invocation}).
 
 @item TROFF
-Likewise, for Troff; default is @samp{'eqn -d\$\$ | troff -Tpost'}.  You
-may need to replace @samp{-Tpost} by @samp{-T@var{term}}, where
+Likewise, for Troff; default is @samp{'eqn -Tps -d\$\$ | troff -Tps'}.  You
+may need to replace @samp{-Tps} by @samp{-T@var{term}}, where
 @var{term} is the PostScript device name for your Troff implementation,
-e.g., @samp{ps} or @samp{psc}; see troff(1).
+e.g., @samp{post} or @samp{psc}; see troff(1).
 
 If you change this, you will also need to set the @code{TRFONTS}
 environment variable or configuration value to point to the appropriate
@@ -2650,33 +2647,33 @@ options}).
 
 
 @node dmp invocation
-@section DMP: Ditroff to MPX conversion
+@section DMP: Troff to MPX conversion
 
 @pindex DMP
-@cindex ditroff output, converting to MPX
-@cindex MPX files, creating from ditroff output
+@cindex troff output, converting to MPX
+@cindex MPX files, creating from troff output
 
-DMP converts device-independent Troff (ditroff) output files into
+DMP converts device-independent Troff (troff) output files into
 low-level MetaPost commands in a so-called MPX file.  This program is
 generally invoked by MakeMPX (@pxref{makempx invocation}).  Synopsis:
 
 @example
-dmp [@var{ditroff-file} [@var{mpxfile}]]
+dmp [@var{troff-file} [@var{mpxfile}]]
 @end example
 
 @noindent
-If @var{ditroff-file} is not specified, input comes from standard input;
+If @var{troff-file} is not specified, input comes from standard input;
 and if @var{mpxfile} is not specified, output goes to standard output.
 
-@pindex dpost
-@findex D @var{c} @r{ditroff graphics}
-@findex x X @r{ditroff device control}
-@findex SetColor @r{ditroff command}
-@findex BeginPath @r{ditroff command}
-@findex DrawPath @r{ditroff command}
+@pindex grops
+@findex D @var{c} @r{troff graphics}
+@findex x X @r{troff device control}
+@findex SetColor @r{troff command}
+@findex BeginPath @r{troff command}
+@findex DrawPath @r{troff command}
 DMP was written to process the output of a Troff pipeline fed the output
 of @code{mpto -troff} (@pxref{mpto invocation}).  DMP understands all
-the @samp{D@var{c}} graphics functions that @code{dpost} does, but it
+the @samp{D@var{c}} graphics functions that @code{grops} does, but it
 ignores @samp{x X} device control functions such as @samp{x X
 SetColor:@dots{}}, @samp{x X BeginPath:}, and @samp{x X
 DrawPath:@dots{}}.
@@ -2685,24 +2682,10 @@ DrawPath:@dots{}}.
 The available font names are defined in the support file
 @file{trfonts.map}, which DMP looks for along the @code{MPSUPPORT} path.
 
-@flindex trchars.adj
-Another support file @file{trchars.adj}, also looked for along the
-@code{MPSUPPORT} path, contains a character adjustment table which
-should reflect the shift amounts found in the standard PostScript
-prologue for Troff and dpost found in the @code{TRFONTS} directory.
-Such an adjustment table is unnecessary for some Troff implementations,
-in which case @file{trchars.adj} should be replaced by an empty
-file---but it must still exist.
-
-
-DMP was written for one particular Troff implementation, and it
-unfortunately has many built-in assumptions about the output and fonts
-file formats used by Troff, which may not be satisfied in other
-environments.  In particular, GNU groff uses some extensions in its file
-formats described in groff_font(5) and groff_out(5) which make its
-output completely unusable for DMP.  On the other hand, the Troff
-version found in Sun Solaris 2.x, and perhaps other systems derived from
-System V R4, works fine with the default settings.
+DMP was written for one particular Troff implementation and later
+changed for groff, thus it unfortunately has many built-in assumptions
+about the output and fonts file formats used by Troff, which may not be
+satisfied in other environments.
 
 If you run into trouble and want to adapt DMP to other systems,
 you might have to try the following (this is primarily for hackers):
@@ -2710,7 +2693,7 @@ you might have to try the following (this is primarily for hackers):
 @itemize @bullet
 @item
 If DMP complains about a missing font table (e.g., @samp{Cannot find
-TR}), your Troff may not support the device @samp{post}.
+TR}), your Troff may not support the device @samp{ps}.
 
 Check troff(1) for the devices supported by your Troff and set the
 @code{TROFF} environment variable appropriately (see above).  Also,
@@ -2721,12 +2704,10 @@ variable as needed.
 If DMP complains about a missing font description file (e.g., @samp{Font
 TR was not in map file}), your version of Troff may be using internal
 font names different from those in the distributed @file{trfonts.map};
-e.g., TR and TI instead of R and I for Times-Roman and Times-Italic.
+e.g., R and I instead of TR and TI for Times-Roman and Times-Italic.
 
-@flindex trchars.adj
-In this case, you may have to adapt @file{trfonts.map} and perhaps also
-@file{trchars.adj} in the MetaPost support directory
-(@file{texmf/metapost/support} by default).
+In this case, you may have to adapt @file{trfonts.map} in the MetaPost
+support directory (@file{texmf/metapost/support} by default).
 
 @item
 If DMP still complains that it cannot parse the font description files
@@ -2744,8 +2725,7 @@ Revised 1992).  Documentation on the subtle differences in other Troff
 implementation is harder to find except for GNU groff, where it's all
 documented in the above-mentioned groff_font(5) and groff_out(5).
 
-Any contributions to improve the portability of DMP or to make it work
-with GNU groff are welcome, of course.
+Any contributions to improve the portability of DMP are welcome, of course.
 
 @end itemize
 
