@@ -35,8 +35,6 @@ static const char perforce_id[] =
 #  define is_subsetted(f)     true
 #  undef  is_included
 #  define is_included(f)      true
-#  undef  set_cur_file_name
-#  define set_cur_file_name(s)    cur_file_name = s
 #  define t1_open()           \
     open_input(&t1_file, kpse_type1_format, FOPEN_RBIN_MODE)
 #  define enc_open()          \

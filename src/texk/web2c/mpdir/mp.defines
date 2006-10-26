@@ -24,8 +24,7 @@ $Id$
 
 @define function hasfmentry();
 @define function tfmoffm();
-@define procedure checkextfm();
 @define procedure mpmapfile();
 @define procedure mpmapline();
 @define procedure mpinitmapfile();
-
+@define procedure mpfontencodings();

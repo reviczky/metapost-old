@@ -55,12 +55,19 @@ size_t last_ptr_index;          /* for use with alloc_array */
 
 
 void pdf_puts (const char *s)
-{
+{    
+  while (*s)
+    fputc(*s++,psfile);
 }
 
 __attribute__ ((format (printf, 1, 2)))
 void pdf_printf (const char *fmt, ...)
-{
+{   
+    va_list args;
+    va_start (args, fmt);
+    vsnprintf (print_buf, PRINTF_BUF_SIZE, fmt, args);
+    pdf_puts (print_buf);
+    va_end (args);
 }
 
 strnumber maketexstring (const char *s)

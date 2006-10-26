@@ -202,6 +202,27 @@ static void write_fontdescriptor (void)
 {
 }
 
+void mpfontencodings (int lastfnum) {
+  int nullfont;
+  int f,ff;
+  enc_entry *e;
+  nullfont = getnullfont();
+  for (f=nullfont+1;f<=lastfnum;f++) {
+    if (fontsizes[f]!=0) {
+      if (hasfmentry (f)) { 
+	fm_cur = (fm_entry *) mpfontmap[f];
+	if (fm_cur != NULL && 
+	    (fm_cur->ps_name != NULL && fm_cur->ff_name != NULL)) {
+	  if (is_reencoded (fm_cur)) {
+	    e = fm_cur->encoding;
+	    read_enc (e);
+	    write_enc (NULL, e, 0);
+	  }	    
+	}
+      }
+    }
+  }
+}
 
 void dopdffont (integer font_objnum, fontnumber f)
 {
@@ -236,10 +257,7 @@ void dopdffont (integer font_objnum, fontnumber f)
         if (is_reencoded (fm_cur)) {
             e = fm_cur->encoding;
             read_enc (e);
-            if (!is_truetype (fm_cur)) {
-                write_enc (NULL, e, 0);
-                encoding_objnum = e->objnum;
-            } 
+	    write_enc (NULL, e, 0);
         }
     }
     if (is_included (fm_cur))

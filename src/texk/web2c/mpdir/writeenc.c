@@ -41,6 +41,23 @@ void read_enc (enc_entry * e)
  */
 void write_enc (char **glyph_names, enc_entry * e, integer eobjnum)
 {
+    boolean is_notdef;
+    int i;
+    char **g;
+    if (glyph_names == NULL) {
+        assert (e != NULL);
+        if (e->objnum != 0)     /* the encoding has been written already */
+            return;
+        e->objnum = 1;
+        g = e->glyph_names;
+    } else {
+        g = glyph_names;
+    }
+    pdf_printf ("\n/%s[\n", e->name);
+    for (i = 0; i < 256; i++) {
+      pdf_printf ("/%s\n", g[i]);
+    }
+    pdf_puts ("]def\n");
 }
 
 /**********************************************************************/
