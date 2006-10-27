@@ -141,6 +141,10 @@ ten_pow[0] := 1;
 for i := 1 to 9 do
     ten_pow[i] := 10*ten_pow[i - 1];
 mp_font_map:=xmalloc_array(fm_entry_ptr,font_max);
+for i := null_font to font_max do
+  mp_font_map[i] := 0;
+	
+
 
 @ The following function divides |s| by |m|. |dd| is number of decimal digits.
 
