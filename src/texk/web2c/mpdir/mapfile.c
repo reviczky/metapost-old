@@ -89,6 +89,7 @@ fm_entry *new_fm_entry (void)
     fm->ff_name = NULL;
     fm->subset_tag = NULL;
     fm->encoding = NULL;
+    fm->encname = NULL;
     fm->tfm_num = getnullfont ();
     fm->tfm_avail = TFM_UNCHECKED;
     fm->type = 0;

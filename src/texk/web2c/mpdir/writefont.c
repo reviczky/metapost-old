@@ -202,6 +202,53 @@ static void write_fontdescriptor (void)
 {
 }
 
+boolean fontisreencoded (int f) {
+  if (fontsizes[f]!=0) {
+    if (hasfmentry (f)) { 
+      fm_cur = (fm_entry *) mpfontmap[f];
+      if (fm_cur != NULL && 
+	  (fm_cur->ps_name != NULL && fm_cur->ff_name != NULL)) {
+	if (is_reencoded (fm_cur)) {
+	  return 1;
+	}	    
+      }
+    }
+  }
+  return 0;
+}
+
+void printencname (int f) {
+  enc_entry *e;
+  if (fontsizes[f]!=0) {
+    if (hasfmentry (f)) { 
+      fm_cur = (fm_entry *) mpfontmap[f];
+      if (fm_cur != NULL && 
+	  (fm_cur->ps_name != NULL && fm_cur->ff_name != NULL)) {
+	if (is_reencoded (fm_cur)) {
+	  e = fm_cur->encoding;
+	  pdf_printf("%s",e->encname);
+	  return;
+	} 
+      }
+    }
+  }
+  pdftex_fail ("fontmap problems for font %s",makecstring (fontname[f]));
+}
+
+void printpsname (int f) {
+  if (fontsizes[f]!=0) {
+    if (hasfmentry (f)) { 
+      fm_cur = (fm_entry *) mpfontmap[f];
+      if (fm_cur != NULL && 
+	  (fm_cur->ps_name != NULL && fm_cur->ff_name != NULL)) {
+	pdf_printf("%s",fm_cur->ps_name);
+	return;
+      }
+    }
+  }
+  pdftex_fail ("fontmap problems for font %s",makecstring (fontname[f]));
+}
+
 void mpfontencodings (int lastfnum) {
   int nullfont;
   int f,ff;
@@ -217,6 +264,22 @@ void mpfontencodings (int lastfnum) {
 	    e = fm_cur->encoding;
 	    read_enc (e);
 	    write_enc (NULL, e, 0);
+	  }	    
+	}
+      }
+    }
+  }
+  /* restore pristine state for next image */
+  for (f=nullfont+1;f<=lastfnum;f++) {
+    if (fontsizes[f]!=0) {
+      if (hasfmentry (f)) { 
+	fm_cur = (fm_entry *) mpfontmap[f];
+	if (fm_cur != NULL && 
+	    (fm_cur->ps_name != NULL && fm_cur->ff_name != NULL)) {
+	  if (is_reencoded (fm_cur)) {
+	    e = fm_cur->encoding;
+	    if (e!=NULL)
+	      e->objnum = 0;
 	  }	    
 	}
       }
@@ -253,13 +316,6 @@ void dopdffont (integer font_objnum, fontnumber f)
                                    used in embedded PDF only; if so then set
                                    write_fontfile_only to true */
 
-    if (!write_fontfile_only) { /* handle Encoding + ToUnicode as well */
-        if (is_reencoded (fm_cur)) {
-            e = fm_cur->encoding;
-            read_enc (e);
-	    write_enc (NULL, e, 0);
-        }
-    }
     if (is_included (fm_cur))
         write_fontfile ();
     //if (fm_cur->fn_objnum != 0) {

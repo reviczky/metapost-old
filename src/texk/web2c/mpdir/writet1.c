@@ -291,10 +291,11 @@ static void enc_getline (void)
         goto restart;
 }
 
-void load_enc (char *enc_name, char **glyph_names)
+void load_enc (char *enc_name, char **enc_encname, char **glyph_names)
 {
     char buf[ENC_BUF_SIZE], *p, *r;
     int names_count;
+    char *myname;
     set_cur_file_name (enc_name);
     if (!enc_open ()) {
         pdftex_warn ("cannot open encoding file for reading");
@@ -309,6 +310,10 @@ void load_enc (char *enc_name, char **glyph_names)
         pdftex_fail
             ("invalid encoding vector (a name or `[' missing): `%s'", enc_line);
     }
+    myname = xmalloc(r-enc_line);
+    memcpy(myname,enc_line+1,(r-enc_line)-1);
+    *(myname+(r-enc_line-1))=0;
+    *enc_encname = myname;
     names_count = 0;
     r++;                        /* skip '[' */
     skip (r, ' ');
@@ -1705,11 +1710,12 @@ void t1_free ()
 boolean t1_subset (char *fontfile, char *encfile, unsigned char *g)
 {
     int i;
+    char *junkedname; /* TODO */
     cur_enc_name = encfile;
     for (i = 0; i < 256; i++)
         ext_glyph_names[i] = (char *) notdef;
     if (cur_enc_name != NULL)
-        load_enc (cur_enc_name, ext_glyph_names);
+      load_enc (cur_enc_name, &junkedname,ext_glyph_names);
     grid = g;
     cur_file_name = fontfile;
     hexline_length = 0;

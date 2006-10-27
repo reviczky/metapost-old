@@ -30,7 +30,7 @@ void read_enc (enc_entry * e)
     assert (e != NULL);
     if (e->loaded)
         return;
-    load_enc (e->name, e->glyph_names);
+    load_enc (e->name, &e->encname, e->glyph_names);
     e->loaded = true;
 }
 
@@ -43,6 +43,8 @@ void write_enc (char **glyph_names, enc_entry * e, integer eobjnum)
 {
     boolean is_notdef;
     int i;
+    int s;
+    int foffset;
     char **g;
     if (glyph_names == NULL) {
         assert (e != NULL);
@@ -53,11 +55,22 @@ void write_enc (char **glyph_names, enc_entry * e, integer eobjnum)
     } else {
         g = glyph_names;
     }
-    pdf_printf ("\n/%s[\n", e->name);
+    pdf_printf("\n%%%%BeginResource: encoding %s",e->encname);
+    pdf_printf ("\n/%s [ ", e->encname);
+    foffset = strlen(e->name)+3;
     for (i = 0; i < 256; i++) {
-      pdf_printf ("/%s\n", g[i]);
+      s = strlen(g[i]);
+      if (s+1+foffset>=80) {
+	pdf_printf ("\n");
+	foffset = 0;
+      }
+      foffset += s+2;
+      pdf_printf ("/%s ", g[i]);
     }
-    pdf_puts ("]def\n");
+    if (foffset>75)
+      pdf_printf ("\n");
+    pdf_puts ("] def\n");
+    pdf_printf("%%%%EndResource");
 }
 
 /**********************************************************************/

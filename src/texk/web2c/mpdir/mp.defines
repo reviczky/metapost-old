@@ -27,4 +27,10 @@ $Id$
 @define procedure mpmapfile();
 @define procedure mpmapline();
 @define procedure mpinitmapfile();
+
+{ functions from writefont.c }
+
 @define procedure mpfontencodings();
+@define function fontisreencoded();
+@define procedure printencname();
+@define procedure printpsname();

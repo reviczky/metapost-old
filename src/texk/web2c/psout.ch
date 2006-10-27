@@ -364,6 +364,7 @@ begin
   print_nl("/hlw {0 dtransform exch truncate exch idtransform pop setlinewidth}bind def");
   print_nl("/vlw {0 exch dtransform truncate idtransform setlinewidth pop}bind def");
   print_nl("%%EndResource");
+  @<Better list of all the fonts and magnifications for edge structure~|h|@>;
   print_nl("%%EndProlog");
   print_nl("%%BeginSetup");
   print_ln;
@@ -371,8 +372,34 @@ begin
     begin for f:=null_font+1 to last_fnum do
     if font_sizes[f]<>null then
       begin ps_name_out(font_name[f],true);
-      ps_name_out(font_ps_name[f],true);
-      ps_print(" def");
+	  ps_print(" /");
+      print_ps_name(f);
+	  if font_is_reencoded(f) then begin
+        ps_print(" findfont dup");
+	    ps_print(" length dict begin { 1 index /FID ne {def} {pop pop} ifelse} forall");
+        ps_print(" /Encoding ");
+	    print_enc_name(f);
+	    ps_print(" def currentdict end");
+        ps_print(" /");
+	    print_ps_name(f);
+        ps_print("-");
+	    print_enc_name(f);
+	    ps_print(" exch definefont pop");
+	    { now fix the definition}
+        print_ln;
+	    ps_name_out(font_name[f],true);
+        ps_print(" /");
+	    print_ps_name(f);
+        ps_print("-");
+	    print_enc_name(f);
+        ps_print(" def");
+        end
+      else
+	    begin ps_name_out(font_name[f],true);
+		ps_print(" /");
+        print_ps_name(f);
+        ps_print(" def");
+        end;
       print_ln;
       end;
   print_nl("%%EndSetup");
@@ -404,8 +431,6 @@ print_dd(round_unscaled(internal[day])); print_char(":");@/
 t:=round_unscaled(internal[time]);
 print_dd(t div 60); print_dd(t mod 60);@/
 print_nl("%%Pages: 1");@/
-@<Better list of all the fonts and magnifications for edge structure~|h|@>;
-print_ln
 
 @ 
 @<Better list of all the fonts and magnifications for edge structure~|h|@>=

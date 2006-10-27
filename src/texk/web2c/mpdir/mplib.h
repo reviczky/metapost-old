@@ -46,6 +46,7 @@ typedef struct {
 typedef struct {
     boolean loaded;             /* the encoding has been loaded? */
     char *name;                 /* encoding file name */
+    char *encname;              /* encoding true name */
     integer objnum;             /* object number */
     char **glyph_names;
     integer tounicode;          /* object number of associated ToUnicode entry */
@@ -79,6 +80,7 @@ typedef struct {
     char *ff_name;              /* font file name */
     char *subset_tag;           /* pseudoUniqueTag for subsetted font */
     enc_entry *encoding;        /* pointer to corresponding encoding */
+    char *encname;              /* encoding true name */
     fontnumber tfm_num; /* number of the TFM refering this entry */
     unsigned short type;        /* font type (T1/TTF/...) */
     short slant;                /* SlantFont */
@@ -278,7 +280,7 @@ extern void flushjbig2page0objects ();
 
 /* writet1.c */
 extern boolean t1_subset (char *, char *, unsigned char *);
-extern void load_enc (char *, char **);
+extern void load_enc (char *, char **, char **);
 extern void writet1 (void);
 extern void t1_free (void);
 
