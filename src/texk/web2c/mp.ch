@@ -1817,7 +1817,7 @@ dump_int(@"57324D50);  {Web2C \MP's magic constant: "W2MP"}
 {Align engine to 4 bytes with one or more trailing NUL}
 x:=strlen(engine_name);
 base_engine:=xmalloc_array(text_char,x+4);
-strcpy(base_engine, engine_name);
+strcpy(stringcast(base_engine), engine_name);
 for k:=x to x+3 do base_engine[k]:=0;
 x:=x+4-(x mod 4);
 dump_int(x);dump_things(base_engine[0], x);
@@ -1841,7 +1841,7 @@ if (x<0) or (x>256) then goto off_base; {corrupted base file}
 base_engine:=xmalloc_array(text_char, x);
 undump_things(base_engine[0], x);
 base_engine[x-1]:=0; {force string termination, just in case}
-if strcmp(engine_name, base_engine) then
+if strcmp(engine_name,stringcast(base_engine)) then
   begin wake_up_terminal;
   wterm_ln('---! ', stringcast(name_of_file+1), ' was written by ', base_engine);
   libc_free(base_engine);

@@ -30,7 +30,13 @@ $Id$
 
 { functions from writefont.c }
 
+@define procedure mploadencodings();
 @define procedure mpfontencodings();
 @define function fontisreencoded();
-@define procedure printencname();
-@define procedure printpsname();
+@define function fontisincluded();
+@define function fontissubsetted();
+
+@define function fmencodingname();
+@define function fmfontname();
+
+@define function dopsfont();

@@ -80,7 +80,6 @@ typedef struct {
     char *ff_name;              /* font file name */
     char *subset_tag;           /* pseudoUniqueTag for subsetted font */
     enc_entry *encoding;        /* pointer to corresponding encoding */
-    char *encname;              /* encoding true name */
     fontnumber tfm_num; /* number of the TFM refering this entry */
     unsigned short type;        /* font type (T1/TTF/...) */
     short slant;                /* SlantFont */
@@ -116,10 +115,8 @@ extern boolean write_ttf_glyph_names;
 extern char **t1_glyph_names, *t1_builtin_glyph_names[];
 extern char *cur_file_name;
 extern const char notdef[];
-extern fm_entry *fm_cur;
 extern integer t1_length1, t1_length2, t1_length3;
 extern integer ttf_length;
-extern fontnumber tex_font;
 extern key_entry font_keys[];
 extern strnumber last_tex_string;
 extern size_t last_ptr_index;
@@ -183,14 +180,12 @@ extern void fb_seek (integer);
 extern void libpdffinish (void);
 extern char *makecfilename (strnumber s);
 extern void make_subset_tag (fm_entry *, char **);
-__attribute__ ((format (printf, 1, 2)))
 extern void pdf_printf (const char *, ...);
 extern void pdf_puts (const char *);
 extern void pdftex_fail (const char *, ...);
 extern void pdftex_warn (const char *, ...);
 extern void setjobid (int, int, int, int);
-__attribute__ ((format (printf, 1, 2)))
-extern void tex_printf (const char *, ...);
+extern void mp_printf (const char *, ...);
 extern void writestreamlength (integer, integer);
 extern char *convertStringToPDFString (const char *in, int len);
 extern void printID (strnumber);
@@ -253,7 +248,7 @@ extern void read_enc (enc_entry *);
 extern void write_enc (char **, enc_entry *, integer);
 
 /* writefont.c */
-extern void dopdffont (integer, fontnumber);
+extern boolean dopsfont (fontnumber);
 
 /* writeimg.c */
 extern boolean checkimageb (integer);
@@ -281,7 +276,7 @@ extern void flushjbig2page0objects ();
 /* writet1.c */
 extern boolean t1_subset (char *, char *, unsigned char *);
 extern void load_enc (char *, char **, char **);
-extern void writet1 (void);
+extern void writet1 (int, fm_entry *);
 extern void t1_free (void);
 
 #define bitfile psfile

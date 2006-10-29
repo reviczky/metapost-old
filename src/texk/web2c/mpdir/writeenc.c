@@ -30,6 +30,7 @@ void read_enc (enc_entry * e)
     assert (e != NULL);
     if (e->loaded)
         return;
+    e->encname = NULL;
     load_enc (e->name, &e->encname, e->glyph_names);
     e->loaded = true;
 }

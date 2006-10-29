@@ -89,7 +89,6 @@ fm_entry *new_fm_entry (void)
     fm->ff_name = NULL;
     fm->subset_tag = NULL;
     fm->encoding = NULL;
-    fm->encname = NULL;
     fm->tfm_num = getnullfont ();
     fm->tfm_avail = TFM_UNCHECKED;
     fm->type = 0;
@@ -243,7 +242,7 @@ int avl_do_entry (fm_entry * fp, int mode)
                      fp->tfm_name);
                 goto exit;
             } else {            /* mode == FM_REPLACE / FM_DELETE */
-                if (fontused[p->tfm_num]) {
+                if (fontsizes[p->tfm_num]!=0) {
                     pdftex_warn
                         ("fontmap entry for `%s' has been used, replace/delete not allowed",
                          fp->tfm_name);
@@ -275,7 +274,7 @@ int avl_do_entry (fm_entry * fp, int mode)
                      fp->ps_name);
                 goto exit;
             } else {            /* mode == FM_REPLACE / FM_DELETE */
-                if (fontused[p->tfm_num]) {
+                if (fontsizes[p->tfm_num]!=0) {
                     /* REPLACE/DELETE not allowed */
                     pdftex_warn
                         ("fontmap entry for `%s' has been used, replace/delete not allowed",
@@ -584,13 +583,13 @@ void fm_read_info ()
             pdftex_warn ("cannot open font map file");
         } else {
             cur_file_name = (char *) nameoffile + 1;
-            tex_printf ("{%s", cur_file_name);
+            mp_printf ("{%s", cur_file_name);
             while (!fm_eof ()) {
                 fm_scan_line ();
                 mitem->lineno++;
             }
             fm_close ();
-            tex_printf ("}");
+            mp_printf ("}");
             fm_file = NULL;
         }
         break;
@@ -631,7 +630,7 @@ static fm_entry *mk_ex_fm (fontnumber f, fm_entry * basefm, int ex)
     if (basefm->ps_name != NULL)
         fm->ps_name = xstrdup (basefm->ps_name);
     fm->ff_name = xstrdup (basefm->ff_name);
-    fm->ff_objnum = pdfnewobjnum ();
+    fm->ff_objnum = 0;
     fm->tfm_num = f;
     fm->tfm_avail = TFM_FOUND;
     assert (strcmp (fm->tfm_name, nontfm));
@@ -745,7 +744,7 @@ static boolean used_tfm (fm_entry * p)
         return false;
 
     /* check whether this font has been used */
-    if (fontused[p->tfm_num])
+    if (fontsizes[p->tfm_num]!=0)
         return true;
     assert (p->tfm_name != NULL);
 

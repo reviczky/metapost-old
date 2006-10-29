@@ -25,35 +25,24 @@ static const char perforce_id[] =
 
 #  include "sysexits.h"
 #  include "mplib.h"
-#  undef  fm_extend
-#  define fm_extend(f)        0
-#  undef  fm_slant
-#  define fm_slant(f)         0
-#  undef  is_reencoded
-#  define is_reencoded(f)     (cur_enc_name != NULL)
-#  undef  is_subsetted
-#  define is_subsetted(f)     true
-#  undef  is_included
-#  define is_included(f)      true
 #  define t1_open()           \
     open_input(&t1_file, kpse_type1_format, FOPEN_RBIN_MODE)
 #  define enc_open()          \
     open_input(&enc_file, kpse_enc_format, FOPEN_RBIN_MODE)
-#  define external_enc()      ext_glyph_names
+#  define external_enc()      (fm_cur->encoding)->glyph_names
+
 #  define full_file_name()    cur_file_name
 #  define get_length1()
 #  define get_length2()
 #  define get_length3()
-#  define is_used_char(c)     (grid[c] == 1)
+#  define is_used_char(c)     mpcharmarked(tex_font, c)
 #  define out_eexec_char      t1_outhex
 #  define save_offset()
 #  define end_last_eexec_line()       \
     hexline_length = HEXLINE_WIDTH; \
     end_hexline();                  \
     t1_eexec_encrypt = false
-#  define t1_log(s)
-#  define t1_scan_only()
-#  define t1_include()
+#  define t1_log(s)           mp_printf(s)
 #  define t1_putchar(c)       fputc(c, bitfile)
 #  define t1_scan_keys()
 #  define embed_all_glyphs(tex_font)  false
@@ -588,7 +577,7 @@ static void t1_check_block_len (boolean decrypt)
     }
 }
 
-static void t1_start_eexec (void)
+static void t1_start_eexec (fm_entry *fm_cur)
 {
     int i;
     if (is_included (fm_cur)) {
@@ -606,7 +595,7 @@ static void t1_start_eexec (void)
         t1_putline ();          /* to put the first four bytes */
 }
 
-static void t1_stop_eexec (void)
+static void t1_stop_eexec (fm_entry *fm_cur)
 {
     int c;
     if (is_included (fm_cur)) {
@@ -963,7 +952,7 @@ static void t1_check_end (void)
         t1_putline ();
 }
 
-static boolean t1_open_fontfile (const char *open_name_prefix)
+static boolean t1_open_fontfile (fm_entry *fm_cur,const char *open_name_prefix)
 {
     ff_entry *ff;
     ff = check_ff_exist (fm_cur);
@@ -979,16 +968,14 @@ static boolean t1_open_fontfile (const char *open_name_prefix)
     return true;
 }
 
-#ifdef pdfTeX
-
-static void t1_scan_only (void)
+static void t1_scan_only (fm_entry *fm_cur)
 {
     do {
         t1_getline ();
         t1_scan_param ();
     }
     while (t1_in_eexec == 0);
-    t1_start_eexec ();
+    t1_start_eexec (fm_cur);
     do {
         t1_getline ();
         t1_scan_param ();
@@ -996,7 +983,7 @@ static void t1_scan_only (void)
     while (!(t1_charstrings () || t1_subrs ()));
 }
 
-static void t1_include (void)
+static void t1_include (fm_entry *fm_cur)
 {
     do {
         t1_getline ();
@@ -1004,7 +991,7 @@ static void t1_include (void)
         t1_putline ();
     }
     while (t1_in_eexec == 0);
-    t1_start_eexec ();
+    t1_start_eexec (fm_cur);
     do {
         t1_getline ();
         t1_scan_param ();
@@ -1017,7 +1004,7 @@ static void t1_include (void)
         t1_putline ();
     }
     while (!t1_end_eexec ());
-    t1_stop_eexec ();
+    t1_stop_eexec (fm_cur);
     if (fixedcontent) {         /* copy 512 zeros (not needed for PDF) */
         do {
             t1_getline ();
@@ -1028,9 +1015,6 @@ static void t1_include (void)
     }
     get_length3 ();
 }
-
-#else                           /* not pdfTeX */
-#endif                          /* pdfTeX */
 
 #define check_subr(subr) \
     if (subr >= subr_size || subr < 0) \
@@ -1323,7 +1307,7 @@ static void cs_mark (const char *cs_name, int subr)
     ptr->used = false;
 }
 
-static void t1_subset_ascii_part (void)
+static void t1_subset_ascii_part (int tex_font, fm_entry *fm_cur)
 {
     int i, j;
     t1_getline ();
@@ -1395,7 +1379,7 @@ static void init_cs_entry (cs_entry * cs)
     cs->valid = false;
 }
 
-static void t1_mark_glyphs (void);
+static void t1_mark_glyphs (int tex_font);
 
 static void t1_read_subrs (void)
 {
@@ -1555,7 +1539,7 @@ static void t1_flush_cs (boolean is_subr)
     xfree (line_end);
 }
 
-static void t1_mark_glyphs (void)
+static void t1_mark_glyphs (int tex_font)
 {
     int i;
     char *charset = extra_charset ();
@@ -1600,7 +1584,7 @@ static void t1_mark_glyphs (void)
                 subr_max = ptr - subr_tab;
 }
 
-static void t1_subset_charstrings (void)
+static void t1_subset_charstrings (int tex_font)
 {
     cs_entry *ptr;
     cs_size_pos =
@@ -1620,7 +1604,7 @@ static void t1_subset_charstrings (void)
         t1_getline ();
     }
     cs_dict_end = xstrdup (t1_line_array);
-    t1_mark_glyphs ();
+    t1_mark_glyphs (tex_font);
     if (subr_tab != NULL) {
         if (cs_token_pair == NULL)
             pdftex_fail
@@ -1633,7 +1617,7 @@ static void t1_subset_charstrings (void)
     t1_cs_flush ();
 }
 
-static void t1_subset_end (void)
+static void t1_subset_end (fm_entry *fm_cur)
 {
     if (t1_synthetic) {         /* copy to "dup /FontName get exch definefont pop" */
         while (!strstr (t1_line_array, "definefont")) {
@@ -1648,7 +1632,7 @@ static void t1_subset_end (void)
             t1_getline ();
             t1_putline ();
         }
-    t1_stop_eexec ();
+    t1_stop_eexec (fm_cur);
     if (fixedcontent) {         /* copy 512 zeros (not needed for PDF) */
         while (!t1_cleartomark ()) {
             t1_getline ();
@@ -1660,43 +1644,33 @@ static void t1_subset_end (void)
     get_length3 ();
 }
 
-void writet1 (void)
+void writet1 (int tex_font, fm_entry *fm_cur)
 {
     read_encoding_only = false;
-#ifdef pdfTeX
-    t1_save_offset = 0;
-    if (strcasecmp (strend (fm_fontfile (fm_cur)) - 4, ".otf") == 0) {
-        if (!is_included (fm_cur) || is_subsetted (fm_cur))
-            pdftex_fail ("OTF fonts must be included entirely");
-        writeotf ();
-        is_otf_font = true;
-        return;
-    }
-#endif
     if (!is_included (fm_cur)) {        /* scan parameters from font file */
-        if (!t1_open_fontfile ("{"))
+      if (!t1_open_fontfile (fm_cur,"{"))
             return;
-        t1_scan_only ();
+        t1_scan_only (fm_cur);
         t1_close_font_file ("}");
         return;
     }
     if (!is_subsetted (fm_cur)) {       /* include entire font */
-        if (!t1_open_fontfile ("<<"))
+      if (!t1_open_fontfile (fm_cur,"<<"))
             return;
-        t1_include ();
+        t1_include (fm_cur);
         t1_close_font_file (">>");
         return;
     }
     /* partial downloading */
-    if (!t1_open_fontfile ("<"))
+    if (!t1_open_fontfile (fm_cur,"<"))
         return;
-    t1_subset_ascii_part ();
-    t1_start_eexec ();
+    t1_subset_ascii_part (tex_font,fm_cur);
+    t1_start_eexec (fm_cur);
     cc_init ();
     cs_init ();
     t1_read_subrs ();
-    t1_subset_charstrings ();
-    t1_subset_end ();
+    t1_subset_charstrings (tex_font);
+    t1_subset_end (fm_cur);
     t1_close_font_file (">");
 }
 
@@ -1705,40 +1679,3 @@ void t1_free ()
     xfree (t1_line_array);
     xfree (t1_buf_array);
 }
-
-#ifndef pdfTeX
-boolean t1_subset (char *fontfile, char *encfile, unsigned char *g)
-{
-    int i;
-    char *junkedname; /* TODO */
-    cur_enc_name = encfile;
-    for (i = 0; i < 256; i++)
-        ext_glyph_names[i] = (char *) notdef;
-    if (cur_enc_name != NULL)
-      load_enc (cur_enc_name, &junkedname,ext_glyph_names);
-    grid = g;
-    cur_file_name = fontfile;
-    hexline_length = 0;
-    writet1 ();
-    for (i = 0; i < 256; i++)
-        if (ext_glyph_names[i] != notdef)
-            free (ext_glyph_names[i]);
-    return 1;                   /* note:  there *is* no unsuccessful return */
-}
-
-boolean t1_subset_2 (char *fontfile, unsigned char *g, char *extraGlyphs)
-{
-    int i;
-    for (i = 0; i < 256; i++)
-        ext_glyph_names[i] = (char *) notdef;
-    grid = g;
-    cur_file_name = fontfile;
-    hexline_length = 0;
-    dvips_extra_charset = extraGlyphs;
-    writet1 ();
-    for (i = 0; i < 256; i++)
-        if (ext_glyph_names[i] != notdef)
-            free (ext_glyph_names[i]);
-    return 1;                   /* note:  there *is* no unsuccessful return */
-}
-#endif                          /* not pdfTeX */

@@ -60,7 +60,6 @@ void pdf_puts (const char *s)
     fputc(*s++,psfile);
 }
 
-__attribute__ ((format (printf, 1, 2)))
 void pdf_printf (const char *fmt, ...)
 {   
     va_list args;
@@ -83,16 +82,19 @@ strnumber maketexstring (const char *s)
     return last_tex_string;
 }
 
-__attribute__ ((format (printf, 1, 2)))
-void tex_printf (const char *fmt, ...)
+void mp_printf (const char *fmt, ...)
 {
     va_list args;
+    int saved_selector;
+    saved_selector = selector;
     va_start (args, fmt);
     vsnprintf (print_buf, PRINTF_BUF_SIZE, fmt, args);
+    selector = gettermandlogid();
     print (maketexstring (print_buf));
     flushstr (last_tex_string);
     xfflush (stdout);
     va_end (args);
+    selector = saved_selector; /* ps_file_only, probably */
 }
 
 /* Helper for pdftex_fail. */

@@ -25,316 +25,162 @@ $Id: writefont.c,v 1.3 2005/12/27 19:04:42 hahe Exp $
 static const char perforce_id[] =
     "$Id: writefont.c,v 1.3 2005/12/27 19:04:42 hahe Exp $";
 
-key_entry font_keys[FONT_KEYS_NUM] = {
-    {"Ascent", "Ascender", 0, false},
-    {"CapHeight", "CapHeight", 0, false},
-    {"Descent", "Descender", 0, false},
-    {"FontName", "FontName", 0, false},
-    {"ItalicAngle", "ItalicAngle", 0, false},
-    {"StemV", "StdVW", 0, false},
-    {"XHeight", "XHeight", 0, false},
-    {"FontBBox", "FontBBox", 0, false},
-    {"", "", 0, false},
-    {"", "", 0, false},
-    {"", "", 0, false}
-};
-
-fontnumber tex_font;
 boolean fontfile_found;
 boolean is_otf_font;
 char fontname_buf[FONTNAME_BUF_SIZE];
 
-static int first_char, last_char;
-static integer char_widths[256];
-static boolean write_fontfile_only;
-static int char_widths_objnum, encoding_objnum, tounicode_objnum;
-
-static void print_key (integer code, integer v)
-{
-    pdf_printf ("/%s ", font_keys[code].pdfname);
-    if (font_keys[code].valid)
-        pdf_printf ("%i", (int) font_keys[code].value);
-    else
-        pdf_printf ("%i", (int) dividescaled (v, fontsizes[tex_font], 3));
-    pdf_puts ("\n");
-}
-
-static void print_italic_angle ()
-{
-    pdf_printf ("/%s ", font_keys[ITALIC_ANGLE_CODE].pdfname);
-    if (font_keys[ITALIC_ANGLE_CODE].valid)
-        pdf_printf ("%g", font_keys[ITALIC_ANGLE_CODE].value);
-    else
-        pdf_printf ("%g", -atan (getslant (tex_font) / 65536.0) * (180 / M_PI));
-    pdf_puts ("\n");
-}
-
-static integer getstemv (void)
-{
-    return getcharwidth (tex_font, '.') / 3;
-}
-
-static void getbbox (void)
-{
-    font_keys[FONTBBOX1_CODE].value = 0;
-    font_keys[FONTBBOX2_CODE].value =
-        dividescaled (-getchardepth (tex_font, 'y'), fontsizes[tex_font], 3);
-    font_keys[FONTBBOX3_CODE].value =
-        dividescaled (getquad (tex_font), fontsizes[tex_font], 3);
-    font_keys[FONTBBOX4_CODE].value =
-        dividescaled (getcharheight (tex_font, 'H'), fontsizes[tex_font], 3);
-}
-
-static void get_char_widths (void)
-{
-    int i;
-    for (i = 0; i < 256; i++) {
-        if (i < fontbc[tex_font] || i > fontec[tex_font])
-            char_widths[i] = 0;
-        else
-            char_widths[i] = getcharwidth (tex_font, i);
-    }
-    for (i = fontbc[tex_font]; i < 256; i++)
-        if (mpcharmarked (tex_font, i))
-            break;
-    first_char = i;
-    for (i = 255; i > first_char; i--)
-        if (mpcharmarked (tex_font, i))
-            break;
-    last_char = i;
-    if ((first_char > last_char) ||
-        (first_char == last_char && !mpcharmarked (tex_font, first_char))) {
-        write_fontfile_only = true;     /* the font is used in PDF images only */
-        return;
-    }
-    for (i = first_char; i <= last_char; i++)
-        if (mpcharmarked (tex_font, i))
-            char_widths[i] = dividescaled (char_widths[i],
-                                           fontsizes[tex_font], 4);
-        else
-            char_widths[i] = 0;
-}
-
-static void write_char_widths (void)
-{
-    int i, j;
-	//    pdfbeginobj (char_widths_objnum, 1);
-    pdf_puts ("[");
-    for (i = first_char; i <= last_char; i++) {
-        pdf_printf ("%i", (int) char_widths[i] / 10);
-        if ((j = char_widths[i] % 10) != 0)
-            pdf_printf (".%i", j);
-        pdf_printf (" ");
-    }
-    pdf_puts ("]\n");
-    //pdfendobj ();
-}
-
-static void write_fontname (boolean as_reference)
-{
-    if (as_reference && fm_cur->fn_objnum != 0) {
-        pdf_printf ("%i 0 R\n", (int) fm_cur->fn_objnum);
-        return;
-    }
-    pdf_puts ("/");
-    if (fm_cur->subset_tag != NULL)
-        pdf_printf ("%s+", fm_cur->subset_tag);
-    if (font_keys[FONTNAME_CODE].valid) {
-        stripspaces (fontname_buf);
-        pdf_printf ("%s", fontname_buf);
-    } else if (fm_cur->ps_name != NULL)
-        pdf_printf ("%s", fm_cur->ps_name);
-    else
-        pdf_printf ("%s", fm_cur->tfm_name);
-    pdf_puts ("\n");
-}
-
-static void write_fontobj (integer font_objnum)
-{
-  /*
-    pdfbegindict (font_objnum, 1);
-    pdf_puts ("/Type /Font\n");
-    pdf_printf ("/Subtype /%s\n", is_truetype (fm_cur) ? "TrueType" : "Type1");
-    if (encoding_objnum != 0)
-        pdf_printf ("/Encoding %i 0 R\n", (int) encoding_objnum);
-    if (no_font_desc (fm_cur)) {
-        pdf_printf ("/BaseFont /%s\n", fm_cur->ps_name);
-        pdfenddict ();
-        return;
-    }
-    char_widths_objnum = pdfnewobjnum ();
-    pdf_printf ("/FirstChar %i\n/LastChar %i\n/Widths %i 0 R\n",
-                first_char, last_char, char_widths_objnum);
-    pdf_printf ("/BaseFont ");
-    write_fontname (true);
-    if (fm_cur->fd_objnum == 0)
-        fm_cur->fd_objnum = pdfnewobjnum ();
-    pdf_printf ("/FontDescriptor %i 0 R\n", (int) fm_cur->fd_objnum);
-    pdfenddict ();
-  */
-}
-
-static void write_fontfile (void)
-{
-  //fontfile_found = false;
-  //is_otf_font = false;
-    if (!is_truetype (fm_cur))
-        writet1 ();
-    //if (!fontfile_found || !is_included (fm_cur))
-    //    return;
-    //if (fm_cur->ff_objnum == 0)
-    //    pdftex_fail ("font file object number for `%s' not initialized",
-    //                 fm_cur->tfm_name);
-    //pdfbegindict (fm_cur->ff_objnum, 0);        /* font file stream */
-    //if (is_truetype (fm_cur))
-    //    pdf_printf ("/Length1 %i\n", (int) ttf_length);
-    //else if (is_otf_font)
-    //    pdf_printf ("/Subtype /Type1C\n");
-    //else
-    //    pdf_printf ("/Length1 %i\n/Length2 %i\n/Length3 %i\n",
-    //                (int) t1_length1, (int) t1_length2, (int) t1_length3);
-    //pdfbeginstream ();
-    //fb_flush ();
-    //pdfendstream ();
-}
-
-static void write_fontdescriptor (void)
-{
-}
-
 boolean fontisreencoded (int f) {
-  if (fontsizes[f]!=0) {
-    if (hasfmentry (f)) { 
-      fm_cur = (fm_entry *) mpfontmap[f];
-      if (fm_cur != NULL && 
-	  (fm_cur->ps_name != NULL && fm_cur->ff_name != NULL)) {
-	if (is_reencoded (fm_cur)) {
-	  return 1;
-	}	    
-      }
-    }
+  fm_entry *fm;
+  if (fontsizes[f]!=0 && hasfmentry (f)) { 
+    fm = (fm_entry *) mpfontmap[f];
+    if (fm != NULL 
+	&& (fm->ps_name != NULL)
+	&& is_reencoded (fm))
+      return 1;
   }
   return 0;
 }
 
-void printencname (int f) {
+boolean fontisincluded (int f) {
+  fm_entry *fm;
+  if (fontsizes[f]!=0 && hasfmentry (f)) { 
+    fm = (fm_entry *) mpfontmap[f];
+    if (fm != NULL 
+	&& (fm->ps_name != NULL && fm->ff_name != NULL) 
+	&& is_included (fm))
+      return 1;
+  }
+  return 0;
+}
+
+boolean fontissubsetted (int f) {
+  fm_entry *fm;
+  if (fontsizes[f]!=0 && hasfmentry (f)) { 
+    fm = (fm_entry *) mpfontmap[f];
+    if (fm != NULL 
+	&& (fm->ps_name != NULL && fm->ff_name != NULL) 
+	&& is_included (fm) && is_subsetted (fm))
+      return 1;
+  }
+  return 0;
+}
+
+
+strnumber fmencodingname (int f) {
   enc_entry *e;
-  if (fontsizes[f]!=0) {
-    if (hasfmentry (f)) { 
-      fm_cur = (fm_entry *) mpfontmap[f];
-      if (fm_cur != NULL && 
-	  (fm_cur->ps_name != NULL && fm_cur->ff_name != NULL)) {
-	if (is_reencoded (fm_cur)) {
-	  e = fm_cur->encoding;
-	  pdf_printf("%s",e->encname);
-	  return;
+  fm_entry *fm;
+  if (hasfmentry (f)) { 
+    fm = (fm_entry *) mpfontmap[f];
+    if (fm != NULL && (fm->ps_name != NULL)) {
+      if (is_reencoded (fm)) {
+	e = fm->encoding;
+	if (e->encname!=NULL) {
+	  return maketexstring(e->encname);
 	} 
+      } else {
+	return 0;
       }
     }
   }
-  pdftex_fail ("fontmap problems for font %s",makecstring (fontname[f]));
+  pdftex_fail ("fontmap encoding problems for font %s",makecstring (fontname[f]));
+  return 0;
 }
 
-void printpsname (int f) {
-  if (fontsizes[f]!=0) {
-    if (hasfmentry (f)) { 
+strnumber fmfontname (int f) {
+  fm_entry *fm;
+  if (hasfmentry (f)) { 
+    fm = (fm_entry *) mpfontmap[f];
+    if (fm != NULL && (fm->ps_name != NULL)) {
+      return maketexstring(fm->ps_name);
+    }
+  }
+  pdftex_fail ("fontmap name problems for font %s",makecstring (fontname[f]));
+  return 0;
+}
+
+
+void mploadencodings (int lastfnum) {
+  int nullfont;
+  int f;
+  enc_entry *e;
+  fm_entry *fm_cur;
+  nullfont = getnullfont();
+  for (f=nullfont+1;f<=lastfnum;f++) {
+    if (fontsizes[f]!=0 && hasfmentry (f)) { 
       fm_cur = (fm_entry *) mpfontmap[f];
       if (fm_cur != NULL && 
-	  (fm_cur->ps_name != NULL && fm_cur->ff_name != NULL)) {
-	pdf_printf("%s",fm_cur->ps_name);
-	return;
+	  fm_cur->ps_name != NULL &&
+	  is_reencoded (fm_cur)) {
+	e = fm_cur->encoding;
+	read_enc (e);
       }
     }
   }
-  pdftex_fail ("fontmap problems for font %s",makecstring (fontname[f]));
 }
 
-void mpfontencodings (int lastfnum) {
+void mpfontencodings (int lastfnum, int encodings_only) {
   int nullfont;
   int f,ff;
   enc_entry *e;
+  fm_entry *fm;
   nullfont = getnullfont();
   for (f=nullfont+1;f<=lastfnum;f++) {
-    if (fontsizes[f]!=0) {
-      if (hasfmentry (f)) { 
-	fm_cur = (fm_entry *) mpfontmap[f];
-	if (fm_cur != NULL && 
-	    (fm_cur->ps_name != NULL && fm_cur->ff_name != NULL)) {
-	  if (is_reencoded (fm_cur)) {
-	    e = fm_cur->encoding;
-	    read_enc (e);
+    if (fontsizes[f]!=0 && hasfmentry (f)) { 
+      fm = (fm_entry *) mpfontmap[f];
+      if (fm != NULL && (fm->ps_name != NULL)) {
+	if (is_reencoded (fm)) {
+	  if (encodings_only || (!is_subsetted (fm))) {
+	    e = fm->encoding;
 	    write_enc (NULL, e, 0);
-	  }	    
+	  }
 	}
       }
     }
   }
-  /* restore pristine state for next image */
   for (f=nullfont+1;f<=lastfnum;f++) {
-    if (fontsizes[f]!=0) {
-      if (hasfmentry (f)) { 
-	fm_cur = (fm_entry *) mpfontmap[f];
-	if (fm_cur != NULL && 
-	    (fm_cur->ps_name != NULL && fm_cur->ff_name != NULL)) {
-	  if (is_reencoded (fm_cur)) {
-	    e = fm_cur->encoding;
-	    if (e!=NULL)
-	      e->objnum = 0;
-	  }	    
+    if (fontsizes[f]!=0 && hasfmentry (f)) { 
+      fm = (fm_entry *) mpfontmap[f];
+      if (fm != NULL && (fm->ps_name != NULL)) {
+	if (is_reencoded (fm)) {
+	  if (encodings_only || (!is_subsetted (fm))) {
+            /* clear for next run */
+            e->objnum = 0;
+	  }
 	}
       }
     }
   }
 }
 
-void dopdffont (integer font_objnum, fontnumber f)
+boolean dopsfont (fontnumber f)
 {
     int i;
-    enc_entry *e;
-
-    tex_font = f;
-    encoding_objnum = 0;
-    tounicode_objnum = 0;
-    write_fontfile_only = false;
-    t1_glyph_names = NULL;
-    for (i = 0; i < FONT_KEYS_NUM; i++)
-        font_keys[i].valid = false;
-
-    if (mpfontmap[tex_font] == NULL)
+  fm_entry *fm_cur;
+    if (mpfontmap[f] == NULL)
         pdftex_fail ("pdffontmap not initialized for font %s",
-                     makecstring (fontname[tex_font]));
-    if (hasfmentry (tex_font))
-        fm_cur = (fm_entry *) mpfontmap[tex_font];
+                     makecstring (fontname[f]));
+    if (hasfmentry (f))
+        fm_cur = (fm_entry *) mpfontmap[f];
     else
         fm_cur = NULL;
-    if (fm_cur == NULL || (fm_cur->ps_name == NULL && fm_cur->ff_name == NULL)) {
-    //    writet3 (font_objnum, tex_font);
-        return;
+    if (fm_cur == NULL)
+      return 1;
+    if (is_truetype(fm_cur) ||
+	(fm_cur->ps_name == NULL && fm_cur->ff_name == NULL)) {
+        return 0;
     }
-
-    get_char_widths ();         /* update char widths; also check whether this font is
-                                   used in embedded PDF only; if so then set
-                                   write_fontfile_only to true */
-
-    if (is_included (fm_cur))
-        write_fontfile ();
-    //if (fm_cur->fn_objnum != 0) {
-    //    pdfbeginobj (fm_cur->fn_objnum, 1);
-    //    write_fontname (false);
-    //    pdfendobj ();
-    //}
-    //if (!write_fontfile_only)
-    //    write_fontobj (font_objnum);
-    //if (no_font_desc (fm_cur))
-    //    return;
-    //if (!write_fontfile_only) {
-    //    write_fontdescriptor ();
-    //    write_char_widths ();
-    //}
-    if (t1_glyph_names == t1_builtin_glyph_names) {
-        for (i = 0; i < 256; i++)
-            if (t1_glyph_names[i] != notdef)
-                xfree (t1_glyph_names[i]);
+    
+    if (is_included(fm_cur)) {
+      printnl(maketexstring("%%BeginResource: font "));
+      flushstr (last_tex_string);
+      print(maketexstring(fm_cur->ps_name));
+      flushstr (last_tex_string);
+      println();
+      writet1 (f,fm_cur);
+      printnl(maketexstring("%%EndResource"));
+      flushstr (last_tex_string);
+      println();
     }
+    return 1;
 }
 

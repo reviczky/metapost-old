@@ -43,8 +43,8 @@ font_info:array[0..font_mem_size] of memory_word;
 @y
 font_info:array[0..font_mem_size] of memory_word;
   {height, width, and depth data}
-@!font_used:array[font_number] of boolean;
-  {has any character from this font actually appeared in the output?}
+@!font_enc_name:array[font_number] of boolean;
+  {encoding names, if any}
 @!mp_font_map: ^fm_entry_ptr; {pointer into AVL tree of font mappings}
 @z
 
@@ -79,7 +79,6 @@ a string from memory, etc.
 @d is_valid_char(#)==((font_bc[f] <= #) and (# <= font_ec[f]) and
                       ichar_exists(char_info(f)(#)))
 
-
 @p function get_nullfont: font_number;
 begin
     get_nullfont := null_font;
@@ -95,6 +94,11 @@ begin
     get_nullstr := "";
 end;
 @#
+function get_termandlogid: integer;
+begin
+  get_termandlogid:=term_and_log;
+end;
+@#
 function get_charwidth(f: font_number; c: eight_bits): scaled;
 begin
     if is_valid_char(c) then
@@ -102,22 +106,84 @@ begin
     else
         get_charwidth := 0;
 end;
+@#
+function tfm_lookup(s: str_number; fs: scaled): font_number;
+{looks up for a TFM with name |s| loaded at |fs| size; if found then flushes |s|}
+var k: font_number;
+begin
+    if fs <> 0 then begin { should not be used! }
+        for k := null_font + 1 to last_fnum do
+            if str_vs_str(font_name[k], s) and (font_sizes[k] = fs) then begin
+                flush_str(s);
+                tfm_lookup := k;
+                return;
+            end;
+    end
+    else begin
+        for k := null_font + 1 to last_fnum do
+            if str_vs_str(font_name[k], s) then begin
+                flush_str(s);
+                tfm_lookup := k;
+                return;
+            end;
+    end;
+    tfm_lookup := null_font;
+  exit:
+end;
+@#
+function new_dummy_font: font_number;
+begin
+    new_dummy_font := read_font_info("dummy");
+end;
+@x
+function round_xn_over_d(@!x:scaled; @!n,@!d:integer):scaled;
+var positive:boolean; {was |x>=0|?}
+@!t,@!u,@!v:nonnegative_integer; {intermediate quantities}
+begin if x>=0 then positive:=true
+else  begin negate(x); positive:=false;
+  end;
+t:=(x mod @'100000)*n;
+u:=(x div @'100000)*n+(t div @'100000);
+v:=(u mod d)*@'100000 + (t mod @'100000);
+if u div d>=@'100000 then arith_error:=true
+else u:=@'100000*(u div d) + (v div d);
+v := v mod d;
+if 2*v >= d then
+    incr(u);
+if positive then
+    round_xn_over_d := u
+else
+    round_xn_over_d := -u;
+end;
+
 
 @ 
 @<Declare the \ps\ output procedures@>=
+procedure ps_print_cmd(@!l:str_number;@!s:str_number);
+begin
+if internal[prologues]>unity then begin ps_room(length(s)); print(s); end
+else begin ps_room(length(l)); print(l); end;
+end;
+@#
+procedure print_cmd(@!l:str_number;@!s:str_number);
+begin
+if internal[prologues]>unity then print(s) else print(l);
+end;
+@#
 function mp_char_marked(@!f:font_number;@!c: eight_bits): boolean;
 var @!b:integer; {|char_base[f]|}
 begin b:=char_base[f];
-if (c>=font_bc[f])and(c<=font_ec[f])and(font_info[b+c].qqqq.b3<>0) then
-  mp_char_marked:=true
-else
-  mp_char_marked:=false;
+  if (c>=font_bc[f])and(c<=font_ec[f])and(font_info[b+c].qqqq.b3<>0) then
+    mp_char_marked:=true
+  else
+    mp_char_marked:=false;
 end;
 
 @ The fontmap entries need a typedef
 
 @<Types...@>=
 fm_entry_ptr = ^integer;
+@!nonnegative_integer=0..@'17777777777; {$0\L x<2^{31}$}
 
 @ To print |scaled| value to PDF output we need some subroutines to ensure
 accurary.
@@ -141,8 +207,10 @@ ten_pow[0] := 1;
 for i := 1 to 9 do
     ten_pow[i] := 10*ten_pow[i - 1];
 mp_font_map:=xmalloc_array(fm_entry_ptr,font_max);
-for i := null_font to font_max do
+for i := null_font to font_max do begin
+  font_enc_name[i] := 0;
   mp_font_map[i] := 0;
+  end;
 	
 
 
@@ -183,6 +251,86 @@ end;
 PostScript names for fonts that do not have to be downloaded, i.e., fonts that
 @z
 
+@x l. 21501
+procedure ps_path_out(@!h:pointer);
+label exit;
+var @!p,@!q:pointer; {for scanning the path}
+@!d:scaled; {a temporary value}
+@!curved:boolean; {|true| unless the cubic is almost straight}
+begin ps_room(40);
+if need_newpath then print("newpath ");
+need_newpath:=true;
+ps_pair_out(x_coord(h),y_coord(h));
+print("moveto");@/
+p:=h;
+repeat if right_type(p)=endpoint then
+  begin if p=h then ps_print(" 0 0 rlineto");
+  return;
+  end;
+q:=link(p);
+@<Start a new line and print the \ps\ commands for the curve from
+  |p| to~|q|@>;
+p:=q;
+until p=h;
+ps_print(" closepath");
+exit:end;
+@y
+procedure ps_path_out(@!h:pointer);
+label exit;
+var @!p,@!q:pointer; {for scanning the path}
+@!d:scaled; {a temporary value}
+@!curved:boolean; {|true| unless the cubic is almost straight}
+begin ps_room(40);
+if need_newpath then print_cmd("newpath ","n ");
+need_newpath:=true;
+ps_pair_out(x_coord(h),y_coord(h));
+print_cmd("moveto","m");@/
+p:=h;
+repeat if right_type(p)=endpoint then
+  begin if p=h then ps_print_cmd(" 0 0 rlineto"," 0 0 r");
+  return;
+  end;
+q:=link(p);
+@<Start a new line and print the \ps\ commands for the curve from
+  |p| to~|q|@>;
+p:=q;
+until p=h;
+ps_print_cmd(" closepath"," p");
+exit:end;
+@z
+
+@x l. 21529
+@ @<Start a new line and print the \ps\ commands for the curve from...@>=
+curved:=true;
+@<Set |curved:=false| if the cubic from |p| to |q| is almost straight@>;
+print_ln;
+if curved then
+  begin ps_pair_out(right_x(p),right_y(p));
+  ps_pair_out(left_x(q),left_y(q));
+  ps_pair_out(x_coord(q),y_coord(q));
+  ps_print("curveto");
+  end
+else if q<>h then
+  begin ps_pair_out(x_coord(q),y_coord(q));
+  ps_print("lineto");
+  end
+@y
+@ @<Start a new line and print the \ps\ commands for the curve from...@>=
+curved:=true;
+@<Set |curved:=false| if the cubic from |p| to |q| is almost straight@>;
+print_ln;
+if curved then
+  begin ps_pair_out(right_x(p),right_y(p));
+  ps_pair_out(left_x(q),left_y(q));
+  ps_pair_out(x_coord(q),y_coord(q));
+  ps_print_cmd("curveto","c");
+  end
+else if q<>h then
+  begin ps_pair_out(x_coord(q),y_coord(q));
+  ps_print_cmd("lineto","l");
+  end
+@z
+
 @x l. 21699
 if (ww<>gs_width) or (adj_wx<>gs_adj_wx) then
   begin if adj_wx then
@@ -201,23 +349,17 @@ if (ww<>gs_width) or (adj_wx<>gs_adj_wx) then
 if (ww<>gs_width) or (adj_wx<>gs_adj_wx) then
   begin if adj_wx then
     begin ps_room(13);
-	if internal[prologues]>unity then begin
-        print_char(" "); 
-	    print_scaled(ww);
-        ps_print(" hlw");
-      end
-    else begin
-      print_char(" "); print_scaled(ww);
-      ps_print(" 0 dtransform exch truncate exch idtransform pop setlinewidth");
-      end;
+    print_char(" "); print_scaled(ww);
+    ps_print_cmd(" 0 dtransform exch truncate exch idtransform pop setlinewidth"," hlw");
     end
-  else begin ps_room(15);
-	if internal[prologues]>unity then begin
+  else begin 
+    if internal[prologues]>unity then begin
+       ps_room(13);
        print_char(" "); 
        print_scaled(ww);
        ps_print(" vlw");
       end
-    else begin
+    else begin ps_room(15);
       print(" 0 "); print_scaled(ww);
       ps_print(" dtransform truncate idtransform setlinewidth pop");
       end;
@@ -297,8 +439,10 @@ begin open_output_file;
 non_ps_setting:=selector; selector:=ps_file_only;@/
 if (internal[prologues]=two)or(internal[prologues]=three) then begin
   @<Print improved initial comment and bounding box for edge structure~|h|@>;
-  @<Print the improved prologue@>;
-  print_nl("%%Page: 1 1"); print_ln;
+  @<Scan all the text nodes and mark the used characters@>;
+  mploadencodings(last_fnum);
+  @<Update encoding names@>;
+  @<Print the improved prologue and setup@>; 
   @<Print any pending specials@>;
   unknown_graphics_state(0);
   need_newpath:=true;
@@ -357,59 +501,224 @@ if internal[tracing_output]>0 then print_edges(h," (just shipped out)",true);
 end;
 
 @ 
-@<Print the improved prologue@>=
+@d applied_reencoding(#)==((font_is_reencoded(#))and
+    ((not font_is_subsetted(#))or(internal[prologues]=two)))
+
+@d ps_print_defined_name(#)==ps_print(" /"); print(font_ps_name[#]); 
+      if applied_reencoding(#) then begin ps_print("-");
+      ps_print(font_enc_name[#]); end
+
+@<Print the improved prologue and setup@>=
 begin 
-  print_nl("%%DocumentProcSets: mpost");
-  print_nl("%%DocumentSuppliedProcSets: mpost");
+  list_used_resources;
+  list_supplied_resources;
+  list_needed_resources;
   print_nl("%%EndComments");
   print_nl("%%BeginProlog");
   print_nl("%%BeginResource: procset mpost");
-  print_nl("/fshow {exch findfont exch scalefont setfont show}bind def");
-  print_nl("/hlw {0 dtransform exch truncate exch idtransform pop setlinewidth}bind def");
-  print_nl("/vlw {0 exch dtransform truncate idtransform setlinewidth pop}bind def");
+  print_nl("/bd{bind def}bind def/fshow {exch findfont exch scalefont setfont show}bd");
+  print_nl("/hlw{0 dtransform exch truncate exch idtransform pop setlinewidth}bd");
+  print_nl("/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
+  print_nl("/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd/p{closepath}bd/n{newpath}bd");
+  print_nl("/fcp{findfont dup length dict begin{1 index/FID ne{def}{pop pop}ifelse}forall}bd");
   print_nl("%%EndResource");
-  @<Better list of all the fonts and magnifications for edge structure~|h|@>;
+  @<Include encodings and fonts  for edge structure~|h|@>;
   print_nl("%%EndProlog");
   print_nl("%%BeginSetup");
   print_ln;
-  if ldf<>null_font then
-    begin for f:=null_font+1 to last_fnum do
-    if font_sizes[f]<>null then
-      begin ps_name_out(font_name[f],true);
-	  ps_print(" /");
-      print_ps_name(f);
-	  if font_is_reencoded(f) then begin
-        ps_print(" findfont dup");
-	    ps_print(" length dict begin { 1 index /FID ne {def} {pop pop} ifelse} forall");
-        ps_print(" /Encoding ");
-	    print_enc_name(f);
-	    ps_print(" def currentdict end");
-        ps_print(" /");
-	    print_ps_name(f);
-        ps_print("-");
-	    print_enc_name(f);
-	    ps_print(" exch definefont pop");
-	    { now fix the definition}
-        print_ln;
-	    ps_name_out(font_name[f],true);
-        ps_print(" /");
-	    print_ps_name(f);
-        ps_print("-");
-	    print_enc_name(f);
+  for f:=null_font+1 to last_fnum do begin
+    if font_sizes[f]<>null then begin
+      if hasfmentry(f) then begin
+        @<Write font definition@>;
+        ps_name_out(font_name[f],true);
+        ps_print_defined_name(f);
         ps_print(" def");
         end
-      else
-	    begin ps_name_out(font_name[f],true);
-		ps_print(" /");
-        print_ps_name(f);
+      else begin 
+	begin_diagnostic;
+        {selector:=term_and_log;}
+	print_err("Warning: font ");
+	print(font_name[f]);
+	print(" cannot be found in any mapfile!");
+	end_diagnostic(true);
+        ps_name_out(font_name[f],true);
+        ps_name_out(font_name[f],true);
         ps_print(" def");
         end;
       print_ln;
       end;
+    end;
   print_nl("%%EndSetup");
   print_ln;
-  end;
+  print_nl("%%Page: 1 1");
+  print_ln;
 end
+
+@ MAYBE: This postscript code is straight from the red book.
+It could be a bit shortened by moving some of the commands
+into a definition to be put in the PostScript dictionary.
+
+TODO:  slant and narrowing
+@<Write font definition@>=
+if applied_reencoding(f) then begin
+ps_name_out(font_ps_name[f],true);
+ps_print(" fcp");
+print_ln;
+ps_print("   /Encoding ");
+ps_print(font_enc_name[f]);
+ps_print(" def currentdict end");
+print_ln;
+ps_print("  ");
+ps_print_defined_name(f);
+ps_print(" exch definefont pop");
+print_ln;
+end
+
+@ Included subset fonts do not need and encoding vector, make
+sure we skip that case.
+
+@p procedure list_used_resources;
+label found,found2;
+var @!f,ff:font_number; {fonts used in a text node or as loop counters}
+@!ldf:font_number; {the last \.{DocumentFont} listed (otherwise |null_font|)}
+firstitem:boolean; 
+begin
+print_nl("%%DocumentResources: procset mpost");
+ldf:=null_font;
+firstitem:=true;
+for f:=null_font+1 to last_fnum do
+  if (font_sizes[f]<>null)and(font_is_reencoded(f)) then
+    begin
+    for ff:=ldf downto null_font do
+      if font_sizes[ff]<>null then
+        if str_vs_str(font_enc_name[f],font_enc_name[ff])=0 then
+          goto found;
+    if font_is_subsetted(f) then 
+      goto found;
+    if ps_offset+1+length(font_enc_name[f])>max_print_line then
+      print_nl("%%+ encoding");
+    if firstitem then begin
+      firstitem:=false;
+      print_nl("%%+ encoding");
+      end;
+    print_char(" ");
+    print(font_enc_name[f]);
+    ldf:=f;
+    found:
+    end;
+ldf:=null_font;
+firstitem:=true;
+for f:=null_font+1 to last_fnum do
+  if font_sizes[f]<>null then
+    begin
+    for ff:=ldf downto null_font do
+      if font_sizes[ff]<>null then
+        if str_vs_str(font_name[f],font_name[ff])=0 then
+          goto found2;
+    if ps_offset+1+length(font_ps_name[f])>max_print_line then
+      print_nl("%%+ font");
+    if firstitem then begin
+      firstitem:=false;
+      print_nl("%%+ font");
+      end;
+    print_char(" ");
+    print(font_ps_name[f]);
+    ldf:=f;
+    found2:
+    end;
+print_ln;
+end;
+
+@
+@p procedure list_supplied_resources;
+label found,found2;
+var @!f,ff:font_number; {fonts used in a text node or as loop counters}
+@!ldf:font_number; {the last \.{DocumentFont} listed (otherwise |null_font|)}
+firstitem:boolean; 
+begin
+print_nl("%%DocumentSuppliedResources: procset mpost");
+ldf:=null_font;
+firstitem:=true;
+for f:=null_font+1 to last_fnum do
+  if (font_sizes[f]<>null)and(font_is_reencoded(f)) then
+    begin
+    for ff:=ldf downto null_font do
+      if font_sizes[ff]<>null then
+        if str_vs_str(font_enc_name[f],font_enc_name[ff])=0 then
+          goto found;
+    if (internal[prologues]=three)and(font_is_subsetted(f))then 
+      goto found;
+    if ps_offset+1+length(font_enc_name[f])>max_print_line then
+      print_nl("%%+ encoding");
+    if firstitem then begin
+      firstitem:=false;
+      print_nl("%%+ encoding");
+      end;
+    print_char(" ");
+    print(font_enc_name[f]);
+    ldf:=f;
+    found:
+    end;
+ldf:=null_font;
+firstitem:=true;
+if internal[prologues]=three then begin
+  for f:=null_font+1 to last_fnum do
+  if font_sizes[f]<>null then
+    begin
+    for ff:=ldf downto null_font do
+      if font_sizes[ff]<>null then
+        if str_vs_str(font_name[f],font_name[ff])=0 then
+          goto found2;
+    if not font_is_included(f) then 
+      goto found2;
+    if ps_offset+1+length(font_ps_name[f])>max_print_line then
+      print_nl("%%+ font");
+    if firstitem then begin
+      firstitem:=false;
+      print_nl("%%+ font");
+      end;
+    print_char(" ");
+    print(font_ps_name[f]);
+    ldf:=f;
+    found2:
+    end;
+  print_ln;
+end;
+end;
+
+
+@
+@p procedure list_needed_resources;
+label found;
+var @!f,ff:font_number; {fonts used in a text node or as loop counters}
+@!ldf:font_number; {the last \.{DocumentFont} listed (otherwise |null_font|)}
+firstitem:boolean; 
+begin
+ldf:=null_font;
+firstitem:=true;
+for f:=null_font+1 to last_fnum do
+  if font_sizes[f]<>null then
+    begin
+    for ff:=ldf downto null_font do
+      if font_sizes[ff]<>null then
+        if str_vs_str(font_name[f],font_name[ff])=0 then
+          goto found;
+    if(internal[prologues]=three)and(font_is_included(f)) then 
+      goto found;
+    if ps_offset+1+length(font_ps_name[f])>max_print_line then
+      print_nl("%%+ font");
+    if firstitem then begin
+      firstitem:=false;
+      print_nl("%%DocumentNeededResources: font");
+      end;
+    print_char(" ");
+    print(font_ps_name[f]);
+    ldf:=f;
+    found:
+    end;
+if not firstitem then
+  print_ln;
+end;
 
 @
 @<Print improved initial comment and bounding box for edge...@>=
@@ -437,69 +746,102 @@ print_dd(t div 60); print_dd(t mod 60);@/
 print_nl("%%Pages: 1");@/
 
 @ 
-@<Better list of all the fonts and magnifications for edge structure~|h|@>=
-@<Scan all the text nodes and set the |font_sizes| lists;
-  if |internal[prologues]<=0| list the sizes selected by |choose_scale|,
-  apply |unmark_font| to each font encountered, and call |mark_string|
-  whenever the size index is zero@>;
-mpfontencodings(last_fnum);
-@<Give the complete \.{DocumentFonts} comment@>;
-if internal[prologues]=two then
-  @<Give a \.{DocumentNeededFonts} comment@>
-else begin 
-  do_nothing;
-  {next_size:=0;
-  @<Make |cur_fsize| a copy of the |font_sizes| array@>;
-  repeat done_fonts:=true;
-  for f:=null_font+1 to last_fnum do
-    begin if cur_fsize[f]<>null then
-      @<Print the \.{\%*Font} comment for font |f| and advance |cur_fsize[f]|@>;
+
+@ @<Include encodings and fonts for edge structure~|h|@>=
+mpfontencodings(last_fnum,(internal[prologues]=two));
+@<Embed fonts that are available@>
+
+@ @<Scan all the text nodes and mark the used ...@>=
+for f:=null_font+1 to last_fnum do begin
+  if font_sizes[f]<>null then begin
+    unmark_font(f);
+    font_sizes[f]:=null;
+    end;
+  if font_enc_name[f]<>0 then
+    delete_str_ref(font_enc_name[f]);
+  font_enc_name[f] := 0;
+end;
+for f:=null_font+1 to last_fnum do begin
+  p:=link(dummy_loc(h));
+  while p<>null do
+    begin if type(p)=text_code then
+      if font_n(p)<>null_font then begin
+        font_sizes[font_n(p)] := void;
+        mark_string_chars(font_n(p),text_p(p));	
+	if hasfmentry(font_n(p)) then
+          font_ps_name[font_n(p)] := fm_font_name(font_n(p));
+        end;
+    p:=link(p);
+    end;
+end
+
+@ @<Update encoding names@>=
+for f:=null_font+1 to last_fnum do begin
+  p:=link(dummy_loc(h));
+  while p<>null do
+    begin if type(p)=text_code then
+      if font_n(p)<>null_font then
+	if hasfmentry(font_n(p)) then
+          if font_enc_name[font_n(p)]=0 then
+            font_enc_name[font_n(p)] := fm_encoding_name(font_n(p));
+    p:=link(p);
+    end;
+end
+
+
+@ @<Embed fonts that are available@>=
+begin next_size:=0;
+@<Make |cur_fsize| a copy of the |font_sizes| array@>;
+repeat done_fonts:=true;
+for f:=null_font+1 to last_fnum do
+  begin if cur_fsize[f]<>null then begin 
+      if internal[prologues]=three then
+        if not dopsfont(f) then begin
+           print_err("Font embedding failed");
+	   error;
+           end;
+      cur_fsize[f]:=link(cur_fsize[f]);
+      end;
     if cur_fsize[f]<>null then
-      begin unmark_font(f); done_fonts:=false; @+end;
+      begin unmark_font(f); done_fonts:=false; @+end
     end;
   if not done_fonts then
     @<Increment |next_size| and apply |mark_string_chars| to all text nodes with
       that size index@>;
-  until done_fonts;}
+  until done_fonts;
+end
+@z
+
+@x
+@ @<Shift or transform as necessary before outputting text node~|p| at...@>=
+transformed:=(txx_val(p)<>scf)or(tyy_val(p)<>scf)or@|
+  (txy_val(p)<>0)or(tyx_val(p)<>0);
+if transformed then
+  begin print("gsave [");
+  ps_pair_out(make_scaled(txx_val(p),scf),@|make_scaled(tyx_val(p),scf));
+  ps_pair_out(make_scaled(txy_val(p),scf),@|make_scaled(tyy_val(p),scf));
+  ps_pair_out(tx_val(p),ty_val(p));@/
+  ps_print("] concat 0 0 moveto");
   end
-
-@ @<Give the complete \.{DocumentFonts} comment@>=
-begin ldf:=null_font;
-for f:=null_font+1 to last_fnum do
-  if font_sizes[f]<>null then
-    begin if ldf=null_font then print_nl("%%DocumentFonts:");
-    for ff:=ldf downto null_font do
-      if font_sizes[ff]<>null then
-        if str_vs_str(font_ps_name[f],font_ps_name[ff])=0 then
-          goto found3;
-    if ps_offset+1+length(font_ps_name[f])>max_print_line then
-      print_nl("%%+");
-    print_char(" ");
-    print(font_ps_name[f]);
-    ldf:=f;
-    found3:
-    end;
-end
-
-@ @<Give a \.{DocumentNeededFonts} comment@>=
-begin ldf:=null_font;
-for f:=null_font+1 to last_fnum do
-  if font_sizes[f]<>null then
-    begin if ldf=null_font then print_nl("%%DocumentNeededFonts:");
-    for ff:=ldf downto null_font do
-      if font_sizes[ff]<>null then
-        if str_vs_str(font_ps_name[f],font_ps_name[ff])=0 then
-          goto found2;
-    if ps_offset+1+length(font_ps_name[f])>max_print_line then
-      print_nl("%%+");
-    print_char(" ");
-    print(font_ps_name[f]);
-    ldf:=f;
-    found2:
-    end;
-end
-
-
+else begin ps_pair_out(tx_val(p),ty_val(p));
+  ps_print("moveto");
+  end;
+print_ln
+@y
+@ @<Shift or transform as necessary before outputting text node~|p| at...@>=
+transformed:=(txx_val(p)<>scf)or(tyy_val(p)<>scf)or@|
+  (txy_val(p)<>0)or(tyx_val(p)<>0);
+if transformed then
+  begin print("gsave [");
+  ps_pair_out(make_scaled(txx_val(p),scf),@|make_scaled(tyx_val(p),scf));
+  ps_pair_out(make_scaled(txy_val(p),scf),@|make_scaled(tyy_val(p),scf));
+  ps_pair_out(tx_val(p),ty_val(p));@/
+  ps_print("] concat 0 0 ");
+  end
+else begin ps_pair_out(tx_val(p),ty_val(p));
+  end;
+ps_print_cmd("moveto","m");
+print_ln
 @z
 
 @x l. 22965
