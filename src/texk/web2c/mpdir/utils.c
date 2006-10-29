@@ -155,7 +155,7 @@ char *makecstring (integer s)
     int allocgrow, i, l ;
     if (s==0)
       return "";
-    l = strstart[s + 1] - strstart[s];
+    l = strstart[nextstr[s]] - strstart[s];
     check_buf (l + 1, MAX_CSTRING_LEN);
     if (cstrbuf == NULL) {
         allocsize = l + 1;

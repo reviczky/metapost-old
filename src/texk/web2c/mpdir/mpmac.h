@@ -82,7 +82,7 @@ $Id $
 
 #  define check_buf(size, buf_size)                          \
     if ((unsigned)(size) > (unsigned)(buf_size))                               \
-        pdftex_fail("buffer overflow at file %s, line %d", __FILE__,  __LINE__ )
+      pdftex_fail("buffer overflow: (%d,%d) at file %s, line %d",size,buf_size, __FILE__,  __LINE__ )
 
 #  define append_char_to_buf(c, p, buf, buf_size) do {       \
     if (c == 9)                                            \

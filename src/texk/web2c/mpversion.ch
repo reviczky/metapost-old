@@ -2,7 +2,7 @@
 @d banner=='This is MetaPost, Version 0.902' {printed when \MP\ starts}
 @d metapost_version=="0.902"
 @y
-@d banner=='This is MetaPost, Version 0.951' {printed when \MP\ starts}
-@d metapost_version=="0.951"
+@d banner=='This is MetaPost, Version 0.952' {printed when \MP\ starts}
+@d metapost_version=="0.952"
 @z
 
