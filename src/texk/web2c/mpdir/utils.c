@@ -152,7 +152,10 @@ char *makecstring (integer s)
     static char *cstrbuf = NULL;
     char *p;
     static int allocsize;
-    int allocgrow, i, l = strstart[s + 1] - strstart[s];
+    int allocgrow, i, l ;
+    if (s==0)
+      return "";
+    l = strstart[s + 1] - strstart[s];
     check_buf (l + 1, MAX_CSTRING_LEN);
     if (cstrbuf == NULL) {
         allocsize = l + 1;

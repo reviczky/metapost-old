@@ -14,7 +14,7 @@
 @d special_command=30 {output special info (\&{special})}
 @y
 @d special_command=30 {output special info (\&{special}) 
-                       or font map info (\&{mapfile}, \&{mapline})}
+                       or font map info (\&{fontmapfile}, \&{fontmapline})}
 @z
 
 @x l. 4892
@@ -23,17 +23,17 @@ primitive("special",special_command,0);
 @y
 primitive("special",special_command,0);
 @!@:special}{\&{special} primitive@>
-primitive("mapfile",special_command,1);
-@!@:special}{\&{special} primitive@>
-primitive("mapline",special_command,2);
-@!@:special}{\&{special} primitive@>
+primitive("fontmapfile",special_command,1);
+@!@:fontmapfile}{\&{fontmapfile} primitive@>
+primitive("fontmapline",special_command,2);
+@!@:fontmapline}{\&{fontmapline} primitive@>
 @z
 
 @x l. 4947
 special_command: print("special");
 @y
-special_command: if m=2 then print("mapline") else 
-                 if m=1 then print("mapfile") else 
+special_command: if m=2 then print("fontmapline") else 
+                 if m=1 then print("fontmapfile") else 
                  print("special");
 @z
 
@@ -52,7 +52,7 @@ font_info:array[0..font_mem_size] of memory_word;
 @ The file |ps_tab_file| gives a table of \TeX\ font names and corresponding
 PostScript names for fonts that do not have to be downloaded, i.e., fonts that
 @y
-@ The new primitives mapfile and mapline.
+@ The new primitives fontmapfile and fontmapline.
 
 @<Declare action procedures for use by |do_statement|@>=
 procedure do_mapfile;
@@ -539,7 +539,7 @@ begin
         {selector:=term_and_log;}
 	print_err("Warning: font ");
 	print(font_name[f]);
-	print(" cannot be found in any mapfile!");
+	print(" cannot be found in any fontmapfile!");
 	end_diagnostic(true);
         ps_name_out(font_name[f],true);
         ps_name_out(font_name[f],true);
