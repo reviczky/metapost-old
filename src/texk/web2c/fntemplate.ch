@@ -74,10 +74,11 @@ var @!c:integer; {\&{charcode} rounded to the nearest integer}
 @!old_setting:0..max_selector; {previous |selector| setting}
 @!s,n:str_number; {a file extension derived from |c|}
 @!i:pool_pointer; { indexes into |filename_template| }
+@!cc:integer; {a temporary integer for template building }
 @!f,g:integer; {field widths}
 begin if job_name=0 then open_log_file;
+c:=round_unscaled(internal[char_code]);
 if filename_template=0 then begin
-  c:=round_unscaled(internal[char_code]);
   if c<0 then s:=".ps"
   else @<Use |c| to compute the file extension |s|@>;
   pack_job_name(s);
@@ -100,27 +101,26 @@ else begin
           if so(str_pool[i])="j" then 
             print(job_name)
           else if so(str_pool[i])="d" then begin
-             c:= round_unscaled(internal[day]);
-             print_with_leading_zeroes(c);
+             cc:= round_unscaled(internal[day]);
+             print_with_leading_zeroes(cc);
              end
           else if so(str_pool[i])="m" then begin
-             c:= round_unscaled(internal[month]);
-             print_with_leading_zeroes(c);
+             cc:= round_unscaled(internal[month]);
+             print_with_leading_zeroes(cc);
              end
           else if so(str_pool[i])="y" then begin
-             c:= round_unscaled(internal[year]);
-             print_with_leading_zeroes(c);
+             cc:= round_unscaled(internal[year]);
+             print_with_leading_zeroes(cc);
              end
           else if so(str_pool[i])="H" then begin
-             c:= round_unscaled(internal[time]) div 60;
-             print_with_leading_zeroes(c);
+             cc:= round_unscaled(internal[time]) div 60;
+             print_with_leading_zeroes(cc);
              end
           else if so(str_pool[i])="M" then begin
-             c:= round_unscaled(internal[time]) mod 60; 
-             print_with_leading_zeroes(c);
+             cc:= round_unscaled(internal[time]) mod 60; 
+             print_with_leading_zeroes(cc);
              end
           else if so(str_pool[i])="c" then begin
-            c:=round_unscaled(internal[char_code]);
             if c<0 then print("ps")
             else begin 
               print_with_leading_zeroes(c);
