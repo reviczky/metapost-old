@@ -938,13 +938,16 @@ void mpmapline (strnumber t)
     //flushstr (t);
 }
 
-void mpinitmapfile (string map_name)
+void mpinitmapfile (void)
 {
     assert (mitem == NULL);
     mitem = xtalloc (1, mapitem);
     mitem->mode = FM_DUPIGNORE;
     mitem->type = MAPFILE;
-    mitem->line = xstrdup (map_name);
+    if (kpse_find_file("mpost.map", kpse_fontmap_format,0))
+      mitem->line = xstrdup ("mpost.map");
+    else
+      mitem->line = xstrdup ("pdftex.map");
 }
 
 /**********************************************************************/

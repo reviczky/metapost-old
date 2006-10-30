@@ -848,5 +848,5 @@ print_ln
 @<Get the first line of input and prepare to start@>;
 @y
 @<Get the first line of input and prepare to start@>;
-mp_init_map_file('mpost.map');
+mp_init_map_file;
 @z
