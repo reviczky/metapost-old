@@ -23,8 +23,7 @@ $Id $
 #  include <stdio.h>
 #endif
 #include <sys/types.h>
-#include <sysexits.h>
-#include <regex.h>
+
 #include <kpathsea/c-proto.h>
 #include <kpathsea/c-stat.h>
 #include <kpathsea/c-fopen.h>
@@ -127,7 +126,7 @@ void pdftex_fail (const char *fmt, ...)
         ("\n ==> Fatal error occurred, the output PS file is not finished!\n",
          stderr);
     va_end (args);
-    exit (EX_SOFTWARE);
+    exit (1);
 }
 
 /* The output format of this fuction must be the same as pdf_warn in
