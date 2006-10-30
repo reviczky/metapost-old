@@ -23,7 +23,6 @@ $Id$
 static const char perforce_id[] =
     "$Id: //depot/Build/source.development/TeX/texk/web2c/pdftexdir/writet1.c#25 $";
 
-#  include "sysexits.h"
 #  include "mplib.h"
 #  define t1_open()           \
     open_input(&t1_file, kpse_type1_format, FOPEN_RBIN_MODE)
