@@ -506,7 +506,11 @@ end;
 
 @d ps_print_defined_name(#)==ps_print(" /"); print(font_ps_name[#]); 
       if applied_reencoding(#) then begin ps_print("-");
-      ps_print(font_enc_name[#]); end
+      ps_print(font_enc_name[#]); end;
+      if fm_font_slant(#)<>0 then begin ps_print("-");
+      ps_print("Slant"); print_int(fm_font_slant(#)) end;
+      if fm_font_extend(#)<>0 then begin ps_print("-");
+      ps_print("Extend"); print_int(fm_font_extend(#)) end
 
 @<Print the improved prologue and setup@>=
 begin 
@@ -521,6 +525,10 @@ begin
   print_nl("/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
   print_nl("/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd/p{closepath}bd/n{newpath}bd");
   print_nl("/fcp{findfont dup length dict begin{1 index/FID ne{def}{pop pop}ifelse}forall}bd");
+  print_nl("/fmc{FontMatrix dup length array copy dup dup}bd/fmd{/FontMatrix exch def}bd");
+  print_nl("/Amul{4 -1 roll exch mul 1000 div}bd/ExtendFont{fmc 0 get Amul 0 exch put fmd}bd");
+  print_nl("/SlantFont{fmc 2 get dup 0 eq{pop 1}if Amul FontMatrix 0 get mul 2 exch put fmd}bd");
+
   print_nl("%%EndResource");
   @<Include encodings and fonts  for edge structure~|h|@>;
   print_nl("%%EndProlog");
@@ -560,18 +568,30 @@ into a definition to be put in the PostScript dictionary.
 
 TODO:  slant and narrowing
 @<Write font definition@>=
-if applied_reencoding(f) then begin
-ps_name_out(font_ps_name[f],true);
-ps_print(" fcp");
-print_ln;
-ps_print("   /Encoding ");
-ps_print(font_enc_name[f]);
-ps_print(" def currentdict end");
-print_ln;
-ps_print("  ");
-ps_print_defined_name(f);
-ps_print(" exch definefont pop");
-print_ln;
+if (applied_reencoding(f))
+   or(fm_font_slant(f)<>0)
+   or(fm_font_extend(f)<>0) then begin
+  ps_name_out(font_ps_name[f],true);
+  ps_print(" fcp");
+  print_ln;
+  if applied_reencoding(f) then begin
+    ps_print("/Encoding ");
+    ps_print(font_enc_name[f]);
+    ps_print(" def ");
+    end;
+  if fm_font_slant(f)<>0 then begin
+    print_int(fm_font_slant(f));
+    ps_print(" SlantFont ");
+    end;
+  if fm_font_extend(f)<>0 then begin
+    print_int(fm_font_extend(f));
+    ps_print(" ExtendFont ");
+    end;
+  ps_print("currentdict end");
+  print_ln;
+  ps_print_defined_name(f);
+  ps_print(" exch definefont pop");
+  print_ln;
 end
 
 @ Included subset fonts do not need and encoding vector, make

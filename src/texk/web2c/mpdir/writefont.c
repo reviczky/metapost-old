@@ -99,6 +99,30 @@ strnumber fmfontname (int f) {
 }
 
 
+integer fmfontslant (int f) {
+  fm_entry *fm;
+  if (hasfmentry (f)) { 
+    fm = (fm_entry *) mpfontmap[f];
+    if (fm != NULL && (fm->ps_name != NULL)) {
+      return fm->slant;
+    }
+  }
+  return 0;
+}
+
+integer fmfontextend (int f) {
+  fm_entry *fm;
+  if (hasfmentry (f)) { 
+    fm = (fm_entry *) mpfontmap[f];
+    if (fm != NULL && (fm->ps_name != NULL)) {
+      return fm->extend;
+    }
+  }
+  return 0;
+}
+
+
+
 void mploadencodings (int lastfnum) {
   int nullfont;
   int f;

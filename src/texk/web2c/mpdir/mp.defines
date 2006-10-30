@@ -38,5 +38,7 @@ $Id$
 
 @define function fmencodingname();
 @define function fmfontname();
+@define function fmfontslant();
+@define function fmfontextend();
 
 @define function dopsfont();
