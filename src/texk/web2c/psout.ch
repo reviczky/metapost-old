@@ -17,6 +17,32 @@
                        or font map info (\&{fontmapfile}, \&{fontmapline})}
 @z
 
+@x l. 4397
+@d restore_clip_color=35
+@d max_given_internal=35
+@y
+@d restore_clip_color=35
+@d procset=36 {wether or not create PostScript command shortcuts}
+@d max_given_internal=36
+@z
+
+@x l. 4480
+primitive("truecorners",internal_quantity,true_corners);@/
+@!@:true_corners_}{\&{truecorners} primitive@>
+@y
+primitive("truecorners",internal_quantity,true_corners);@/
+@!@:true_corners_}{\&{truecorners} primitive@>
+primitive("procset",internal_quantity,procset);@/
+@!@:procset_}{\&{procset} primitive@>
+@z
+
+@x l. 4521
+int_name[default_color_model]:="defaultcolormodel";
+@y
+int_name[default_color_model]:="defaultcolormodel";
+int_name[procset]:="procset";
+@z
+
 @x l. 4892
 primitive("special",special_command,0);
 @!@:special}{\&{special} primitive@>
@@ -161,13 +187,13 @@ end;
 @<Declare the \ps\ output procedures@>=
 procedure ps_print_cmd(@!l:str_number;@!s:str_number);
 begin
-if internal[prologues]>unity then begin ps_room(length(s)); print(s); end
+if internal[procset]>0 then begin ps_room(length(s)); print(s); end
 else begin ps_room(length(l)); print(l); end;
 end;
 @#
 procedure print_cmd(@!l:str_number;@!s:str_number);
 begin
-if internal[prologues]>unity then print(s) else print(l);
+if internal[procset]>0 then print(s) else print(l);
 end;
 @#
 function mp_char_marked(@!f:font_number;@!c: eight_bits): boolean;
@@ -353,7 +379,7 @@ if (ww<>gs_width) or (adj_wx<>gs_adj_wx) then
     ps_print_cmd(" 0 dtransform exch truncate exch idtransform pop setlinewidth"," hlw");
     end
   else begin 
-    if internal[prologues]>unity then begin
+    if internal[procset]>unity then begin
        ps_room(13);
        print_char(" "); 
        print_scaled(ww);
@@ -376,7 +402,7 @@ special_command: if cur_mod=0 then do_special else if cur_mod=1 then do_mapfile 
 @z
 
 
-@x
+@x l. 22273
 procedure ship_out(@!h:pointer); {output edge structure |h|}
 label done,found;
 var @!p:pointer; {the current graphical object}
@@ -471,7 +497,7 @@ else begin
 if (internal[prologues]>0) and (last_ps_fnum<last_fnum) then
   read_psname_table;
 print("%%BeginProlog"); print_ln;
-if internal[prologues]>0 then @<Print the prologue@>;
+if (internal[prologues]>0)or(internal[procset]>0) then @<Print the prologue@>;
 print("%%EndProlog");
 print_nl("%%Page: 1 1"); print_ln;
 @<Print any pending specials@>;
@@ -519,16 +545,20 @@ begin
   list_needed_resources;
   print_nl("%%EndComments");
   print_nl("%%BeginProlog");
-  print_nl("%%BeginResource: procset mpost");
+  if internal[procset]>0 then
+    print_nl("%%BeginResource: procset mpost")
+  else
+    print_nl("%%BeginResource: procset mpost-minimal");
   print_nl("/bd{bind def}bind def/fshow {exch findfont exch scalefont setfont show}bd");
-  print_nl("/hlw{0 dtransform exch truncate exch idtransform pop setlinewidth}bd");
-  print_nl("/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
-  print_nl("/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd/p{closepath}bd/n{newpath}bd");
+  if internal[procset]>0 then begin
+    print_nl("/hlw{0 dtransform exch truncate exch idtransform pop setlinewidth}bd");
+    print_nl("/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
+    print_nl("/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd/p{closepath}bd/n{newpath}bd");
+    end;
   print_nl("/fcp{findfont dup length dict begin{1 index/FID ne{def}{pop pop}ifelse}forall}bd");
   print_nl("/fmc{FontMatrix dup length array copy dup dup}bd/fmd{/FontMatrix exch def}bd");
   print_nl("/Amul{4 -1 roll exch mul 1000 div}bd/ExtendFont{fmc 0 get Amul 0 exch put fmd}bd");
   print_nl("/SlantFont{fmc 2 get dup 0 eq{pop 1}if Amul FontMatrix 0 get mul 2 exch put fmd}bd");
-
   print_nl("%%EndResource");
   @<Include encodings and fonts  for edge structure~|h|@>;
   print_nl("%%EndProlog");
@@ -603,7 +633,10 @@ var @!f,ff:font_number; {fonts used in a text node or as loop counters}
 @!ldf:font_number; {the last \.{DocumentFont} listed (otherwise |null_font|)}
 firstitem:boolean; 
 begin
-print_nl("%%DocumentResources: procset mpost");
+if internal[procset]>0 then
+  print_nl("%%DocumentResources: procset mpost")
+else
+  print_nl("%%DocumentResources: procset mpost-minimal");
 ldf:=null_font;
 firstitem:=true;
 for f:=null_font+1 to last_fnum do
@@ -656,7 +689,10 @@ var @!f,ff:font_number; {fonts used in a text node or as loop counters}
 @!ldf:font_number; {the last \.{DocumentFont} listed (otherwise |null_font|)}
 firstitem:boolean; 
 begin
-print_nl("%%DocumentSuppliedResources: procset mpost");
+if internal[procset]>0 then
+  print_nl("%%DocumentSuppliedResources: procset mpost")
+else
+  print_nl("%%DocumentSuppliedResources: procset mpost-minimal");
 ldf:=null_font;
 firstitem:=true;
 for f:=null_font+1 to last_fnum do
@@ -832,7 +868,50 @@ for f:=null_font+1 to last_fnum do
 end
 @z
 
-@x
+@x l. 22468
+@<Print the prologue@>=
+begin if ldf<>null_font then
+  begin for f:=null_font+1 to last_fnum do
+    if font_sizes[f]<>null then
+      begin ps_name_out(font_name[f],true);
+      ps_name_out(font_ps_name[f],true);
+      ps_print(" def");
+      print_ln;
+      end;
+  print("/fshow {exch findfont exch scalefont setfont show}bind def");
+  print_ln;
+  end;
+end
+@y
+@<Print the prologue@>=
+begin 
+if ldf<>null_font then begin 
+  if internal[prologues]>0 then begin
+    for f:=null_font+1 to last_fnum do
+    if font_sizes[f]<>null then
+      begin ps_name_out(font_name[f],true);
+      ps_name_out(font_ps_name[f],true);
+      ps_print(" def");
+      print_ln;
+      end;
+    if internal[procset]=0 then
+      print("/fshow {exch findfont exch scalefont setfont show}bind def");
+    end;
+  end;
+if internal[procset]>0 then begin
+  if (internal[prologues]>0)and(ldf<>null_font) then
+    print_nl("/bd{bind def}bind def/fshow {exch findfont exch scalefont setfont show}bd")
+  else
+    print_nl("/bd{bind def}bind def");
+  print_nl("/hlw{0 dtransform exch truncate exch idtransform pop setlinewidth}bd");
+  print_nl("/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
+  print_nl("/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd/p{closepath}bd/n{newpath}bd");
+  end;
+print_ln;
+end
+@z
+
+@x l. 22547
 @ @<Shift or transform as necessary before outputting text node~|p| at...@>=
 transformed:=(txx_val(p)<>scf)or(tyy_val(p)<>scf)or@|
   (txy_val(p)<>0)or(tyx_val(p)<>0);
