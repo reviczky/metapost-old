@@ -22,7 +22,7 @@
 @d max_given_internal=35
 @y
 @d restore_clip_color=35
-@d procset=36 {wether or not create PostScript command shortcuts}
+@d mpprocset=36 {wether or not create PostScript command shortcuts}
 @d max_given_internal=36
 @z
 
@@ -32,15 +32,15 @@ primitive("truecorners",internal_quantity,true_corners);@/
 @y
 primitive("truecorners",internal_quantity,true_corners);@/
 @!@:true_corners_}{\&{truecorners} primitive@>
-primitive("procset",internal_quantity,procset);@/
-@!@:procset_}{\&{procset} primitive@>
+primitive("mpprocset",internal_quantity,mpprocset);@/
+@!@:mpprocset_}{\&{mpprocset} primitive@>
 @z
 
 @x l. 4521
 int_name[default_color_model]:="defaultcolormodel";
 @y
 int_name[default_color_model]:="defaultcolormodel";
-int_name[procset]:="procset";
+int_name[mpprocset]:="mpprocset";
 @z
 
 @x l. 4892
@@ -187,13 +187,13 @@ end;
 @<Declare the \ps\ output procedures@>=
 procedure ps_print_cmd(@!l:str_number;@!s:str_number);
 begin
-if internal[procset]>0 then begin ps_room(length(s)); print(s); end
+if internal[mpprocset]>0 then begin ps_room(length(s)); print(s); end
 else begin ps_room(length(l)); print(l); end;
 end;
 @#
 procedure print_cmd(@!l:str_number;@!s:str_number);
 begin
-if internal[procset]>0 then print(s) else print(l);
+if internal[mpprocset]>0 then print(s) else print(l);
 end;
 @#
 function mp_char_marked(@!f:font_number;@!c: eight_bits): boolean;
@@ -379,7 +379,7 @@ if (ww<>gs_width) or (adj_wx<>gs_adj_wx) then
     ps_print_cmd(" 0 dtransform exch truncate exch idtransform pop setlinewidth"," hlw");
     end
   else begin 
-    if internal[procset]>unity then begin
+    if internal[mpprocset]>0 then begin
        ps_room(13);
        print_char(" "); 
        print_scaled(ww);
@@ -497,7 +497,7 @@ else begin
 if (internal[prologues]>0) and (last_ps_fnum<last_fnum) then
   read_psname_table;
 print("%%BeginProlog"); print_ln;
-if (internal[prologues]>0)or(internal[procset]>0) then @<Print the prologue@>;
+if (internal[prologues]>0)or(internal[mpprocset]>0) then @<Print the prologue@>;
 print("%%EndProlog");
 print_nl("%%Page: 1 1"); print_ln;
 @<Print any pending specials@>;
@@ -545,12 +545,12 @@ begin
   list_needed_resources;
   print_nl("%%EndComments");
   print_nl("%%BeginProlog");
-  if internal[procset]>0 then
+  if internal[mpprocset]>0 then
     print_nl("%%BeginResource: procset mpost")
   else
     print_nl("%%BeginResource: procset mpost-minimal");
   print_nl("/bd{bind def}bind def/fshow {exch findfont exch scalefont setfont show}bd");
-  if internal[procset]>0 then begin
+  if internal[mpprocset]>0 then begin
     print_nl("/hlw{0 dtransform exch truncate exch idtransform pop setlinewidth}bd");
     print_nl("/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
     print_nl("/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd/p{closepath}bd/n{newpath}bd");
@@ -633,7 +633,7 @@ var @!f,ff:font_number; {fonts used in a text node or as loop counters}
 @!ldf:font_number; {the last \.{DocumentFont} listed (otherwise |null_font|)}
 firstitem:boolean; 
 begin
-if internal[procset]>0 then
+if internal[mpprocset]>0 then
   print_nl("%%DocumentResources: procset mpost")
 else
   print_nl("%%DocumentResources: procset mpost-minimal");
@@ -689,7 +689,7 @@ var @!f,ff:font_number; {fonts used in a text node or as loop counters}
 @!ldf:font_number; {the last \.{DocumentFont} listed (otherwise |null_font|)}
 firstitem:boolean; 
 begin
-if internal[procset]>0 then
+if internal[mpprocset]>0 then
   print_nl("%%DocumentSuppliedResources: procset mpost")
 else
   print_nl("%%DocumentSuppliedResources: procset mpost-minimal");
@@ -894,11 +894,11 @@ if ldf<>null_font then begin
       ps_print(" def");
       print_ln;
       end;
-    if internal[procset]=0 then
+    if internal[mpprocset]=0 then
       print("/fshow {exch findfont exch scalefont setfont show}bind def");
     end;
   end;
-if internal[procset]>0 then begin
+if internal[mpprocset]>0 then begin
   if (internal[prologues]>0)and(ldf<>null_font) then
     print_nl("/bd{bind def}bind def/fshow {exch findfont exch scalefont setfont show}bd")
   else
