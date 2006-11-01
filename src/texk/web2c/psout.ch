@@ -161,6 +161,7 @@ function new_dummy_font: font_number;
 begin
     new_dummy_font := read_font_info("dummy");
 end;
+
 @x
 function round_xn_over_d(@!x:scaled; @!n,@!d:integer):scaled;
 var positive:boolean; {was |x>=0|?}
@@ -530,13 +531,16 @@ end;
 @d applied_reencoding(#)==((font_is_reencoded(#))and
     ((not font_is_subsetted(#))or(internal[prologues]=two)))
 
-@d ps_print_defined_name(#)==ps_print(" /"); print(font_ps_name[#]); 
-      if applied_reencoding(#) then begin ps_print("-");
-      ps_print(font_enc_name[#]); end;
-      if fm_font_slant(#)<>0 then begin ps_print("-");
-      ps_print("Slant"); print_int(fm_font_slant(#)) end;
-      if fm_font_extend(#)<>0 then begin ps_print("-");
-      ps_print("Extend"); print_int(fm_font_extend(#)) end
+@d ps_print_defined_name(#)==ps_print(" /"); 
+      if (font_is_subsetted(#)) then print(fm_font_subset_name(#))
+      else begin print(font_ps_name[#]); 
+        if applied_reencoding(#) then begin ps_print("-");
+        ps_print(font_enc_name[#]); end;
+        if fm_font_slant(#)<>0 then begin ps_print("-");
+        ps_print("Slant"); print_int(fm_font_slant(#)) end;
+        if fm_font_extend(#)<>0 then begin ps_print("-");
+        ps_print("Extend"); print_int(fm_font_extend(#)) end;
+      end
 
 @<Print the improved prologue and setup@>=
 begin 
@@ -948,4 +952,5 @@ print_ln
 @y
 @<Get the first line of input and prepare to start@>;
 mp_init_map_file;
+setjobid(internal[year],internal[month],internal[day],internal[time]);
 @z

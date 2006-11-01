@@ -98,6 +98,23 @@ strnumber fmfontname (int f) {
   return 0;
 }
 
+strnumber fmfontsubsetname (int f) {
+  fm_entry *fm;
+  if (hasfmentry (f)) { 
+    fm = (fm_entry *) mpfontmap[f];
+    if (fm != NULL && (fm->ps_name != NULL)) {
+      if (is_subsetted(fm)) {
+	return maketexstring("some-kind-of-subset");
+      } else {
+	return maketexstring(fm->ps_name);
+      }
+    }
+  }
+  pdftex_fail ("fontmap name problems for font %s",makecstring (fontname[f]));
+  return 0;
+}
+
+
 
 integer fmfontslant (int f) {
   fm_entry *fm;
@@ -197,6 +214,10 @@ boolean dopsfont (fontnumber f)
     if (is_included(fm_cur)) {
       printnl(maketexstring("%%BeginResource: font "));
       flushstr (last_tex_string);
+      if (is_subsetted(fm_cur)) {
+	print(maketexstring(fm_cur->subset_tag));
+	print(maketexstring("-"));
+      }
       print(maketexstring(fm_cur->ps_name));
       flushstr (last_tex_string);
       println();

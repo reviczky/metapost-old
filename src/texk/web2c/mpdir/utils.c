@@ -32,6 +32,11 @@ $Id $
 #include <float.h>              /* for DBL_EPSILON */
 #include "mplib.h"
 
+#define Z_NULL  0  
+
+typedef unsigned char  Byte;
+typedef Byte  Bytef;
+
 #define check_nprintf(size_get, size_want) \
     if ((unsigned)(size_get) >= (unsigned)(size_want)) \
         pdftex_fail ("snprintf failed: file %s, line %d", __FILE__, __LINE__);
@@ -594,4 +599,107 @@ void initversionstring (char **versions)
 {
 }
 
+/* define char_ptr, char_array & char_limit */
+typedef char char_entry;
+define_array (char);
+
+
+void setjobid (int year, int month, int day, int time)
+{
+    char *name_string, *format_string, *s;
+    size_t slen;
+    int i;
+
+    if (job_id_string != NULL)
+        return;
+
+    name_string = xstrdup (makecstring (jobname));
+    format_string = xstrdup (makecstring (memident));
+    slen = SMALL_BUF_SIZE +
+        strlen (name_string) +
+        strlen (format_string) +
+      //strlen (banner) +
+        strlen (versionstring) + strlen (kpathsea_version_string);
+    s = xtalloc (slen, char);
+    /* The Web2c version string starts with a space.  */
+    i = snprintf (s, slen,
+                  "%.4d/%.2d/%.2d %.2d:%.2d %s %s %s %s",
+                  year, month, day, time / 60, time % 60,
+                  name_string, format_string, //ptexbanner,
+                  versionstring, kpathsea_version_string);
+    check_nprintf (i, slen);
+    job_id_string = xstrdup (s);
+    xfree (s);
+    xfree (name_string);
+    xfree (format_string);
+}
+
+
+
+static void fnstr_append (const char *s)
+{
+    size_t l = strlen (s) + 1;
+    alloc_array (char, l, SMALL_ARRAY_SIZE);
+    strcat (char_ptr, s);
+    char_ptr = strend (char_ptr);
+}
+
+int crc32 (int oldcrc, const Byte *buf, int len) {
+  return 23456789;
+}
+
+void make_subset_tag (fm_entry * fm_cur, char **glyph_names, int tex_font)
+{
+    char tag[7];
+    unsigned long crc;
+    int i;
+    size_t l ;
+    if (job_id_string ==NULL)
+      exit;
+    l = strlen (job_id_string) + 1;
+    
+    alloc_array (char, l, SMALL_ARRAY_SIZE);
+    strcpy (char_array, job_id_string);
+    char_ptr = strend (char_array);
+    if (fm_cur->tfm_name != NULL) {
+        fnstr_append (" TFM name: ");
+        fnstr_append (fm_cur->tfm_name);
+    }
+    fnstr_append (" PS name: ");
+    //if (font_keys[FONTNAME_CODE].valid)
+    //    fnstr_append (fontname_buf);
+    //else 
+    if (fm_cur->ps_name != NULL)
+        fnstr_append (fm_cur->ps_name);
+    fnstr_append (" Encoding: ");
+    if (fm_cur->encoding != NULL && (fm_cur->encoding)->name != NULL)
+        fnstr_append ((fm_cur->encoding)->name);
+    else
+        fnstr_append ("built-in");
+    fnstr_append (" CharSet: ");
+    assert (glyph_names != NULL);
+    for (i = 0; i < 256; i++)
+        if (mpcharmarked (tex_font, i) && glyph_names[i] != notdef) {
+            fnstr_append ("/");
+            fnstr_append (glyph_names[i]);
+        }
+    if (fm_cur->charset != NULL) {
+        fnstr_append (" Extra CharSet: ");
+        fnstr_append (fm_cur->charset);
+    }
+    crc = crc32 (0L, Z_NULL, 0);
+    crc = crc32 (crc, (Bytef *) char_array, strlen (char_array));
+    /* we need to fit a 32-bit number into a string of 6 uppercase chars long;
+     * there are 26 uppercase chars ==> each char represents a number in range
+     * 0..25. The maximal number that can be represented by the tag is
+     * 26^6 - 1, which is a number between 2^28 and 2^29. Thus the bits 29..31
+     * of the CRC must be dropped out.
+     */
+    for (i = 0; i < 6; i++) {
+        tag[i] = 'A' + crc % 26;
+        crc /= 26;
+    }
+    tag[6] = 0;
+    fm_cur->subset_tag = xstrdup (tag);
+}
 

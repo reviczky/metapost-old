@@ -56,7 +56,6 @@ extern Boolean shiftlowchars;
 #    define pdfmovechars 0
 #  endif                        /* SHIFTLOWCHARS */
 #  define extra_charset()     dvips_extra_charset
-#  define make_subset_tag(a, b)
 #  define update_subset_tag()
 #  define fixedcontent        true
 
@@ -1321,7 +1320,7 @@ static void t1_subset_ascii_part (int tex_font, fm_entry *fm_cur)
     else
         t1_glyph_names = t1_builtin_glyph_names;
     if (is_included (fm_cur) && is_subsetted (fm_cur)) {
-        make_subset_tag (fm_cur, t1_glyph_names);
+      make_subset_tag (fm_cur, t1_glyph_names, tex_font);
         update_subset_tag ();
     }
     if (t1_encoding == ENC_STANDARD)

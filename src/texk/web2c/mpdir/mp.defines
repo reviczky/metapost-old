@@ -38,7 +38,13 @@ $Id$
 
 @define function fmencodingname();
 @define function fmfontname();
+@define function fmfontsubsetname();
 @define function fmfontslant();
 @define function fmfontextend();
 
 @define function dopsfont();
+
+{ functions from utils.c }
+
+@define procedure setjobid();
+

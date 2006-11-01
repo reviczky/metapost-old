@@ -179,7 +179,7 @@ extern void fb_putchar (eightbits b);
 extern void fb_seek (integer);
 extern void libpdffinish (void);
 extern char *makecfilename (strnumber s);
-extern void make_subset_tag (fm_entry *, char **);
+extern void make_subset_tag (fm_entry *, char **, int);
 extern void pdf_printf (const char *, ...);
 extern void pdf_puts (const char *);
 extern void pdftex_fail (const char *, ...);
