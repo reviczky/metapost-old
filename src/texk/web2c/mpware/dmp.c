@@ -23,8 +23,8 @@
  *  gets modified.
  */
 
-char *banner="% Written by DMP, Version 0.902";	/* first line of output */
-char *term_banner="This is DMP, Version 0.902";
+char *banner="% Written by DMP, Version 0.99";	/* first line of output */
+char *term_banner="This is DMP, Version 0.99";
 
 #include <stdio.h>
 #include <math.h>
@@ -734,7 +734,7 @@ void set_num_char(int f,int c)
 	    vv += (cursize/unit)*shiftv[i];
 	    break;
 	}
-    if (c==0) quit("attempt to typeset an invalid character","","");
+    /* if (c==0) quit("attempt to typeset an invalid character","",""); */
     if (hh-str_h2>=1.0 || str_h2-hh>=1.0 || vv-str_v>=1.0 || str_v-vv>=1.0
 	    || f!=str_f || cursize!=str_size) {
 	if (str_f>=0) finish_last_char();
