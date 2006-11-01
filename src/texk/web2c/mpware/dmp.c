@@ -81,7 +81,7 @@ char *dbname = "trfonts.map";	/* file for table of troff & TFM font names */
 char *adjname = "trchars.adj";	/* file for character shift amounts */
 int lnno = 0;			/* line num. in troff output file (our input) */
 float sizescale;		/* groff font size scaling factor */
-int gflag;			/* non-zero if using groff fonts */
+int gflag = 0;			/* non-zero if using groff fonts */
 
 void quit(char *msg1, char *msg2, char *msg3) 
 {
@@ -1357,7 +1357,8 @@ Primary author of dmp: John Hobby.\n", stdout);
     fprintf(mpxf, "%s\n", banner);
     read_desc();
     read_fmap(dbname);
-    read_char_adj(adjname);
+    if (!gflag)
+      read_char_adj(adjname);
     if (do_page()) {
 	do {
 	    h=0; v=0;
