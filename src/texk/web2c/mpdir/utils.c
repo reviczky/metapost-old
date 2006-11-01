@@ -32,6 +32,10 @@ $Id $
 #include <float.h>              /* for DBL_EPSILON */
 #include "mplib.h"
 
+/* define char_ptr, char_array & char_limit */
+typedef char char_entry;
+define_array (char);
+
 #define Z_NULL  0  
 
 typedef unsigned char  Byte;
@@ -140,7 +144,7 @@ void pdftex_warn (const char *fmt, ...)
 {
     va_list args;
     va_start (args, fmt);
-    fputs ("\nWarning: module writet1 of dvips", stderr);
+    fputs ("\nWarning: module writet1", stderr);
     if (cur_file_name)
         fprintf (stderr, " (file %s)", cur_file_name);
     fputs (": ", stderr);
@@ -151,15 +155,18 @@ void pdftex_warn (const char *fmt, ...)
 }
 
 
+static char *cstrbuf = NULL;
+
 char *makecstring (integer s)
 {
-    static char *cstrbuf = NULL;
     char *p;
     static int allocsize;
     int allocgrow, i, l ;
     if (s==0)
       return "";
     l = strstart[nextstr[s]] - strstart[s];
+	if (l==0)
+	  return "";
     check_buf (l + 1, MAX_CSTRING_LEN);
     if (cstrbuf == NULL) {
         allocsize = l + 1;
@@ -172,7 +179,7 @@ char *makecstring (integer s)
             allocsize += allocgrow;
         else
             allocsize = MAX_CSTRING_LEN;
-		//        cstrbuf = xreallocarray (cstrbuf, char, allocsize);
+        cstrbuf = xrealloc (cstrbuf, sizeof (char) * allocsize);
     }
     p = cstrbuf;
     for (i = 0; i < l; i++)
@@ -599,11 +606,6 @@ void initversionstring (char **versions)
 {
 }
 
-/* define char_ptr, char_array & char_limit */
-typedef char char_entry;
-define_array (char);
-
-
 void setjobid (int year, int month, int day, int time)
 {
     char *name_string, *format_string, *s;
@@ -614,7 +616,8 @@ void setjobid (int year, int month, int day, int time)
         return;
 
     name_string = xstrdup (makecstring (jobname));
-    format_string = xstrdup (makecstring (memident));
+	format_string = xstrdup (makecstring (memident));
+	
     slen = SMALL_BUF_SIZE +
         strlen (name_string) +
         strlen (format_string) +
@@ -623,8 +626,8 @@ void setjobid (int year, int month, int day, int time)
     s = xtalloc (slen, char);
     /* The Web2c version string starts with a space.  */
     i = snprintf (s, slen,
-                  "%.4d/%.2d/%.2d %.2d:%.2d %s %s %s %s",
-                  year, month, day, time / 60, time % 60,
+                  "%.4d/%.2d/%.2d %.2d:%.2d %s %s%s %s",
+                  (year>>16), (month>>16), (day>>16), (time>>16) / 60, (time>>16) % 60,
                   name_string, format_string, //ptexbanner,
                   versionstring, kpathsea_version_string);
     check_nprintf (i, slen);
@@ -644,8 +647,17 @@ static void fnstr_append (const char *s)
     char_ptr = strend (char_ptr);
 }
 
-int crc32 (int oldcrc, const Byte *buf, int len) {
-  return 23456789;
+/* this is not really a true crc32, but it should be just enough to keep
+   subsets prefixes somewhat disjunct */
+unsigned long crc32 (int oldcrc, const Byte *buf, int len) {
+  unsigned long ret;
+  int i;
+  if (oldcrc==0)
+	ret = (23<<24)+(45<<16)+(67<<8)+89;
+  else
+	for (i=0;i<len;i++)
+	  ret = (ret<<2)+buf[i];
+  return ret;
 }
 
 void make_subset_tag (fm_entry * fm_cur, char **glyph_names, int tex_font)
@@ -680,8 +692,10 @@ void make_subset_tag (fm_entry * fm_cur, char **glyph_names, int tex_font)
     assert (glyph_names != NULL);
     for (i = 0; i < 256; i++)
         if (mpcharmarked (tex_font, i) && glyph_names[i] != notdef) {
-            fnstr_append ("/");
-            fnstr_append (glyph_names[i]);
+			if (glyph_names[i]!=NULL) {
+			  fnstr_append ("/");
+			  fnstr_append (glyph_names[i]);
+			}
         }
     if (fm_cur->charset != NULL) {
         fnstr_append (" Extra CharSet: ");

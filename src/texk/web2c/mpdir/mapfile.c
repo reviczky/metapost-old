@@ -320,10 +320,10 @@ int check_fm_entry (fm_entry * fm, boolean warn)
         } else {                /* not a base font */
             /* if no font file given, drop this entry */
             if (!is_fontfile (fm)) {
-                if (warn)
+			  /* if (warn)
                     pdftex_warn
                         ("invalid entry for `%s': font file missing",
-                         fm->tfm_name);
+						fm->tfm_name);*/
                 a += 2;
             }
         }
@@ -336,7 +336,7 @@ int check_fm_entry (fm_entry * fm, boolean warn)
         a += 4;
     }
     if ((fm->slant != 0 || fm->extend != 0) &&
-        (!is_included (fm) || is_truetype (fm))) {
+        (is_truetype (fm))) {
         if (warn)
             pdftex_warn
                 ("invalid entry for `%s': SlantFont/ExtendFont can be used only with embedded T1 fonts",
@@ -928,14 +928,16 @@ void process_map_item (char *s, int type)
 
 void mpmapfile (strnumber t)
 {
-    process_map_item (makecstring (t), MAPFILE);
-    //flushstr (t);
+  char *s = xstrdup(makecstring (t));
+    process_map_item (s, MAPFILE);
+    xfree (s);
 }
 
 void mpmapline (strnumber t)
 {
-    process_map_item (makecstring (t), MAPLINE);
-    //flushstr (t);
+  char *s = xstrdup(makecstring (t));
+    process_map_item (s, MAPLINE);
+    xfree (s);
 }
 
 void mpinitmapfile (void)

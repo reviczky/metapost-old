@@ -532,15 +532,15 @@ end;
     ((not font_is_subsetted(#))or(internal[prologues]=two)))
 
 @d ps_print_defined_name(#)==ps_print(" /"); 
-      if (font_is_subsetted(#)) then print(fm_font_subset_name(#))
-      else begin print(font_ps_name[#]); 
-        if applied_reencoding(#) then begin ps_print("-");
+      if (font_is_subsetted(#))and(font_is_included(#))and(internal[prologues]=three)
+      then print(fm_font_subset_name(#))
+      else print(font_ps_name[#]); 
+      if applied_reencoding(#) then begin ps_print("-");
         ps_print(font_enc_name[#]); end;
-        if fm_font_slant(#)<>0 then begin ps_print("-");
-        ps_print("Slant"); print_int(fm_font_slant(#)) end;
-        if fm_font_extend(#)<>0 then begin ps_print("-");
-        ps_print("Extend"); print_int(fm_font_extend(#)) end;
-      end
+      if fm_font_slant(#)<>0 then begin
+        ps_print("-Slant_"); print_int(fm_font_slant(#)) end;
+      if fm_font_extend(#)<>0 then begin
+        ps_print("-Extend_"); print_int(fm_font_extend(#)) end
 
 @<Print the improved prologue and setup@>=
 begin 
@@ -591,7 +591,6 @@ begin
       end;
     end;
   print_nl("%%EndSetup");
-  print_ln;
   print_nl("%%Page: 1 1");
   print_ln;
 end
@@ -602,10 +601,10 @@ into a definition to be put in the PostScript dictionary.
 
 TODO:  slant and narrowing
 @<Write font definition@>=
-if (applied_reencoding(f))
-   or(fm_font_slant(f)<>0)
-   or(fm_font_extend(f)<>0) then begin
-  ps_name_out(font_ps_name[f],true);
+if (applied_reencoding(f))or(fm_font_slant(f)<>0)or(fm_font_extend(f)<>0) then begin
+  if (font_is_subsetted(f))and(font_is_included(f))and(internal[prologues]=three)
+  then ps_name_out(fm_font_subset_name(f),true)
+  else ps_name_out(font_ps_name[f],true);
   ps_print(" fcp");
   print_ln;
   if applied_reencoding(f) then begin
@@ -679,7 +678,10 @@ for f:=null_font+1 to last_fnum do
       print_nl("%%+ font");
       end;
     print_char(" ");
-    print(font_ps_name[f]);
+	if (internal[prologues]=three)and(font_is_subsetted(f)) then
+       print(fm_font_subset_name(f))
+    else
+       print(font_ps_name[f]);
     ldf:=f;
     found2:
     end;
@@ -738,7 +740,10 @@ if internal[prologues]=three then begin
       print_nl("%%+ font");
       end;
     print_char(" ");
-    print(font_ps_name[f]);
+	if font_is_subsetted(f) then
+       print(fm_font_subset_name(f))
+    else
+       print(font_ps_name[f]);
     ldf:=f;
     found2:
     end;
@@ -749,7 +754,7 @@ end;
 
 @
 @p procedure list_needed_resources;
-label found;
+label found,found2;
 var @!f,ff:font_number; {fonts used in a text node or as loop counters}
 @!ldf:font_number; {the last \.{DocumentFont} listed (otherwise |null_font|)}
 firstitem:boolean; 
@@ -776,8 +781,26 @@ for f:=null_font+1 to last_fnum do
     ldf:=f;
     found:
     end;
-if not firstitem then
+if not firstitem then begin
   print_ln;
+  ldf:=null_font;
+  firstitem:=true;
+  for f:=null_font+1 to last_fnum do
+    if font_sizes[f]<>null then
+      begin
+      for ff:=ldf downto null_font do
+        if font_sizes[ff]<>null then
+          if str_vs_str(font_name[f],font_name[ff])=0 then
+            goto found2;
+      if(internal[prologues]=three)and(font_is_included(f)) then 
+        goto found2;
+      print("%%IncludeResource: font ");
+      print(font_ps_name[f]);
+      print_ln;
+      ldf:=f;
+      found2:
+      end;
+end;
 end;
 
 @
@@ -898,20 +921,22 @@ if ldf<>null_font then begin
       ps_print(" def");
       print_ln;
       end;
-    if internal[mpprocset]=0 then
+    if internal[mpprocset]=0 then begin
       print("/fshow {exch findfont exch scalefont setfont show}bind def");
+      print_ln;
+      end;
     end;
   end;
 if internal[mpprocset]>0 then begin
   if (internal[prologues]>0)and(ldf<>null_font) then
-    print_nl("/bd{bind def}bind def/fshow {exch findfont exch scalefont setfont show}bd")
+    print("/bd{bind def}bind def/fshow {exch findfont exch scalefont setfont show}bd")
   else
     print_nl("/bd{bind def}bind def");
   print_nl("/hlw{0 dtransform exch truncate exch idtransform pop setlinewidth}bd");
   print_nl("/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
   print_nl("/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd/p{closepath}bd/n{newpath}bd");
+  print_ln;
   end;
-print_ln;
 end
 @z
 

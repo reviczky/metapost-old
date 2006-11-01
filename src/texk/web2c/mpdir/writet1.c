@@ -43,7 +43,6 @@ static const char perforce_id[] =
     t1_eexec_encrypt = false
 #  define t1_log(s)           mp_printf(s)
 #  define t1_putchar(c)       fputc(c, bitfile)
-#  define t1_scan_keys()
 #  define embed_all_glyphs(tex_font)  false
 #  undef pdfmovechars
 #  ifdef SHIFTLOWCHARS
@@ -57,6 +56,7 @@ extern Boolean shiftlowchars;
 #  endif                        /* SHIFTLOWCHARS */
 #  define extra_charset()     dvips_extra_charset
 #  define update_subset_tag()
+
 #  define fixedcontent        true
 
 static char *dvips_extra_charset;
@@ -66,7 +66,7 @@ static char *ext_glyph_names[256];
 static char print_buf[PRINTF_BUF_SIZE];
 static int hexline_length;
 const char notdef[] = ".notdef";
-//static size_t last_ptr_index;
+/* static size_t last_ptr_index; */
 
 #include <kpathsea/c-vararg.h>
 #include <kpathsea/c-proto.h>
@@ -297,12 +297,14 @@ void load_enc (char *enc_name, char **enc_encname, char **glyph_names)
         pdftex_fail
             ("invalid encoding vector (a name or `[' missing): `%s'", enc_line);
     }
+	while (*(r-1)==' ') r--; /* strip trailing spaces from encoding name */
     myname = xmalloc(r-enc_line);
     memcpy(myname,enc_line+1,(r-enc_line)-1);
     *(myname+(r-enc_line-1))=0;
     *enc_encname = myname;
-    names_count = 0;
+	while (*r!='[') r++;
     r++;                        /* skip '[' */
+    names_count = 0;
     skip (r, ' ');
     for (;;) {
         while (*r == '/') {
@@ -513,9 +515,10 @@ static void t1_putline (void)
     if (t1_eexec_encrypt) {
         while (p < t1_line_ptr)
             out_eexec_char (eencrypt (*p++));
-    } else
+    } else {
         while (p < t1_line_ptr)
             t1_putchar (*p++);
+	}
 }
 
 static void t1_puts (const char *s)
@@ -526,7 +529,6 @@ static void t1_puts (const char *s)
     t1_putline ();
 }
 
-__attribute__ ((format (printf, 1, 2)))
 static void t1_printf (const char *fmt, ...)
 {
     va_list args;
@@ -538,8 +540,10 @@ static void t1_printf (const char *fmt, ...)
 
 static void t1_init_params (const char *open_name_prefix)
 {
+  if ((open_name_prefix != NULL) && strlen(open_name_prefix)) {
     t1_log (open_name_prefix);
     t1_log (cur_file_name);
+  }
     t1_lenIV = 4;
     t1_dr = 55665;
     t1_er = 55665;
@@ -554,7 +558,9 @@ static void t1_init_params (const char *open_name_prefix)
 
 static void t1_close_font_file (const char *close_name_suffix)
 {
+  if ((close_name_suffix != NULL) && strlen(close_name_suffix)) {
     t1_log (close_name_suffix);
+  }
     t1_close ();
     cur_file_name = NULL;
 }
@@ -589,7 +595,8 @@ static void t1_start_eexec (fm_entry *fm_cur)
         *t1_line_ptr++ = 0;
     }
     t1_eexec_encrypt = true;
-    if (is_included (fm_cur))
+	if (!read_encoding_only)
+	  if (is_included (fm_cur))
         t1_putline ();          /* to put the first four bytes */
 }
 
@@ -718,7 +725,36 @@ static void t1_modify_italic (void)
     font_keys[ITALIC_ANGLE_CODE].valid = true;
 }
 
-static void t1_scan_keys (void)
+#else
+
+static void t1_modify_fm (void)
+{
+  //    t1_line_ptr = eol (t1_line_array);
+}
+
+static void t1_modify_italic (void)
+{
+  //    t1_line_ptr = eol (t1_line_array);
+}
+
+#endif                          /* pdfTeX */
+
+key_entry font_keys[FONT_KEYS_NUM] = {
+    {"Ascent", "Ascender", 0, false},
+    {"CapHeight", "CapHeight", 0, false},
+    {"Descent", "Descender", 0, false},
+    {"FontName", "FontName", 0, false},
+    {"ItalicAngle", "ItalicAngle", 0, false},
+    {"StemV", "StdVW", 0, false},
+    {"XHeight", "XHeight", 0, false},
+    {"FontBBox", "FontBBox", 0, false},
+    {"", "", 0, false},
+    {"", "", 0, false},
+    {"", "", 0, false}
+};
+
+
+static void t1_scan_keys (int tex_font,fm_entry *fm_cur)
 {
     int i, k;
     char *p, *q, *r;
@@ -736,7 +772,7 @@ static void t1_scan_keys (void)
     if (t1_prefix ("/FontType")) {
         p = t1_line_array + strlen ("FontType") + 1;
         if ((i = t1_scan_num (p, 0)) != 1)
-            pdftex_fail ("Type%d fonts unsupported by pdfTeX", i);
+            pdftex_fail ("Type%d fonts unsupported by metapost", i);
         return;
     }
     for (key = font_keys; key - font_keys < MAX_KEY_CODE; key++)
@@ -753,25 +789,26 @@ static void t1_scan_keys (void)
             pdftex_fail ("a name expected: `%s'", t1_line_array);
         }
         r = ++p;                /* skip the slash */
-        for (q = t1_buf_array; *p != ' ' && *p != 10; *q++ = *p++);
-        *q = 0;
-        if (fm_slant (fm_cur) != 0) {
-            sprintf (q, "-Slant_%i", (int) fm_slant (fm_cur));
-            q = strend (q);
-        }
-        if (fm_extend (fm_cur) != 0) {
-            sprintf (q, "-Extend_%i", (int) fm_extend (fm_cur));
-        }
-        strncpy (fontname_buf, t1_buf_array, FONTNAME_BUF_SIZE);
-        /* at this moment we cannot call make_subset_tag() yet, as the encoding
-         * is not read; thus we mark the offset of the subset tag and write it
-         * later */
         if (is_included (fm_cur) && is_subsetted (fm_cur)) {
-            t1_fontname_offset = t1_offset () + (r - t1_line_array);
-            strcpy (t1_buf_array, p);
-            sprintf (r, "ABCDEF+%s%s", fontname_buf, t1_buf_array);
-            t1_line_ptr = eol (r);
-        }
+		    /* */
+    		if (fm_cur->encoding!=NULL && fm_cur->encoding->glyph_names!=NULL)
+               make_subset_tag (fm_cur, fm_cur->encoding->glyph_names, tex_font);
+		    else
+               make_subset_tag (fm_cur, t1_builtin_glyph_names, tex_font);
+			/* save the fontname */
+   		    strncpy (fontname_buf, p, FONTNAME_BUF_SIZE);
+ 			for (i=0; fontname_buf[i] != 10; i++);
+    		fontname_buf[i]=0;
+            alloc_array (t1_line, (r-t1_line_array+6+1+strlen(fontname_buf)+1), T1_BUF_SIZE);
+			strncpy (r, fm_cur->subset_tag , 6);
+			*(r+6) = '-';
+			strncpy (r+7, fontname_buf, strlen(fontname_buf)+1);
+			t1_line_ptr = eol (r);
+        } else {
+		  /* for (q = p; *q != ' ' && *q != 10; *q++);*/
+		  /**q = 0;*/
+          t1_line_ptr = eol (r);
+		}
         return;
     }
     if ((k == STEMV_CODE || k == FONTBBOX1_CODE)
@@ -787,9 +824,7 @@ static void t1_scan_keys (void)
     key->value = t1_scan_num (p, 0);
 }
 
-#endif                          /* pdfTeX */
-
-static void t1_scan_param (void)
+static void t1_scan_param (int tex_font,fm_entry *fm_cur)
 {
     static const char *lenIV = "/lenIV";
     if (!t1_scan || *t1_line_array != '/')
@@ -798,7 +833,7 @@ static void t1_scan_param (void)
         t1_lenIV = t1_scan_num (t1_line_array + strlen (lenIV), 0);
         return;
     }
-    t1_scan_keys ();
+    t1_scan_keys (tex_font,fm_cur);
 }
 
 static void copy_glyph_names (char **glyph_names, int a, int b)
@@ -966,33 +1001,33 @@ static boolean t1_open_fontfile (fm_entry *fm_cur,const char *open_name_prefix)
     return true;
 }
 
-static void t1_scan_only (fm_entry *fm_cur)
+static void t1_scan_only (int tex_font, fm_entry *fm_cur)
 {
     do {
         t1_getline ();
-        t1_scan_param ();
+        t1_scan_param (tex_font, fm_cur);
     }
     while (t1_in_eexec == 0);
     t1_start_eexec (fm_cur);
     do {
         t1_getline ();
-        t1_scan_param ();
+        t1_scan_param (tex_font, fm_cur);
     }
     while (!(t1_charstrings () || t1_subrs ()));
 }
 
-static void t1_include (fm_entry *fm_cur)
+static void t1_include (int tex_font, fm_entry *fm_cur)
 {
     do {
         t1_getline ();
-        t1_scan_param ();
+        t1_scan_param (tex_font, fm_cur);
         t1_putline ();
     }
     while (t1_in_eexec == 0);
     t1_start_eexec (fm_cur);
     do {
         t1_getline ();
-        t1_scan_param ();
+        t1_scan_param (tex_font, fm_cur);
         t1_putline ();
     }
     while (!(t1_charstrings () || t1_subrs ()));
@@ -1156,7 +1191,6 @@ static void cc_init (void)
 #define mark_subr(n)    cs_mark(0, n)
 #define mark_cs(s)      cs_mark(s, 0)
 
-__attribute__ ((format (printf, 3, 4)))
 static void cs_warn (const char *cs_name, int subr, const char *fmt, ...)
 {
     char buf[SMALL_BUF_SIZE];
@@ -1310,7 +1344,7 @@ static void t1_subset_ascii_part (int tex_font, fm_entry *fm_cur)
     int i, j;
     t1_getline ();
     while (!t1_prefix ("/Encoding")) {
-        t1_scan_param ();
+	  t1_scan_param (tex_font, fm_cur);
         t1_putline ();
         t1_getline ();
     }
@@ -1319,11 +1353,13 @@ static void t1_subset_ascii_part (int tex_font, fm_entry *fm_cur)
         t1_glyph_names = external_enc ();
     else
         t1_glyph_names = t1_builtin_glyph_names;
+	/* 
     if (is_included (fm_cur) && is_subsetted (fm_cur)) {
-      make_subset_tag (fm_cur, t1_glyph_names, tex_font);
+	    make_subset_tag (fm_cur, t1_glyph_names, tex_font);
         update_subset_tag ();
     }
-    if (t1_encoding == ENC_STANDARD)
+    */
+    if ((!is_subsetted (fm_cur)) && t1_encoding == ENC_STANDARD)
         t1_puts ("/Encoding StandardEncoding def\n");
     else {
         t1_puts
@@ -1344,7 +1380,7 @@ static void t1_subset_ascii_part (int tex_font, fm_entry *fm_cur)
     }
     do {
         t1_getline ();
-        t1_scan_param ();
+        t1_scan_param (tex_font, fm_cur);
         if (!t1_prefix ("/UniqueID"))   /* ignore UniqueID for subsetted fonts */
             t1_putline ();
     }
@@ -1379,13 +1415,13 @@ static void init_cs_entry (cs_entry * cs)
 
 static void t1_mark_glyphs (int tex_font);
 
-static void t1_read_subrs (void)
+static void t1_read_subrs (int tex_font, fm_entry *fm_cur)
 {
     int i, s;
     cs_entry *ptr;
     t1_getline ();
     while (!(t1_charstrings () || t1_subrs ())) {
-        t1_scan_param ();
+        t1_scan_param (tex_font, fm_cur);
         t1_putline ();
         t1_getline ();
     }
@@ -1402,7 +1438,8 @@ static void t1_read_subrs (void)
             t1_getline ();
         return;
     }
-    subr_tab = xtalloc (subr_size, cs_entry);
+	//    subr_tab = xtalloc (subr_size, cs_entry);
+	subr_tab = (cs_entry *)malloc (subr_size*sizeof (cs_entry));
     for (ptr = subr_tab; ptr - subr_tab < subr_size; ptr++)
         init_cs_entry (ptr);
     subr_array_start = xstrdup (t1_line_array);
@@ -1642,20 +1679,37 @@ static void t1_subset_end (fm_entry *fm_cur)
     get_length3 ();
 }
 
+int t1_updatefm (int f, fm_entry *fm)
+{
+  char *s, *p;
+  read_encoding_only = true;
+  if (!t1_open_fontfile (fm,NULL)) {
+	return 0;
+  }
+  t1_scan_only (f, fm);
+  s = xstrdup(fontname_buf);
+  for (p=s; *p != ' '; *p++);
+  *p=0;
+  fm->ps_name = s;
+  t1_close_font_file ("");
+  return 1;
+}
+
+
 void writet1 (int tex_font, fm_entry *fm_cur)
 {
     read_encoding_only = false;
     if (!is_included (fm_cur)) {        /* scan parameters from font file */
       if (!t1_open_fontfile (fm_cur,"{"))
             return;
-        t1_scan_only (fm_cur);
+   	    t1_scan_only (tex_font, fm_cur);
         t1_close_font_file ("}");
         return;
     }
     if (!is_subsetted (fm_cur)) {       /* include entire font */
       if (!t1_open_fontfile (fm_cur,"<<"))
             return;
-        t1_include (fm_cur);
+	  t1_include (tex_font,fm_cur);
         t1_close_font_file (">>");
         return;
     }
@@ -1666,7 +1720,7 @@ void writet1 (int tex_font, fm_entry *fm_cur)
     t1_start_eexec (fm_cur);
     cc_init ();
     cs_init ();
-    t1_read_subrs ();
+    t1_read_subrs (tex_font, fm_cur);
     t1_subset_charstrings (tex_font);
     t1_subset_end (fm_cur);
     t1_close_font_file (">");

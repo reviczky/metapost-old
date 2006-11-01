@@ -91,7 +91,12 @@ strnumber fmfontname (int f) {
   if (hasfmentry (f)) { 
     fm = (fm_entry *) mpfontmap[f];
     if (fm != NULL && (fm->ps_name != NULL)) {
-      return maketexstring(fm->ps_name);
+	  if (fontisincluded(f)) {
+		/* find the real fontname, and update ps_name and subset_tag if needed */
+		if(!t1_updatefm(f,fm))
+		  pdftex_fail ("font loading problems for font %s",makecstring (fontname[f]));
+	  }
+	  return maketexstring(fm->ps_name);
     }
   }
   pdftex_fail ("fontmap name problems for font %s",makecstring (fontname[f]));
@@ -100,14 +105,17 @@ strnumber fmfontname (int f) {
 
 strnumber fmfontsubsetname (int f) {
   fm_entry *fm;
+  char *s;
   if (hasfmentry (f)) { 
     fm = (fm_entry *) mpfontmap[f];
     if (fm != NULL && (fm->ps_name != NULL)) {
       if (is_subsetted(fm)) {
-	return maketexstring("some-kind-of-subset");
+		s = xmalloc(strlen(fm->ps_name)+8);
+		snprintf(s,strlen(fm->ps_name)+8,"%s-%s",fm->subset_tag,fm->ps_name);
+		return maketexstring(s);
       } else {
-	return maketexstring(fm->ps_name);
-      }
+		return maketexstring(fm->ps_name);
+	  }
     }
   }
   pdftex_fail ("fontmap name problems for font %s",makecstring (fontname[f]));
@@ -152,8 +160,8 @@ void mploadencodings (int lastfnum) {
       if (fm_cur != NULL && 
 	  fm_cur->ps_name != NULL &&
 	  is_reencoded (fm_cur)) {
-	e = fm_cur->encoding;
-	read_enc (e);
+		e = fm_cur->encoding;
+		read_enc (e);
       }
     }
   }
@@ -215,8 +223,10 @@ boolean dopsfont (fontnumber f)
       printnl(maketexstring("%%BeginResource: font "));
       flushstr (last_tex_string);
       if (is_subsetted(fm_cur)) {
-	print(maketexstring(fm_cur->subset_tag));
-	print(maketexstring("-"));
+	    print(maketexstring(fm_cur->subset_tag));
+        flushstr (last_tex_string);
+     	print(maketexstring("-"));
+        flushstr (last_tex_string);
       }
       print(maketexstring(fm_cur->ps_name));
       flushstr (last_tex_string);
