@@ -91,10 +91,13 @@ strnumber fmfontname (int f) {
   if (hasfmentry (f)) { 
     fm = (fm_entry *) mpfontmap[f];
     if (fm != NULL && (fm->ps_name != NULL)) {
-	  if (fontisincluded(f)) {
+	  if (fontisincluded(f) && !fontpsnamefixed[f]) {
 		/* find the real fontname, and update ps_name and subset_tag if needed */
-		if(!t1_updatefm(f,fm))
-		  pdftex_fail ("font loading problems for font %s",makecstring (fontname[f]));
+	    if(t1_updatefm(f,fm)) {
+	      fontpsnamefixed[f] = true;
+	    } else {
+	      pdftex_fail ("font loading problems for font %s",makecstring (fontname[f]));
+	    }
 	  }
 	  return maketexstring(fm->ps_name);
     }

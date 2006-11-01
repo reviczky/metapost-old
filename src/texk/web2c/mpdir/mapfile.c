@@ -533,10 +533,10 @@ static void fm_scan_line ()
                  * no embedding:  'cmr10.pfa'
                  */
                 if (a == '<' || u == '<') {
-                    set_included (fm);
-                    if ((a == '<' && b == 0) || (a == 0 && v == 0))
-                        set_subsetted (fm);
-                    /* otherwise b == '<' (or '[') => no subsetting */
+		  set_included (fm);
+		  if ((a == '<' && b == 0) || (a == 0 && v == 0))
+		    set_subsetted (fm);
+		  /* otherwise b == '<' (or '[') => no subsetting */
                 }
                 set_field (ff_name);
                 u = v = 0;

@@ -785,30 +785,33 @@ static void t1_scan_keys (int tex_font,fm_entry *fm_cur)
     skip (p, ' ');
     if ((k = key - font_keys) == FONTNAME_CODE) {
         if (*p != '/') {
-            remove_eol (p, t1_line_array);
-            pdftex_fail ("a name expected: `%s'", t1_line_array);
+	  remove_eol (p, t1_line_array);
+	  pdftex_fail ("a name expected: `%s'", t1_line_array);
         }
         r = ++p;                /* skip the slash */
-        if (is_included (fm_cur) && is_subsetted (fm_cur)) {
-		    /* */
-    		if (fm_cur->encoding!=NULL && fm_cur->encoding->glyph_names!=NULL)
-               make_subset_tag (fm_cur, fm_cur->encoding->glyph_names, tex_font);
-		    else
-               make_subset_tag (fm_cur, t1_builtin_glyph_names, tex_font);
-			/* save the fontname */
-   		    strncpy (fontname_buf, p, FONTNAME_BUF_SIZE);
- 			for (i=0; fontname_buf[i] != 10; i++);
-    		fontname_buf[i]=0;
-            alloc_array (t1_line, (r-t1_line_array+6+1+strlen(fontname_buf)+1), T1_BUF_SIZE);
-			strncpy (r, fm_cur->subset_tag , 6);
-			*(r+6) = '-';
-			strncpy (r+7, fontname_buf, strlen(fontname_buf)+1);
-			t1_line_ptr = eol (r);
-        } else {
-		  /* for (q = p; *q != ' ' && *q != 10; *q++);*/
-		  /**q = 0;*/
-          t1_line_ptr = eol (r);
-		}
+        if (is_included (fm_cur)) {
+	  /* save the fontname */
+	  strncpy (fontname_buf, p, FONTNAME_BUF_SIZE);
+	  for (i=0; fontname_buf[i] != 10; i++);
+	  fontname_buf[i]=0;
+	  
+	  if(is_subsetted (fm_cur)) {
+	    if (fm_cur->encoding!=NULL && fm_cur->encoding->glyph_names!=NULL)
+	      make_subset_tag (fm_cur, fm_cur->encoding->glyph_names, tex_font);
+	    else
+	      make_subset_tag (fm_cur, t1_builtin_glyph_names, tex_font);
+
+	    alloc_array (t1_line, (r-t1_line_array+6+1+strlen(fontname_buf)+1), T1_BUF_SIZE);
+	    strncpy (r, fm_cur->subset_tag , 6);
+	    *(r+6) = '-';
+	    strncpy (r+7, fontname_buf, strlen(fontname_buf)+1);
+	    t1_line_ptr = eol (r);
+	  } else {
+	    /* for (q = p; *q != ' ' && *q != 10; *q++);*/
+	    /**q = 0;*/
+	    t1_line_ptr = eol (r);
+	  }
+	}
         return;
     }
     if ((k == STEMV_CODE || k == FONTBBOX1_CODE)
@@ -1688,7 +1691,7 @@ int t1_updatefm (int f, fm_entry *fm)
   }
   t1_scan_only (f, fm);
   s = xstrdup(fontname_buf);
-  for (p=s; *p != ' '; *p++);
+  for (p=s; *p != ' ' && *p != 0; *p++);
   *p=0;
   fm->ps_name = s;
   t1_close_font_file ("");

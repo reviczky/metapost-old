@@ -69,8 +69,10 @@ font_info:array[0..font_mem_size] of memory_word;
 @y
 font_info:array[0..font_mem_size] of memory_word;
   {height, width, and depth data}
-@!font_enc_name:array[font_number] of boolean;
+@!font_enc_name:array[font_number] of str_number;
   {encoding names, if any}
+@!font_ps_name_fixed:array[font_number] of boolean;
+  {are the postscript names fixed already? }
 @!mp_font_map: ^fm_entry_ptr; {pointer into AVL tree of font mappings}
 @z
 
@@ -205,7 +207,7 @@ begin b:=char_base[f];
   else
     mp_char_marked:=false;
 end;
-
+ 
 @ The fontmap entries need a typedef
 
 @<Types...@>=
@@ -236,6 +238,7 @@ for i := 1 to 9 do
 mp_font_map:=xmalloc_array(fm_entry_ptr,font_max);
 for i := null_font to font_max do begin
   font_enc_name[i] := 0;
+  font_ps_name_fixed[i] := false;
   mp_font_map[i] := 0;
   end;
 	
@@ -358,6 +361,42 @@ else if q<>h then
   end
 @z
 
+@x
+      print_char("0"+lcap_val(p)); print(" setlinecap");
+@y
+      print_char("0"+lcap_val(p)); print_cmd(" setlinecap"," lc");
+@z
+
+@x
+  print_char("0"+ljoin_val(p)); print(" setlinejoin");
+@y
+  print_char("0"+ljoin_val(p)); print_cmd(" setlinejoin"," lj");
+@z
+
+@x
+  print_scaled(miterlim_val(p)); print(" setmiterlimit");
+@y
+  print_scaled(miterlim_val(p)); print_cmd(" setmiterlimit"," ml");
+@z
+
+@x
+        print(" setrgbcolor");
+@y
+        print_cmd(" setrgbcolor", " R");
+@z
+
+@x
+        print(" setcmykcolor");
+@y
+        print_cmd(" setcmykcolor"," C");
+@z
+
+@x
+        print(" setgray");
+@y
+        print_cmd(" setgray"," B");
+@z
+
 @x l. 21699
 if (ww<>gs_width) or (adj_wx<>gs_adj_wx) then
   begin if adj_wx then
@@ -394,6 +433,73 @@ if (ww<>gs_width) or (adj_wx<>gs_adj_wx) then
   gs_width := ww;
   gs_adj_wx := adj_wx;
   end
+@z
+
+@x
+    begin ps_print(" [] 0 setdash");
+@y
+    begin ps_print_cmd(" [] 0 setdash"," D");
+@z
+
+@x
+  ps_print(" [] 0 setdash")
+@y
+  ps_print_cmd(" [] 0 setdash"," D")
+@z
+
+@x
+  print(" setdash");
+@y
+  print_cmd(" setdash"," d");
+@z
+
+@x
+if fill_also then print_nl("gsave fill grestore");
+@<Issue \ps\ commands to transform the coordinate system@>;
+ps_print(" stroke");
+if transformed then ps_print(" grestore");
+@y
+if internal[mpprocset]=0 then begin
+  if fill_also then print_nl("gsave fill grestore");
+  @<Issue \ps\ commands to transform the coordinate system@>;
+  ps_print(" stroke");
+  if transformed then ps_print(" grestore");
+  end 
+else begin
+  if fill_also then print_nl("I") else print_ln;
+  if (txy<>0)or(tyx<>0) then
+    begin {print_ln;}
+    print(" [");
+    ps_pair_out(txx,tyx);
+    ps_pair_out(txy,tyy);@/
+    ps_print("0 0] t");
+    end
+  else if (txx<>unity)or(tyy<>unity) then
+    begin {print_ln;}
+    ps_pair_out(txx,tyy);
+    print(" s");
+    end;
+  ps_print(" S");
+  if transformed then ps_print(" G");
+end;
+@z
+
+@x
+  begin print_nl("gsave ");
+@y
+  begin print_ln; print_cmd("gsave ","g ");
+@z
+
+@x
+    begin ps_print("gsave ");
+@y
+    begin ps_print_cmd("gsave ","g ");
+@z
+
+@x
+ps_print(" fill");
+@y
+ps_print_cmd(" fill"," F");
 @z
 
 @x l. 22238
@@ -451,7 +557,7 @@ if internal[tracing_output]>0 then print_edges(h," (just shipped out)",true);
 end;
 @y
 procedure ship_out(@!h:pointer); {output edge structure |h|}
-label done,found,found2,found3;
+label done,done2,found,found2,found3;
 var @!p:pointer; {the current graphical object}
 @!q:pointer; {something that |p| points to}
 @!t:integer; {a temporary value}
@@ -486,7 +592,7 @@ if (internal[prologues]=two)or(internal[prologues]=three) then begin
     end; {all cases are enumerated}
     p:=link(p);
     end;
-  print("showpage"); print_ln;
+  print_cmd("showpage","P"); print_ln;
   print("%%EOF"); print_ln;
   a_close(ps_file);
   selector:=non_ps_setting;
@@ -517,7 +623,7 @@ while p<>null do
   end; {all cases are enumerated}
   p:=link(p);
   end;
-print("showpage"); print_ln;
+print_cmd("showpage","P"); print_ln;
 print("%%EOF"); print_ln;
 a_close(ps_file);
 selector:=non_ps_setting;
@@ -526,6 +632,17 @@ if internal[prologues]<=0 then clear_sizes;
 end;
 if internal[tracing_output]>0 then print_edges(h," (just shipped out)",true);
 end;
+
+@ @<Print the procset@>=
+    begin
+    print_nl("/hlw{0 dtransform exch truncate exch idtransform pop setlinewidth}bd");
+    print_nl("/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
+    print_nl("/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd/p{closepath}bd/n{newpath}bd");
+    print_nl("/C{setcmykcolor}bd/B{setgray}bd/R{setrgbcolor}bd/lj{setlinejoin}bd/ml{setmiterlimit}bd");
+    print_nl("/lc{setlinecap}bd/S{stroke}bd/F{fill}bd/g{gsave}bd/G{grestore}bd/s{scale}bd/t{concat}bd");
+    print_nl("/d{setdash}bd/D{[] 0 setdash}bd/P{showpage}bd/I{g F G}bd/w{clip}bd");
+    end
+
 
 @ 
 @d applied_reencoding(#)==((font_is_reencoded(#))and
@@ -554,11 +671,7 @@ begin
   else
     print_nl("%%BeginResource: procset mpost-minimal");
   print_nl("/bd{bind def}bind def/fshow {exch findfont exch scalefont setfont show}bd");
-  if internal[mpprocset]>0 then begin
-    print_nl("/hlw{0 dtransform exch truncate exch idtransform pop setlinewidth}bd");
-    print_nl("/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
-    print_nl("/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd/p{closepath}bd/n{newpath}bd");
-    end;
+  if internal[mpprocset]>0 then @<Print the procset@>;
   print_nl("/fcp{findfont dup length dict begin{1 index/FID ne{def}{pop pop}ifelse}forall}bd");
   print_nl("/fmc{FontMatrix dup length array copy dup dup}bd/fmd{/FontMatrix exch def}bd");
   print_nl("/Amul{4 -1 roll exch mul 1000 div}bd/ExtendFont{fmc 0 get Amul 0 exch put fmd}bd");
@@ -595,12 +708,7 @@ begin
   print_ln;
 end
 
-@ MAYBE: This postscript code is straight from the red book.
-It could be a bit shortened by moving some of the commands
-into a definition to be put in the PostScript dictionary.
-
-TODO:  slant and narrowing
-@<Write font definition@>=
+@ @<Write font definition@>=
 if (applied_reencoding(f))or(fm_font_slant(f)<>0)or(fm_font_extend(f)<>0) then begin
   if (font_is_subsetted(f))and(font_is_included(f))and(internal[prologues]=three)
   then ps_name_out(fm_font_subset_name(f),true)
@@ -871,28 +979,29 @@ for f:=null_font+1 to last_fnum do begin
     end;
 end
 
-
 @ @<Embed fonts that are available@>=
 begin next_size:=0;
 @<Make |cur_fsize| a copy of the |font_sizes| array@>;
 repeat done_fonts:=true;
 for f:=null_font+1 to last_fnum do
   begin if cur_fsize[f]<>null then begin 
-      if internal[prologues]=three then
-        if not dopsfont(f) then begin
-           print_err("Font embedding failed");
-	   error;
-           end;
-      cur_fsize[f]:=link(cur_fsize[f]);
-      end;
+    if internal[prologues]=three then
+       if not dopsfont(f) then
+	  if hasfmentry(f) then begin
+            print_err("Font embedding failed");
+	    error;
+            end;
+    cur_fsize[f]:=link(cur_fsize[f]);
     if cur_fsize[f]<>null then
       begin unmark_font(f); done_fonts:=false; @+end
     end;
+  end;
   if not done_fonts then
     @<Increment |next_size| and apply |mark_string_chars| to all text nodes with
       that size index@>;
   until done_fonts;
 end
+
 @z
 
 @x l. 22468
@@ -932,12 +1041,30 @@ if internal[mpprocset]>0 then begin
     print("/bd{bind def}bind def/fshow {exch findfont exch scalefont setfont show}bd")
   else
     print_nl("/bd{bind def}bind def");
-  print_nl("/hlw{0 dtransform exch truncate exch idtransform pop setlinewidth}bd");
-  print_nl("/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
-  print_nl("/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd/p{closepath}bd/n{newpath}bd");
+  @<Print the procset@>;
   print_ln;
   end;
 end
+@z
+
+@x
+start_clip_code:begin print_nl("gsave ");
+  ps_path_out(path_p(p));
+  ps_print(" clip");
+  print_ln;
+  if internal[restore_clip_color]>0 then
+    unknown_graphics_state(1);
+  end;
+stop_clip_code:begin print_nl("grestore");
+@y
+start_clip_code:begin print_nl(""); print_cmd("gsave ","g ");
+  ps_path_out(path_p(p));
+  ps_print_cmd(" clip"," w");
+  print_ln;
+  if internal[restore_clip_color]>0 then
+    unknown_graphics_state(1);
+  end;
+stop_clip_code:begin print_nl(""); print_cmd("grestore","G");
 @z
 
 @x l. 22547
@@ -960,11 +1087,11 @@ print_ln
 transformed:=(txx_val(p)<>scf)or(tyy_val(p)<>scf)or@|
   (txy_val(p)<>0)or(tyx_val(p)<>0);
 if transformed then
-  begin print("gsave [");
+  begin print_cmd("gsave [", "g [");
   ps_pair_out(make_scaled(txx_val(p),scf),@|make_scaled(tyx_val(p),scf));
   ps_pair_out(make_scaled(txy_val(p),scf),@|make_scaled(tyy_val(p),scf));
   ps_pair_out(tx_val(p),ty_val(p));@/
-  ps_print("] concat 0 0 ");
+  ps_print_cmd("] concat 0 0 ","] t 0 0");
   end
 else begin ps_pair_out(tx_val(p),ty_val(p));
   end;
