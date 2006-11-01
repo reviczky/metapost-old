@@ -27,6 +27,7 @@ char *banner="% Written by DMP, Version 0.99";	/* first line of output */
 char *term_banner="This is DMP, Version 0.99";
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <ctype.h>
 

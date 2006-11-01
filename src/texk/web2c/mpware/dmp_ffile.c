@@ -60,6 +60,12 @@ FILE *fsearch(char *nam, char *ext, int path_type)
 	  path = tfmpath;
 	} else if (path_type == DB_TYPE) {
 	  path = dbpath;
+	} else if (path_type == CHARLIB_TYPE) { 	 
+           path = charpath; 	 
+           /* somewhat sneaky trick to unify 'fsearch' API with 	 
+                  the smallest possible code impact */ 	 
+           ext = nam; 	 
+           nam = "charlib/";
 	} else if (path_type == TRFONTS_TYPE) {
 	  path = trpath;
 	}

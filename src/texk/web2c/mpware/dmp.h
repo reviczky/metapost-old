@@ -6,7 +6,8 @@
 
 #define TEXFONTS_TYPE 1
 #define DB_TYPE 2
-#define TRFONTS_TYPE 3
+#define CHARLIB_TYPE 3
+#define TRFONTS_TYPE 4
 
 extern FILE *fsearch(char *nam, char *ext, int path_type);
 extern void fsearch_init(void);
