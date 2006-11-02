@@ -1,20 +1,22 @@
 /* expand.c: general expansion.
 
-Copyright (C) 1993, 94, 95, 96, 97, 98 Karl Berry & Olaf Weber.
+   Copyright 1993, 94, 95, 96, 97, 98, 05 Karl Berry & Olaf Weber.
 
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Library General Public
-License as published by the Free Software Foundation; either
-version 2 of the License, or (at your option) any later version.
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
 
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Library General Public License for more details.
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
 
-You should have received a copy of the GNU Library General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+*/
 
 #include <kpathsea/config.h>
 
@@ -82,6 +84,7 @@ kpse_expand_kpse_dot P1C(string, path)
 
   for (elt = kpse_path_element (path); elt; elt = kpse_path_element (NULL)) {
     string save_ret = ret;
+    boolean ret_copied = true;
     /* We assume that the !! magic is only used on absolute components.
        Single "." gets special treatment, as does "./" or its equivalent. */
     if (kpse_absolute_p (elt, false) || (elt[0] == '!' && elt[1] == '!')) {
@@ -91,11 +94,16 @@ kpse_expand_kpse_dot P1C(string, path)
 #ifndef VMS
     } else if (elt[0] == '.' && IS_DIR_SEP(elt[1])) {
       ret = concatn (ret, kpse_dot, elt + 1, ENV_SEP_STRING, NULL);
-    } else {
+    } else if (*elt) {
       ret = concatn (ret, kpse_dot, DIR_SEP_STRING, elt, ENV_SEP_STRING, NULL);
 #endif
+    } else {
+      /* omit empty path elements from TEXMFCNF.
+         See http://bugs.debian.org/358330.  */
+      ret_copied = false;
     }
-    free (save_ret);
+    if (ret_copied)
+      free (save_ret);
   }
 
 #ifdef MSDOS
@@ -271,6 +279,7 @@ static str_list_type brace_expand P1C(const_string *, text)
     result = str_list_init();
     partial = str_list_init();
     for (p = *text; *p && *p != '}'; ++p) {
+        /* FIXME: Should be IS_ENV_SEP(*p) */
         if (*p == ENV_SEP || *p == ',') {
             expand_append(&partial, *text, p);
             str_list_concat(&result, partial);

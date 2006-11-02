@@ -3,12 +3,12 @@ version = @KPSEVERSION@
 
 # Add -DNO_DEBUG to disable debugging, for vanishingly better performance.
 
-ac_include ../make/paths.mk
-ac_include ../make/makevars.mk
-ac_include ../make/common.mk
-ac_include ../make/library.mk
-ac_include ../make/programs.mk
-ac_include ../make/texi.mk
+kpse_include ../make/paths.mk
+kpse_include ../make/makevars.mk
+kpse_include ../make/common.mk
+kpse_include ../make/library.mk
+kpse_include ../make/programs.mk
+kpse_include ../make/texi.mk
 
 @MAINT@warn_more = -Wmissing-prototypes -Wwrite-strings -Wshadow
 @MAINT@MAKEINFO_FLAGS := $(MAKEINFO_FLAGS) --no-split
@@ -19,6 +19,9 @@ install_headers = *.h $(srcdir)/*.h
 # Put tex-file.o first, because it's what depends on the paths, and may
 # reduce frustration if the paths are wrong by doing it first.
 
+# the files from error.lo onward only contain actual code when
+# compiled for or under mingw32
+
 objects = tex-file.lo absolute.lo atou.lo cnf.lo concat.lo concat3.lo \
 concatn.lo db.lo debug.lo dir.lo elt-dirs.lo expand.lo extend-fname.lo \
 file-p.lo find-suffix.lo fn.lo fontmap.lo getopt.lo getopt1.lo hash.lo \
@@ -27,7 +30,10 @@ pathsearch.lo proginit.lo progname.lo readable.lo rm-suffix.lo \
 str-list.lo str-llist.lo tex-glyph.lo tex-hush.lo tex-make.lo \
 tilde.lo truncate.lo uppercasify.lo variable.lo version.lo xbasename.lo \
 xcalloc.lo xdirname.lo xfopen.lo xfseek.lo xftell.lo xgetcwd.lo xmalloc.lo \
-xopendir.lo xputenv.lo xrealloc.lo xstat.lo xstrdup.lo $(liblobjs) $(malloc)
+xopendir.lo xputenv.lo xrealloc.lo xstat.lo xstrdup.lo $(liblobjs) $(malloc) \
+error.lo filename.lo home.lo lookcmd.lo string.lo system.lo time.lo user.lo \
+volume.lo
+
 liblobjs = @LTLIBOBJS@
 
 library = kpathsea
@@ -80,6 +86,14 @@ texmf.sed: Makefile
 	echo '/^[% ]*TEXMFLOCAL[ =]/s%\$$TEXMF%$(texmf)%' >>$@
 	echo '/^[% ]*TEXMFDIST[ =]/s%\$$TEXMF%$(texmf)%' >>$@
 	echo '/^[% ]*VARTEXMF[ =]/s%\$$TEXMF%$(texmf)%' >>$@
+	echo '/^[% ]*TEXMFSYSVAR[ =]/s%\$$TEXMF%$(texmf)%' >>$@
+	echo '/^[% ]*TEXMFSYSCONFIG[ =]/s%\$$TEXMF%$(texmf)%' >>$@
+	echo '/^[% ]*TEXMFSYSVAR[ =]/s%$(texmf)MAIN%\$$TEXMFMAIN%' >>$@
+	echo '/^[% ]*TEXMFSYSCONFIG[ =]/s%$(texmf)MAIN%\$$TEXMFMAIN%' >>$@
+	echo '/^[% ]*TEXMFVAR[ =]/s%\$$TEXMF%$(texmf)%' >>$@
+	echo '/^[% ]*TEXMFCONFIG[ =]/s%\$$TEXMF%$(texmf)%' >>$@
+	echo '/^[% ]*TEXMFVAR[ =]/s%$(texmf)MAIN%\$$TEXMFMAIN%' >>$@
+	echo '/^[% ]*TEXMFCONFIG[ =]/s%$(texmf)MAIN%\$$TEXMFMAIN%' >>$@
 	echo '/^[% ]*TEXMFCNF[ =]/s%\$$TEXMF%$(texmf)%' >>$@
 # And fill in the last clause of TEXMFCNF with an absolute path.
 	echo '/^ *TEXMFCNF[ =]/s%@web2c@%$(web2cdir)%' >>$@
@@ -200,13 +214,18 @@ install-data: texmf.cnf kpathsea.info install-man
 	for f in $(install_headers); do \
 	  $(INSTALL_DATA) $$f $(includedir)/kpathsea/; done
 	rm -f $(includedir)/kpathsea/acconfig.h
-	$(POSTINSTALL)
+	$(POST_INSTALL)
 	test -r $(infodir)/dir || $(INSTALL_DATA) $(top_srcdir)/../dir $(infodir)
 	if $(SHELL) -c 'install-info --version' >/dev/null 2>&1; then \
 	  install-info --info-dir=$(infodir) $(infodir)/kpathsea.info; \
 	else true; fi
 
 uninstall-data:
+	$(PRE_UNINSTALL)
+	if $(SHELL) -c 'install-info --version' >/dev/null 2>&1; then \
+	  install-info --delete --info-dir=$(infodir) $(infodir)/kpathsea.info; \
+	else true; fi
+	$(NORMAL_UNINSTALL)
 	rm -f $(infodir)/kpathsea.i*
 #	for f in $(install_headers); do rm -f $(includedir)/`basename $$f`; done
 
@@ -227,7 +246,9 @@ distdir: doc $(library).dvi $(library).h
 # autoheader input file, not an includable C header. Bad name.
 $(library).h: always
 	rm -f $@
-	echo '#include <kpathsea/config.h>' >$@
+	echo '/* This is a generated file */' >$@
+	echo '/* collecting all kpathsea headers. */' >>$@
+	echo '#include <kpathsea/config.h>' >>$@
 	ls -1 *.h \
 	  | grep -v '\(acconfig\|config\|kpathsea\|win32lib\)\.h' \
 	  | sed -e 's,^,#include <kpathsea/,' -e s',$$,>,' >>$@
@@ -235,7 +256,7 @@ $(library).h: always
 always:
 .PHONY: always
 
-ac_include ../make/config.mk
+kpse_include ../make/config.mk
 
 info: $(library).info
 dvi: $(library).dvi
@@ -254,7 +275,7 @@ $(library).info: bugs.texi hier.texi install.texi unixtex.texi
 @MAINT@	$(MAKEINFO) $(one_info) $(MAKEINFO_FLAGS) $< -o $@
 @MAINT@doc: info HIER BUGS INSTALL unixtex.ftp
 
-ac_include ../make/clean.mk
+kpse_include ../make/clean.mk
 
 mostlyclean::
 	rm -f kpsewhich kpsestat kpseaccess kpsereadlink *.lo
@@ -266,7 +287,7 @@ distclean::
 manfiles = kpseaccess.1 kpsestat.1 kpsewhich.1 kpsereadlink.1 \
            mktexlsr.1 mktexmf.1 mktextfm.1 mktexpk.1
 
-ac_include ../make/man.mk
+kpse_include ../make/man.mk
 
-ac_include ../make/rdepend.mk
-ac_include depend.mk
+kpse_include ../make/rdepend.mk
+kpse_include depend.mk
