@@ -13,7 +13,7 @@ dir=libs
 
 # Don't pass --cache-file argument to avoid running different autoconf
 # versions with a common cache.
-for f in configure libs/configure; do
+for f in configure ; do
   sed 's@ac_sub_configure_args --cache-file=.ac_sub_cache_file@ac_sub_configure_args@' < $f > configure_tmp$$
   cat configure_tmp$$ > $f
   rm -f configure_tmp$$
@@ -78,8 +78,6 @@ dir=texk/dvipsk
 dir=texk/gsftopk
 (test -d $dir || exit; cd $dir; echo $dir; autoconf -m ../etc/autoconf)
 dir=texk/ispell
-(test -d $dir || exit; cd $dir; echo $dir; autoconf -m ../etc/autoconf)
-dir=texk/kpathsea
 (test -d $dir || exit; cd $dir; echo $dir; autoconf -m ../etc/autoconf)
 dir=texk/lacheck
 (test -d $dir || exit; cd $dir; echo $dir; autoconf -m ../etc/autoconf)

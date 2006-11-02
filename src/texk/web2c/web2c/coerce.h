@@ -24,7 +24,7 @@
 /* And we use the opportunity to declare a few functions that could not be
    declared in texmfmp.h, because they need typedefs not yet known at that
    point.  */
-extern strnumber getjobname P1H(void);
+extern strnumber getjobname P1H(strnumber);
 
 #ifdef MP
 /* MP defined poolASCIIcode instead of packedASCIIcode, sigh. */
@@ -45,14 +45,10 @@ extern poolpointer makesrcspecial P2H(strnumber, int);
 extern void remembersourceinfo P2H(strnumber, int);
 #endif
 
+#ifdef luaTeX
+#include <luatexdir/luatex.h>
+#else /* luaTeX */
 #ifdef pdfTeX
 #include <pdftexdir/pdftex.h>
 #endif /* pdfTeX */
-
-#ifdef pdfeTeX
-#include <pdfetexdir/pdfetex.h>
-#endif /* pdfeTeX */
-
-#ifdef pdfxTeX
-#include <pdfxtexdir/pdfxtex.h>
-#endif /* pdfxTeX */
+#endif /* luaTeX */

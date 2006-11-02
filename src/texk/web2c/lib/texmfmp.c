@@ -20,10 +20,18 @@
 #include <kpathsea/absolute.h>
 
 #include <time.h> /* For `struct tm'.  */
+#if defined (__MINGW32__)
+#if defined (HAVE_SYS_TIMEB_H)
+#include <sys/timeb.h>
+#elif defined (HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#endif
+#else
 #if defined (HAVE_SYS_TIME_H)
 #include <sys/time.h>
 #elif defined (HAVE_SYS_TIMEB_H)
 #include <sys/timeb.h>
+#endif
 #endif
 
 #if defined(__STDC__)
@@ -38,14 +46,14 @@
    Unfortunately there's no way to get the banner into this code, so
    just repeat the text.  */
 #ifdef TeX
-#if defined (eTeX)
+#if defined(XeTeX)
+#include <xetexdir/xetexextra.h>
+#elif defined (eTeX)
 #include <etexdir/etexextra.h>
 #elif defined (pdfTeX)
 #include <pdftexdir/pdftexextra.h>
 #elif defined (pdfeTeX)
 #include <pdfetexdir/pdfetexextra.h>
-#elif defined (pdfxTeX)
-#include <pdfxtexdir/pdfxtexextra.h>
 #elif defined (Omega)
 #include <omegadir/omegaextra.h>
 #elif defined (eOmega)
@@ -88,7 +96,7 @@
 #define edit_var "MFEDIT"
 #endif /* MF */
 #ifdef MP
-#define BANNER "This is MetaPost, Version 0.902"
+#define BANNER "This is MetaPost, Version 0.901"
 #define COPYRIGHT_HOLDER "AT&T Bell Laboratories"
 #define AUTHOR "John Hobby"
 #define PROGRAM_HELP MPHELP
@@ -104,6 +112,11 @@
 #endif /* MP */
 
 /* The main program, etc.  */
+
+#ifdef XeTeX
+#include "xetexdir/XeTeX_ext.h"
+#endif
+
 
 /* What we were invoked as and with.  */
 char **argv;
@@ -150,7 +163,7 @@ static string get_input_file_name P1H(void);
 static int eightbitp;
 #endif /* Omega || eOmega || Aleph */
 
-#if defined(pdfTeX) || defined(pdfeTeX) || defined(pdfxTeX)
+#if defined(pdfTeX) || defined(pdfeTeX)
 char *ptexbanner;
 #endif
 
@@ -158,6 +171,14 @@ char *ptexbanner;
 /* name of TeX program to pass to makempx */
 static string mpost_tex_program = "";
 #endif
+
+/* Get a true/false value for a variable from texmf.cnf and the environment. */
+static boolean
+texmf_yesno(const_string var)
+{
+  string value = kpse_var_value (var);
+  return value && (*value == 't' || *value == 'y' || *value == '1');
+}
 
 /* The entry point: set up for reading the command line, which will
    happen in `topenin', then call the main body.  */
@@ -174,7 +195,7 @@ maininit P2C(int, ac, string *, av)
   /* Must be initialized before options are parsed.  */
   interactionoption = 4;
 
-#if defined(pdfTeX) || defined(pdfeTeX) || defined(pdfxTeX)
+#if defined(pdfTeX) || defined(pdfeTeX)
   ptexbanner = BANNER;
 #endif
 
@@ -182,7 +203,8 @@ maininit P2C(int, ac, string *, av)
      since we want the --ini option, have to do it before getting into
      the web (which would read the base file, etc.).  */
   parse_options (ac, av);
-  
+  /*TH: perhaps?  if (!user_progname) user_progname = dump_name; */
+
   /* Do this early so we can inspect program_invocation_name and
      kpse_program_name below, and because we have to do this before
      any path searching.  */
@@ -199,11 +221,7 @@ maininit P2C(int, ac, string *, av)
   if (filelineerrorstylep < 0) {
     filelineerrorstylep = 0;
   } else if (!filelineerrorstylep) {
-    string file_line_error_style = kpse_var_value ("file_line_error_style");
-    filelineerrorstylep = (file_line_error_style
-                           && (*file_line_error_style == 't'
-                               || *file_line_error_style == 'y'
-                               || *file_line_error_style == '1'));
+    filelineerrorstylep = texmf_yesno ("file_line_error_style");
   }
 
   /* If no dump default yet, and we're not doing anything special on
@@ -212,11 +230,7 @@ maininit P2C(int, ac, string *, av)
   if (parsefirstlinep < 0) {
     parsefirstlinep = 0;
   } else if (!parsefirstlinep) {
-    string parse_first_line = kpse_var_value ("parse_first_line");
-    parsefirstlinep = (parse_first_line
-                       && (*parse_first_line == 't'
-                           || *parse_first_line == 'y'
-                           || *parse_first_line == '1'));
+    parsefirstlinep = texmf_yesno ("parse_first_line");
   }
   if (parsefirstlinep && (!dump_name || !translate_filename)) {
     parse_first_line (main_input_file);
@@ -256,17 +270,24 @@ maininit P2C(int, ac, string *, av)
   }
   
 #ifdef TeX
-#if !defined(Omega) && !defined(eOmega) && !defined(Aleph)
-  /* Sanity check: -mltex and -enc only work in combination with -ini. */
+  /* Sanity check: -mltex, -enc, -etex only work in combination with -ini. */
   if (!iniversion) {
+#if !defined(Omega) && !defined(eOmega) && !defined(Aleph)
     if (mltexp) {
       fprintf(stderr, "-mltex only works with -ini\n");
     }
+#if !defined(XeTeX)
     if (enctexp) {
       fprintf(stderr, "-enc only works with -ini\n");
     }
-  }
 #endif
+#endif
+#if defined(eTeX) || defined(pdfeTeX) || defined(Aleph) || defined(XeTeX)
+    if (etexp) {
+      fprintf(stderr, "-etex only works with -ini\n");
+    }
+#endif
+  }
 #endif
   
   /* If we've set up the fmt/base default in any of the various ways
@@ -312,11 +333,7 @@ maininit P2C(int, ac, string *, av)
   if (shellenabledp < 0) {
     shellenabledp = 0;
   } else if (!shellenabledp) {
-    string shell_escape = kpse_var_value ("shell_escape");
-    shellenabledp = (shell_escape
-                     && (*shell_escape == 't'
-                         || *shell_escape == 'y'
-                         || *shell_escape == '1'));
+    shellenabledp = texmf_yesno ("shell_escape");
   }
   if (!outputcomment) {
     outputcomment = kpse_var_value ("output_comment");
@@ -355,17 +372,56 @@ topenin P1H(void)
 {
   int i;
 
+#ifdef XeTeX
+  static UFILE termin_file;
+  if (termin == 0) {
+    termin = &termin_file;
+    termin->f = stdin;
+    termin->savedChar = -1;
+    termin->skipNextLF = 0;
+    termin->encodingMode = UTF8;
+    termin->conversionData = 0;
+    inputfile[0] = termin;
+  }
+#endif
+
   buffer[first] = 0; /* In case there are no arguments.  */
 
   if (optind < argc) { /* We have command line arguments.  */
     int k = first;
     for (i = optind; i < argc; i++) {
+#ifdef XeTeX
+      unsigned char *ptr = (unsigned char *)&(argv[i][0]);
+      /* need to interpret UTF8 from the command line */
+      UInt32 rval;
+      while (rval = *(ptr++)) {
+        UInt16 extraBytes = bytesFromUTF8[rval];
+        switch (extraBytes) { /* note: code falls through cases! */
+          case 5: rval <<= 6; if (*ptr) rval += *(ptr++);
+          case 4: rval <<= 6; if (*ptr) rval += *(ptr++);
+          case 3: rval <<= 6; if (*ptr) rval += *(ptr++);
+          case 2: rval <<= 6; if (*ptr) rval += *(ptr++);
+          case 1: rval <<= 6; if (*ptr) rval += *(ptr++);
+          case 0: ;
+        };
+        rval -= offsetsFromUTF8[extraBytes];
+        /* now rval is a USV; if it's >=64K, we need to put surrogates in the buffer */
+        if (rval > 0xFFFF) {
+          rval -= 0x10000;
+          buffer[k++] = 0xd800 + rval / 0x0400;
+          buffer[k++] = 0xdc00 + rval % 0x0400;
+        }
+        else
+          buffer[k++] = rval;
+      }
+#else
       char *ptr = &(argv[i][0]);
       /* Don't use strcat, since in Omega the buffer elements aren't
          single bytes.  */
       while (*ptr) {
         buffer[k++] = *(ptr++);
       }
+#endif
       buffer[k++] = ' ';
     }
     argc = 0;	/* Don't do this again.  */
@@ -385,11 +441,12 @@ topenin P1H(void)
 
   /* One more time, this time converting to TeX's internal character
      representation.  */
-#if !defined(Omega) && !defined(eOmega) && !defined(Aleph)
+#if !defined(Omega) && !defined(eOmega) && !defined(Aleph) && !defined(XeTeX)
   for (i = first; i < last; i++)
     buffer[i] = xord[buffer[i]];
 #endif
 }
+
 
 /* IPC for TeX.  By Tom Rokicki for the NeXT; it makes TeX ship out the
    DVI file in a pipe to TeXView so that the output can be displayed
@@ -584,7 +641,7 @@ ipcpage P1C(int, is_eof)
 
 #if defined (TeX) || defined (MF) || defined (MP)
   /* TCX and Omega get along like sparks and gunpowder. */
-#if !defined(Omega) && !defined(eOmega) && !defined(Aleph)
+#if !defined(Omega) && !defined(eOmega) && !defined(Aleph) && !defined(XeTeX)
 
 /* Return the next number following START, setting POST to the following
    character, as in strtol.  Issue a warning and return -1 if no number
@@ -638,7 +695,7 @@ readtcxfile P1H(void)
     string line;
     unsigned line_count = 0;
     FILE *translate_file = xfopen (translate_filename, FOPEN_R_MODE);
-    while (line = read_line (translate_file)) {
+    while ((line = read_line (translate_file))) {
       int first;
       string start2;
       string comment_loc = strchr (line, '%');
@@ -685,9 +742,55 @@ readtcxfile P1H(void)
     WARNING1 ("Could not open char translation file `%s'", orig_filename);
   }
 }
-#endif /* !Omega && !eOmega && !Aleph */
+#endif /* !Omega && !eOmega && !Aleph && !XeTeX */
 #endif /* TeX || MF || MP [character translation] */
 
+#ifdef XeTeX /* XeTeX handles this differently, and allows odd quotes within names */
+string
+normalize_quotes P2C(const_string, name, const_string, mesg)
+{
+    int quote_char = 0;
+    boolean must_quote = (strchr(name, ' ') != NULL);
+    int len = strlen(name);
+    /* Leave room for quotes and NUL. */
+    string ret;
+    string p;
+    const_string q;
+    for (q = name; *q; q++) {
+        if (*q == ' ') {
+            if (!must_quote) {
+                len += 2;
+                must_quote = true;
+            }
+        }
+        else if (*q == '\"' || *q == '\'') {
+            must_quote = true;
+            if (quote_char == 0)
+                quote_char = '\"' + '\'' - *q;
+            len += 2; /* this could sometimes add length we don't need */
+        }
+    }
+    ret = (string)xmalloc(len + 1);
+    p = ret;
+    if (must_quote) {
+        if (quote_char == 0)
+            quote_char = '\"';
+        *p++ = quote_char;
+    }
+    for (q = name; *q; q++) {
+        if (*q == quote_char) {
+            *p++ = quote_char;
+            quote_char = '\"' + '\'' - quote_char;
+            *p++ = quote_char;
+        }
+        *p++ = *q;
+    }
+    if (quote_char != 0)
+        *p++ = quote_char;
+    *p = '\0';
+    return ret;
+}
+#else
 /* Normalize quoting of filename -- that is, only quote if there is a space,
    and always use the quote-name-quote style. */
 string
@@ -717,6 +820,7 @@ normalize_quotes P2C(const_string, name, const_string, mesg)
     }
     return ret;
 }
+#endif
 
 /* Getting the input filename. */
 string
@@ -726,6 +830,11 @@ get_input_file_name P1H(void)
 
   if (argv[optind] && argv[optind][0] != '&' && argv[optind][0] != '\\') {
     /* Not &format, not \input, so assume simple filename. */    
+#ifdef XeTeX
+    string name = normalize_quotes(argv[optind], "argument");
+    input_file_name = kpse_find_file(argv[optind], INPUT_FORMAT, false);
+    argv[optind] = name;
+#else
     string name = normalize_quotes(argv[optind], "argument");
     boolean quoted = (name[0] == '"');
     if (quoted) {
@@ -740,6 +849,7 @@ get_input_file_name P1H(void)
         name--;
     }
     argv[optind] = name;
+#endif
   }
   return input_file_name;
 }
@@ -773,13 +883,18 @@ static struct option long_options[]
 #endif /* IPC */
 #if !defined(Omega) && !defined(eOmega) && !defined(Aleph)
       { "mltex",                     0, &mltexp, 1 },
+#if !defined(XeTeX)
       { "enc",                       0, &enctexp, 1 },
+#endif /* !XeTeX */
 #endif /* !Omega && !eOmega && !Aleph */
+#if defined (eTeX) || defined(pdfeTeX) || defined(Aleph) || defined(XeTeX)
+      { "etex",                      0, &etexp, 1 },
+#endif /* eTeX || pdfeTeX || Aleph */
       { "output-comment",            1, 0, 0 },
       { "output-directory",          1, 0, 0 },
-#if defined(pdfTeX) || defined(pdfeTeX) || defined(pdfxTeX)
+#if defined(pdfTeX) || defined(pdfeTeX)
       { "output-format",             1, 0, 0 },
-#endif /* pdfTeX or pdfeTeX or pdfxTeX */
+#endif /* pdfTeX or pdfeTeX */
       { "shell-escape",              0, &shellenabledp, 1 },
       { "no-shell-escape",           0, &shellenabledp, -1 },
       { "debug-format",              0, &debugformatfile, 1 },
@@ -797,6 +912,11 @@ static struct option long_options[]
       { "translate-file",            1, 0, 0 },
       { "default-translate-file",    1, 0, 0 },
       { "8bit",                      0, &eightbitp, 1 },
+#if defined(XeTeX)
+      { "no-pdf",                 0, &nopdfoutput, 1 },
+      { "output-driver",          1, 0, 0 },
+      { "papersize",              1, 0, 0 },
+#endif /* XeTeX */
 #endif /* TeX || MF || MP */
 #if defined (TeX) || defined (MF)
       { "mktex",                     1, 0, 0 },
@@ -832,11 +952,22 @@ parse_options P2C(int, argc,  string *, argv)
     if (ARGUMENT_IS ("kpathsea-debug")) {
       kpathsea_debug |= atoi (optarg);
 
+#ifdef XeTeX
+    } else if (ARGUMENT_IS ("papersize")) {
+      papersize = optarg;
+    } else if (ARGUMENT_IS ("output-driver")) {
+      outputdriver = optarg;
+#endif
+
     } else if (ARGUMENT_IS ("progname")) {
       user_progname = optarg;
 
     } else if (ARGUMENT_IS ("jobname")) {
+#ifdef XeTeX
+      job_name = optarg;
+#else
       job_name = normalize_quotes(optarg, "jobname");
+#endif
       
     } else if (ARGUMENT_IS (DUMP_OPTION)) {
       dump_name = optarg;
@@ -893,7 +1024,7 @@ parse_options P2C(int, argc,  string *, argv)
           parse_src_specials_option(optarg);
        }
 #endif /* TeX */
-#if defined(pdfTeX) || defined(pdfeTeX) || defined(pdfxTeX)
+#if defined(pdfTeX) || defined(pdfeTeX)
     } else if (ARGUMENT_IS ("output-format")) {
        pdfoutputoption = 1;
        if (strcmp(optarg, "dvi") == 0) {
@@ -904,7 +1035,7 @@ parse_options P2C(int, argc,  string *, argv)
          WARNING1 ("Ignoring unknown value `%s' for --output-format", optarg);
          pdfoutputoption = 0;
        }
-#endif /* pdfTeX || pdfeTeX || pdfxTeX */
+#endif /* pdfTeX || pdfeTeX */
 #if defined (TeX) || defined (MF) || defined (MP)
     } else if (ARGUMENT_IS ("translate-file")) {
       translate_filename = optarg;
@@ -1084,9 +1215,19 @@ parse_first_line P1C(const_string, filename)
 /* Return true if FNAME is acceptable as a name for \openout, \openin, or
    \input.  */
 
+typedef enum ok_type {
+    ok_reading,
+    ok_writing
+} ok_type;
+
+static const_string ok_type_name[] = {
+    "reading",
+    "writing"
+};
+
 static boolean
-opennameok P3C(const_string, fname, const_string, check_var,
-               const_string, default_choice)
+opennameok P4C(const_string, fname, const_string, check_var,
+               const_string, default_choice, ok_type, action)
 {
   /* We distinguish three cases:
      'a' (any)        allows any file to be opened.
@@ -1113,8 +1254,9 @@ opennameok P3C(const_string, fname, const_string, check_var,
     /* Disallow .rhosts, .login, etc.  Allow .tex (for LaTeX).  */
     if (base[0] == 0 ||
         (base[0] == '.' && !IS_DIR_SEP(base[1]) && !STREQ (base, ".tex"))) {
-      fprintf(stderr, "%s: Not writing to %s (%s = %s).\n",
-              program_invocation_name, fname, check_var, open_choice);
+      fprintf(stderr, "%s: Not %s to %s (%s = %s).\n",
+              program_invocation_name, ok_type_name[action], fname,
+              check_var, open_choice);
       return false;
     }
   }
@@ -1133,24 +1275,34 @@ opennameok P3C(const_string, fname, const_string, check_var,
     if (!texmfoutput || *texmfoutput == '\0'
         || fname != strstr (fname, texmfoutput)
         || !IS_DIR_SEP(fname[strlen(texmfoutput)])) {
-      fprintf(stderr, "%s: Not writing to %s (%s = %s).\n",
-              program_invocation_name, fname, check_var, open_choice);
+      fprintf(stderr, "%s: Not %s to %s (%s = %s).\n",
+              program_invocation_name, ok_type_name[action], fname,
+              check_var, open_choice);
       return false;
     }
   }
   /* For all pathnames, we disallow "../" at the beginning or "/../"
      anywhere.  */
   if (fname[0] == '.' && fname[1] == '.' && IS_DIR_SEP(fname[2])) {
-    fprintf(stderr, "%s: Not writing to %s (%s = %s).\n",
-            program_invocation_name, fname, check_var, open_choice);
+    fprintf(stderr, "%s: Not %s to %s (%s = %s).\n",
+            program_invocation_name, ok_type_name[action], fname,
+            check_var, open_choice);
     return false;
   } else {
-    const_string dotpair = strstr (fname, "..");
-    /* If dotpair[2] == DIR_SEP, then dotpair[-1] is well-defined. */
-    if (dotpair && IS_DIR_SEP(dotpair[2]) && IS_DIR_SEP(dotpair[-1])) {
-      fprintf(stderr, "%s: Not writing to %s (%s = %s).\n",
-              program_invocation_name, fname, check_var, open_choice);
-      return false;
+    /* Check for "/../".  Since more than one characted can be matched
+       by IS_DIR_SEP, we cannot use "/../" itself. */
+    const_string dotpair = strstr(fname, "..");
+    while (dotpair) {
+      /* If dotpair[2] == DIR_SEP, then dotpair[-1] is well-defined,
+         because the "../" case was handled above. */
+      if (IS_DIR_SEP(dotpair[2]) && IS_DIR_SEP(dotpair[-1])) {
+        fprintf(stderr, "%s: Not %s to %s (%s = %s).\n",
+                program_invocation_name, ok_type_name[action], fname,
+                check_var, open_choice);
+        return false;
+      }
+      /* Continue after the dotpair. */
+      dotpair = strstr(dotpair+2, "..");
     }
   }
 
@@ -1161,14 +1313,130 @@ opennameok P3C(const_string, fname, const_string, check_var,
 boolean openinnameok P1C(const_string, fname)
 {
     /* For input default to all. */
-    return opennameok (fname, "openin_any", "a");
+    return opennameok (fname, "openin_any", "a", ok_reading);
 }
 
 boolean openoutnameok P1C(const_string, fname)
 {
     /* For output, default to paranoid. */
-    return opennameok (fname, "openout_any", "p");
+    return opennameok (fname, "openout_any", "p", ok_writing);
 }
+
+/* 
+  piped I/O
+ */
+
+/* The code that implements popen() needs an array for tracking 
+   possible pipe file pointers, because these need to be
+   closed using pclose().
+*/
+
+#if defined(pdfTeX) || defined(pdfeTeX)
+
+static FILE *pipes [] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+                         NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+
+boolean
+open_in_or_pipe P3C(FILE **, f_ptr,  int, filefmt,  const_string, fopen_mode)
+{
+    string fname = NULL;
+    int i; /* iterator */
+    
+    /* opening a read pipe is straightforward, only have to
+       skip past the pipe symbol in the file name. filename
+       quoting is assumed to happen elsewhere (it does :-)) */
+
+    if (shellenabledp && *(nameoffile+1) == '|') {
+      /* the user requested a pipe */
+      *f_ptr = NULL;
+      fname = (string)xmalloc(strlen(nameoffile+1));
+      strcpy(fname,nameoffile+1);
+#if !defined(pdfTeX) && !defined(pdfeTeX)
+      if (fullnameoffile)
+         free (fullnameoffile);
+      fullnameoffile = xstrdup (fname);
+#endif
+      *f_ptr = popen(fname+1,"r");
+      free(fname);
+      for (i=0; i<=15; i++) {
+        if (pipes[i]==NULL) {
+          pipes[i] = *f_ptr;
+          break;
+        }
+      }
+      if (*f_ptr)
+        setvbuf (*f_ptr,(char *)NULL,_IOLBF,0);
+
+      return *f_ptr != NULL;
+    }
+
+    return open_input(f_ptr,filefmt,fopen_mode) ;
+}
+
+
+boolean
+open_out_or_pipe P2C(FILE **, f_ptr,  const_string, fopen_mode)
+{
+    string fname;
+    int i; /* iterator */
+
+    /* opening a write pipe takes a little bit more work, because TeX
+       will perhaps have appended ".tex".  To avoid user confusion as
+       much as possible, this extension is stripped only when the command
+       is a bare word.  Some small string trickery is needed to make
+       sure the correct number of bytes is free()-d afterwards */
+	
+    if (shellenabledp && *(nameoffile+1) == '|') {
+      /* the user requested a pipe */
+      fname = (string)xmalloc(strlen(nameoffile+1));
+      strcpy(fname,nameoffile+1);
+      if (strchr (fname,' ')==NULL && strchr(fname,'>')==NULL) {
+        /* mp and mf currently do not use this code, but it 
+           is better to be prepared */
+        if (STREQ((fname+strlen(fname)-3),"tex"))
+          *(fname+strlen(fname)-4) = 0;
+        *f_ptr = popen(fname+1,"w");
+        *(fname+strlen(fname)) = '.';
+      } else {
+        *f_ptr = popen(fname+1,"w");
+      }
+      free(fname);
+
+      for (i=0; i<=15; i++) {
+        if (pipes[i]==NULL) {
+          pipes[i] = *f_ptr;
+          break;
+        }
+      }
+
+      if (*f_ptr)
+        setvbuf(*f_ptr,(char *)NULL,_IOLBF,0);
+
+      return *f_ptr != NULL;
+    }
+
+    return open_output(f_ptr,fopen_mode);
+}
+
+
+void
+close_file_or_pipe P1C(FILE *, f)
+{
+  int i; /* iterator */
+
+  if (shellenabledp) {
+    /* if this file was a pipe, pclose() it and return */    
+    for (i=0; i<=15; i++) {
+      if (pipes[i] == f) {
+        pclose (f);
+        pipes[i] = NULL;
+        return;
+      }
+    }
+  }
+  close_file(f);
+}
+#endif
 
 /* All our interrupt handler has to do is set TeX's or Metafont's global
    variable `interrupt'; then they will do everything needed.  */
@@ -1250,6 +1518,29 @@ get_date_and_time P4C(integer *, minutes,  integer *, day,
 }
 
 /*
+ Getting a high resolution time.
+ */
+void
+get_seconds_and_micros P2C(integer *, seconds,  integer *, micros)
+{
+#if defined (HAVE_GETTIMEOFDAY)
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  *seconds = tv.tv_sec;
+  *micros  = tv.tv_usec;
+#elif defined (HAVE_FTIME)
+  struct timeb tb;
+  ftime(&tb);
+  *seconds = tb.time;
+  *micros  = tb.millitm*1000;
+#else
+  time_t clock = time((time_t*)NULL);
+  *seconds = clock;
+  *micros  = 0;
+#endif
+}
+
+/*
   Generating a better seed numbers
   */
 integer
@@ -1275,6 +1566,7 @@ getrandomseed()
    to eof.  Otherwise, we return `true' and set last = first +
    length(line except trailing whitespace).  */
 
+#ifndef XeTeX /* for XeTeX, we have a replacement function in XeTeX_ext.c */
 boolean
 input_line P1C(FILE *, f)
 {
@@ -1320,6 +1612,7 @@ input_line P1C(FILE *, f)
 
     return true;
 }
+#endif /* !XeTeX */
 
 /* This string specifies what the `e' option does in response to an
    error message.  */ 
@@ -1345,7 +1638,11 @@ calledit P4C(packedASCIIcode *, filename,
 
   /* Close any open input files, since we're going to kill the job.  */
   for (i = 1; i <= inopen; i++)
+#ifdef XeTeX
+    xfclose (inputfile[i]->f, "inputfile");
+#else
     xfclose (inputfile[i], "inputfile");
+#endif
 
   /* Replace the default with the value of the appropriate environment
      variable or config file value, if it's set.  */
@@ -1575,16 +1872,46 @@ checkpoolpointer (poolpointer poolptr, size_t len)
   }
 }
 
-#if !defined(pdfTeX) && !defined(pdfeTeX) && !defined(pdfxTeX)
-static int
+#if !defined(pdfTeX) && !defined(pdfeTeX)
+#ifndef XeTeX	/* XeTeX uses this from XeTeX_mac.c */
+static
+#endif
+int
 maketexstring(const_string s)
 {
   size_t len;
+#ifdef XeTeX
+  UInt32 rval;
+  unsigned char* cp = (unsigned char*)s;
+#endif
   assert (s != 0);
   len = strlen(s);
-  checkpoolpointer (poolptr, len);
+  checkpoolpointer (poolptr, len); /* in the XeTeX case, this may be more than enough */
+#ifdef XeTeX
+  while (rval = *(cp++)) {
+  UInt16 extraBytes = bytesFromUTF8[rval];
+  switch (extraBytes) { /* note: code falls through cases! */
+    case 5: rval <<= 6; if (*cp) rval += *(cp++);
+    case 4: rval <<= 6; if (*cp) rval += *(cp++);
+    case 3: rval <<= 6; if (*cp) rval += *(cp++);
+    case 2: rval <<= 6; if (*cp) rval += *(cp++);
+    case 1: rval <<= 6; if (*cp) rval += *(cp++);
+    case 0: ;
+  };
+  rval -= offsetsFromUTF8[extraBytes];
+  if (rval > 0xffff) {
+    rval -= 0x10000;
+    strpool[poolptr++] = 0xd800 + rval / 0x0400;
+    strpool[poolptr++] = 0xdc00 + rval % 0x0400;
+  }
+  else
+    strpool[poolptr++] = rval;
+  }
+#else
   while (len-- > 0)
     strpool[poolptr++] = *s++;
+#endif
+
   return (makestring());
 }
 #endif
@@ -1595,10 +1922,12 @@ makefullnamestring()
   return maketexstring(fullnameoffile);
 }
 
+/* Get the job name to be used, which may have been set from the
+   command line. */
 strnumber
-getjobname()
+getjobname(strnumber name)
 {
-    strnumber ret = curname;
+    strnumber ret = name;
     if (job_name != NULL)
       ret = maketexstring(job_name);
     return ret;
@@ -1623,18 +1952,22 @@ compare_paths P2C(const_string, p1, const_string, p2)
   return ret;
 }
 
+#ifdef XeTeX
+#define strstartar strstart
+#endif
+
 string
 gettexstring P1C(strnumber, s)
 {
   poolpointer i, len;
   string name;
-#if !defined(Omega) && !defined(eOmega) && !defined(Aleph)
+#if !defined(Omega) && !defined(eOmega) && !defined(Aleph) && !defined(XeTeX)
   len = strstart[s + 1] - strstart[s];
 #else
   len = strstartar[s + 1 - 65536L] - strstartar[s - 65536L];
 #endif
   name = (string)xmalloc (len + 1);
-#if !defined(Omega) && !defined(eOmega) && !defined(Aleph)
+#if !defined(Omega) && !defined(eOmega) && !defined(Aleph) && !defined(XeTeX)
   strncpy (name, (string)&strpool[strstart[s]], len);
 #else
   /* Don't use strncpy.  The strpool is not made up of chars. */
@@ -1643,6 +1976,10 @@ gettexstring P1C(strnumber, s)
   name[len] = 0;
   return name;
 }
+
+#ifdef XeTeX
+#undef strstartar
+#endif
 
 boolean
 isnewsource P2C(strnumber, srcfilename, int, lineno)
@@ -1748,7 +2085,7 @@ callmakempx P2C(string, mpname,  string, mpxname)
 #if defined (__sun__) || defined (__cplusplus)
 #define NO_MF_ASM
 #endif
-#if defined(WIN32) && !defined(NO_MF_ASM)
+#if defined(WIN32) && !defined(NO_MF_ASM) && !defined(__MINGW32__)
 #include "lib/mfmpw32.c"
 #elif defined (__i386__) && defined (__GNUC__) && !defined (NO_MF_ASM)
 #include "lib/mfmpi386.asm"

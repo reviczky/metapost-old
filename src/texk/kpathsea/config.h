@@ -58,7 +58,7 @@
 #define DEV_NULL "/dev/null"
 #endif
 
-#ifdef WIN32
+#if defined (WIN32) && ! defined(__MINGW32__)
 #define __STDC__ 1
 #endif /* not WIN32 */
 
@@ -85,7 +85,11 @@
   but before "lib.h". FP.
 */
 #ifdef WIN32
+#ifndef __MINGW32__
 #include <win32lib.h>
+#else
+#include <kpathsea/win32lib.h>
+#endif
 #endif
 
 #include <kpathsea/debug.h>    /* Runtime tracing.  */

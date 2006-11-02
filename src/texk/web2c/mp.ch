@@ -1374,8 +1374,10 @@ while ((buffer[k]=" ")or(buffer[k]=tab))and(k<last) do incr(k);
 @z
 
 @x [35.765] Change name of recorder file.
+if job_name=0 then job_name:="mpout";
 pack_job_name(".log");
 @y
+if job_name=0 then job_name:=get_job_name("mpout");
 pack_job_name(".fls");
 recorder_change_filename(stringcast(name_of_file+1));
 pack_job_name(".log");
@@ -1460,7 +1462,7 @@ var j:integer;
       incr(j);
     stop_at_space:=true;
     end_name;
-    job_name:=get_job_name;
+    job_name:=get_job_name(cur_name);
     str_ref[job_name] := max_str_ref;
 @z
 
@@ -1841,7 +1843,7 @@ if (x<0) or (x>256) then goto off_base; {corrupted base file}
 base_engine:=xmalloc_array(text_char, x);
 undump_things(base_engine[0], x);
 base_engine[x-1]:=0; {force string termination, just in case}
-if strcmp(engine_name,stringcast(base_engine)) then
+if strcmp(engine_name, stringcast(base_engine)) then
   begin wake_up_terminal;
   wterm_ln('---! ', stringcast(name_of_file+1), ' was written by ', base_engine);
   libc_free(base_engine);

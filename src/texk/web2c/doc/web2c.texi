@@ -11,8 +11,8 @@ The latest version is available from ftp://ftp.tug.org/tex/texinfo.tex.}
 \fi
 @end tex
 
-@set version 7.5.3
-@set month-year August 2004
+@set version 7.5.5
+@set month-year June 2005
 
 @c Define new indices for commands in auxiliary files, filenames, and options.
 @defcodeindex cm
@@ -1004,11 +1004,14 @@ to suffice.)
 The program accepts the following options, as well as the standard
 @samp{-help} and @samp{-version} (@pxref{Common options}):
 @table @samp
-@item -[no]-file-line-error
+@item -enc
+@itemx -[no]-file-line-error
 @itemx -fmt=@var{fmtname}
 @itemx -halt-on-error
 @itemx -ini
 @itemx -interaction=@var{string}
+@itemx -ipc
+@itemx -ipc-start
 @itemx -jobname=@var{string}
 @itemx -kpathsea-debug=@var{number}
 @itemx -[no]parse-first-line
@@ -1415,16 +1418,17 @@ TCX files were chosen because they follow Knuth's original ideas for
 the use of the @samp{xchr} and @samp{xord} tables.  He ventured that
 these would be changed in the WEB source in order to adjust the actual
 version to a given environment.  It turns out, however, that
-recompiling the WEB sources is not as simple a task as Knuth
-predicted; therefore, TCX files, providing the possibility of changing
-of the conversion tables on on-the-fly, has been implemented instead.
+recompiling the WEB sources is not as simple a task as Knuth may have
+imagined; therefore, TCX files, providing the possibility of changing
+of the conversion tables on on-the-fly, have been implemented instead.
 
 This approach limits the portability of @TeX{} documents, as some
 implementations do not support it (or use a different method for
-input-internal reencoding).  It may also be problematic to determine the
-encoding to use for a @TeX{} document of unknown provenance; in the
-worst case, failure to do so correctly may result in subtle errors in
-the typeset output.
+input-internal reencoding).  It may also be problematic to determine
+the encoding to use for a @TeX{} document of unknown provenance; in
+the worst case, failure to do so correctly may result in subtle errors
+in the typeset output.  But we feel the benefits outweigh these
+disadvantages.
 
 This is entirely independent of the ML@TeX{} extension (@pxref{MLTeX}):
 whereas a TCX file defines how an input keyboard character is mapped to
@@ -1458,6 +1462,7 @@ Initial @TeX{} (@pxref{Initial TeX,,Initial @TeX{}}) ignores TCX files.
 
 @flindex il1-t1.tcx
 @flindex il2-t1.tcx
+@flindex empty.tcx
 @cindex Cork encoding and ISO input
 @cindex T1 encoding and ISO input
 The Web2c distribution comes with a number of TCX files.  Two
@@ -1465,6 +1470,20 @@ important ones are @file{il1-t1.tcx} and @file{il2-t1.tcx}, which
 support ISO Latin 1 and ISO Latin 2, respectively, with Cork-encoded
 fonts (a.k.a.@ the @LaTeX{} T1 encoding).  TCX files for Czech,
 Polish, and Slovak are also provided.
+
+One other notable TCX file is @file{empty.tcx}, which is, well,
+empty.  Its purpose is to reset Web2C's behavior to the default (only
+visible ASCII being printable, as described below) when a format was
+dumped with another TCX being active---which is in fact the case for
+everything but plain @TeX{} in the TeX Live and other distributions.
+Thus:
+
+@example
+latex somefile8.tex
+@result{} terminal etc. output with 8-bit chars
+latex --translate-file=empty.tcx somefile8.tex
+@result{} terminal etc. output with ^^ notation
+@end example
 
 @cindex syntax of TCX files
 Syntax of TCX files:
@@ -1510,13 +1529,12 @@ definition that counts.
 @cindex printable characters, specifying
 @kindex ^^ @r{notation, avoiding}
 Finally, here's what happens: when @TeX{} sees an input character with
-code @var{src}, it 1) changes @var{src} to @var{dest}; and 2) makes code
-the @var{dest} ``printable'', i.e., printed as-is in diagnostics and the
-log file instead of in @samp{^^} notation.
+code @var{src}, it 1) changes @var{src} to @var{dest}; and 2) makes the
+@var{dest} code ``printable'', i.e., printed as-is in diagnostics and the
+log file rather than in @samp{^^} notation.
 
 By default, no characters are translated, and character codes between 32
-and 126 inclusive (decimal) are printable.  It is not possible to make
-these (or any) characters unprintable.
+and 126 inclusive (decimal) are printable.
 
 Specifying translations for the printable ASCII characters (codes
 32--127) will yield unpredictable results.  Additionally you shouldn't
@@ -1536,16 +1554,17 @@ considered printable by default.  If you specify both the @samp{-8bit}
 option and a TCX file, then the TCX can set specific characters to be
 non-printable.
 
-Both the active TCX encoding and whether characters are printable are
-saved in the dump files (like @file{tex.fmt}).  So by giving these
-options in combination with @samp{-ini} you set the defaults seen by
-anyone who uses the resulting dump file.
+Both the specified TCX encoding and whether characters are printable
+are saved in the dump files (like @file{tex.fmt}).  So by giving these
+options in combination with @samp{-ini}, you control the defaults seen
+by anyone who uses the resulting dump file.
 
 When loading a dump, if the @samp{-8bit} option was given, then all
 characters become printable by default.
 
 When loading a dump, if a TCX file was specified, then the TCX data from
 the dump is ignored and the data from the file used instead.
+
 
 @node patgen invocation
 @subsection Patgen: Creating hyphenation patterns
@@ -2277,7 +2296,7 @@ supported) and a number of other subsidiary programs, described below.
 * Initial MetaPost::            Making mems.
 * makempx invocation::          Create MPX files for labels.
 * dvitomp invocation::          DVI-to-MPX translation.
-* dmp invocation::              Troff-to-MPX translation.
+* dmp invocation::              Ditroff-to-MPX translation.
 * mpto invocation::             Extracting labels from MetaPost programs.
 * newer invocation::            Is one file newer than another?
 @end menu
@@ -2377,7 +2396,10 @@ enviroment variable @code{TEX} to @samp{latex} (@pxref{makempx
 invocation}).
 
 @var{tex-input} need not be specifically @TeX{} input; it could also be
-Troff.  
+Troff.  In that case, you will need the @samp{-m pictures} Troff macro
+package (unfortunately absent from many Troff implementations), or an
+equivalent such as the @samp{-m pspic} macros from GNU groff described
+in grops(1).
 
 Other typesetters can be supported with no change to MetaPost itself;
 only MakeMPX needs to be updated.
@@ -2549,7 +2571,7 @@ is prepended to the input from the MetaPost file.
 @item
 @cindex DVItoMP, invoked by MakeMPX
 @cindex DMP, invoked by MakeMPX
-The typesetter output (a DVI file in the case of @TeX{}, troff output
+The typesetter output (a DVI file in the case of @TeX{}, Ditroff output
 for Troff) is translated back to MetaPost, by DVItoMP (@pxref{dvitomp
 invocation}) or DMP (@pxref{dmp invocation}) respectively.
 @end enumerate
@@ -2610,10 +2632,10 @@ If you use @LaTeX{}, set this to @code{latex}, and supply an appropriate
 @code{verbatimtex} header in the MP source (@pxref{mpost invocation}).
 
 @item TROFF
-Likewise, for Troff; default is @samp{'eqn -Tps -d\$\$ | troff -Tps'}.  You
-may need to replace @samp{-Tps} by @samp{-T@var{term}}, where
+Likewise, for Troff; default is @samp{'eqn -d\$\$ | troff -Tpost'}.  You
+may need to replace @samp{-Tpost} by @samp{-T@var{term}}, where
 @var{term} is the PostScript device name for your Troff implementation,
-e.g., @samp{post} or @samp{psc}; see troff(1).
+e.g., @samp{ps} or @samp{psc}; see troff(1).
 
 If you change this, you will also need to set the @code{TRFONTS}
 environment variable or configuration value to point to the appropriate
@@ -2647,33 +2669,33 @@ options}).
 
 
 @node dmp invocation
-@section DMP: Troff to MPX conversion
+@section DMP: Ditroff to MPX conversion
 
 @pindex DMP
-@cindex troff output, converting to MPX
-@cindex MPX files, creating from troff output
+@cindex ditroff output, converting to MPX
+@cindex MPX files, creating from ditroff output
 
-DMP converts device-independent Troff (troff) output files into
+DMP converts device-independent Troff (ditroff) output files into
 low-level MetaPost commands in a so-called MPX file.  This program is
 generally invoked by MakeMPX (@pxref{makempx invocation}).  Synopsis:
 
 @example
-dmp [@var{troff-file} [@var{mpxfile}]]
+dmp [@var{ditroff-file} [@var{mpxfile}]]
 @end example
 
 @noindent
-If @var{troff-file} is not specified, input comes from standard input;
+If @var{ditroff-file} is not specified, input comes from standard input;
 and if @var{mpxfile} is not specified, output goes to standard output.
 
-@pindex grops
-@findex D @var{c} @r{troff graphics}
-@findex x X @r{troff device control}
-@findex SetColor @r{troff command}
-@findex BeginPath @r{troff command}
-@findex DrawPath @r{troff command}
+@pindex dpost
+@findex D @var{c} @r{ditroff graphics}
+@findex x X @r{ditroff device control}
+@findex SetColor @r{ditroff command}
+@findex BeginPath @r{ditroff command}
+@findex DrawPath @r{ditroff command}
 DMP was written to process the output of a Troff pipeline fed the output
 of @code{mpto -troff} (@pxref{mpto invocation}).  DMP understands all
-the @samp{D@var{c}} graphics functions that @code{grops} does, but it
+the @samp{D@var{c}} graphics functions that @code{dpost} does, but it
 ignores @samp{x X} device control functions such as @samp{x X
 SetColor:@dots{}}, @samp{x X BeginPath:}, and @samp{x X
 DrawPath:@dots{}}.
@@ -2682,10 +2704,24 @@ DrawPath:@dots{}}.
 The available font names are defined in the support file
 @file{trfonts.map}, which DMP looks for along the @code{MPSUPPORT} path.
 
-DMP was written for one particular Troff implementation and later
-changed for groff, thus it unfortunately has many built-in assumptions
-about the output and fonts file formats used by Troff, which may not be
-satisfied in other environments.
+@flindex trchars.adj
+Another support file @file{trchars.adj}, also looked for along the
+@code{MPSUPPORT} path, contains a character adjustment table which
+should reflect the shift amounts found in the standard PostScript
+prologue for Troff and dpost found in the @code{TRFONTS} directory.
+Such an adjustment table is unnecessary for some Troff implementations,
+in which case @file{trchars.adj} should be replaced by an empty
+file---but it must still exist.
+
+
+DMP was written for one particular Troff implementation, and it
+unfortunately has many built-in assumptions about the output and fonts
+file formats used by Troff, which may not be satisfied in other
+environments.  In particular, GNU groff uses some extensions in its file
+formats described in groff_font(5) and groff_out(5) which make its
+output completely unusable for DMP.  On the other hand, the Troff
+version found in Sun Solaris 2.x, and perhaps other systems derived from
+System V R4, works fine with the default settings.
 
 If you run into trouble and want to adapt DMP to other systems,
 you might have to try the following (this is primarily for hackers):
@@ -2693,7 +2729,7 @@ you might have to try the following (this is primarily for hackers):
 @itemize @bullet
 @item
 If DMP complains about a missing font table (e.g., @samp{Cannot find
-TR}), your Troff may not support the device @samp{ps}.
+TR}), your Troff may not support the device @samp{post}.
 
 Check troff(1) for the devices supported by your Troff and set the
 @code{TROFF} environment variable appropriately (see above).  Also,
@@ -2704,10 +2740,12 @@ variable as needed.
 If DMP complains about a missing font description file (e.g., @samp{Font
 TR was not in map file}), your version of Troff may be using internal
 font names different from those in the distributed @file{trfonts.map};
-e.g., R and I instead of TR and TI for Times-Roman and Times-Italic.
+e.g., TR and TI instead of R and I for Times-Roman and Times-Italic.
 
-In this case, you may have to adapt @file{trfonts.map} in the MetaPost
-support directory (@file{texmf/metapost/support} by default).
+@flindex trchars.adj
+In this case, you may have to adapt @file{trfonts.map} and perhaps also
+@file{trchars.adj} in the MetaPost support directory
+(@file{texmf/metapost/support} by default).
 
 @item
 If DMP still complains that it cannot parse the font description files
@@ -2725,7 +2763,8 @@ Revised 1992).  Documentation on the subtle differences in other Troff
 implementation is harder to find except for GNU groff, where it's all
 documented in the above-mentioned groff_font(5) and groff_out(5).
 
-Any contributions to improve the portability of DMP are welcome, of course.
+Any contributions to improve the portability of DMP or to make it work
+with GNU groff are welcome, of course.
 
 @end itemize
 
@@ -2790,20 +2829,27 @@ Surround the MetaPost sections with @TeX{} commands. This is the default.
 Newer compares file modification times.  Synopsis:
 
 @example
-newer @var{src} @var{dependent}
+newer @var{src1} [ @var{src2} ... @var{srcN} ] @var{target}
 @end example
 
 @noindent
-Newer exits successfully if the file @var{src} exists and is older as
-@var{dependent}, i.e., the modification time (mtime) of @var{src} is
-greater than that of @var{dependent}.  @xref{Attribute Meanings,,, libc,
-GNU C Library}.
+Newer exits successfully if the files @var{src1} ... @var{srcN} exist
+and at least one of them is not older than @var{dependent}, i.e., the
+modification time (mtime) of at least one of the source files
+is greater than or the same as that of @var{dependent}.  Newer also
+exits successfully if the file @var{dependent} doesn't exist.
+@xref{Attribute Meanings,,, libc, GNU C Library}.
 
-Although this could be written as a Perl script (see the perlop man
-page) or using the @samp{--full-time} option supported by @code{ls}
-(@pxref{ls invocation,,,coreutils, GNU core utilities}), it seems
-undesirable to depend on such independent, and sadly non-universal,
-programs.
+The program accepts the following option, as well as the standard
+@samp{--help} and @samp{--version} (@pxref{Common options}):
+@table @samp
+@item --quiet
+@opindex --quiet (newer)
+Return result only, do not print any output.
+@item --verbose
+@opindex --verbose (newer)
+List missing source files to STDERR.  This is the default.
+@end table
 
 This is used by MakeMPX (@pxref{makempx invocation}).
 
@@ -4291,14 +4337,12 @@ be modified only through a @file{.ch} file.
 MetaPost-related files, including @file{mp.web} itself, are copyrighted
 under X-like terms; the precise notice is included below.
 
-Finally, almost all of the Kpathsea library is covered by the GNU
-Library General Public License, but part of one file is covered by the
-regular GNU General Public License (@pxref{Introduction,,, kpathsea,
-Kpathsea}).  Therefore, the @emph{binaries} resulting from a standard
-Web2c compilation are also covered by the GPL; so if you (re)distribute
-the binaries, you must also (offer to) distribute the complete source that
-went into those binaries.  See the files @file{COPYING} and
-@file{COPYING.LIB} for complete details on the GPL and LGPL.
+Finally, the Kpathsea library is covered by the GNU Lesser General
+Public License (@pxref{Introduction,,, kpathsea, Kpathsea}).  Therefore,
+the @emph{binaries} resulting from a standard Web2c compilation are also
+covered by the LGPL; so if you (re)distribute the binaries, you must
+also (offer to) distribute the complete source that went into those
+binaries.  See the file @file{LGPL} for complete details on the LGPL.
 
 The following notice must be included by the terms of the MetaPost
 copyright.

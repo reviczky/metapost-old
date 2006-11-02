@@ -2,9 +2,9 @@
 # mostly ripped off from Makefile.in from pdftex
 # $Id $
 
-ac_include ../make/common.mk
-ac_include ../make/programs.mk
-ac_include ../make/library.mk
+kpse_include ../make/common.mk
+kpse_include ../make/programs.mk
+kpse_include ../make/library.mk
 
 kpathsea_srcdir_parent = $(srcdir)/../..
 kpathsea_dir_parent = ../..
@@ -23,7 +23,7 @@ libmpost.a: $(OBJS)
 	$(AR) $(ARFLAGS) $@  $(OBJS)
 	$(RANLIB) $@
 
-ac_include ../make/clean.mk
+kpse_include ../make/clean.mk
 
 clean::
 	rm -f libmpost.a
@@ -34,4 +34,4 @@ depend:
 	    grep -v "^$(CC)\|$(CXX)\|$(AR)\|make\|klibtool" | \
 	    sed 's: [^ ]*/\.\./libs/[^ ]*::g' > $(srcdir)/depend.mk
 
-ac_include mpdir/depend.mk
+kpse_include mpdir/depend.mk
