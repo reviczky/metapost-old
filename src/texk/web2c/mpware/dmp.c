@@ -500,16 +500,17 @@ int scan_desc_line(int f, char *lin)
 	add_to_pool(*lin++);
     add_to_pool('\0');
     while (*lin==' ' || *lin=='\t') lin++;
-    if (*lin=='"')
-	*hfind(s,charcodes[f]) = lastcode;
-    else {
-	(void) get_float_map(lin);
-	(void) get_int(arg_tail);
-	lastcode = get_int_map(arg_tail);
-	if (arg_tail==NULL) return 0;
-	*hfind(s,charcodes[f]) = lastcode;
-	if (lastcode<0 || lastcode>=MAXCHARS) return 0;
-    }
+    if (*lin=='"') {
+        if (lastcode<MAXCHARS)
+        *hfind(s,charcodes[f]) = lastcode;
+    } else {
+        (void) get_float_map(lin);
+        (void) get_int(arg_tail);
+        lastcode = get_int_map(arg_tail);
+        if (arg_tail==NULL) return 0;
+        if (lastcode<MAXCHARS)
+           *hfind(s,charcodes[f]) = lastcode;
+    } 
     return 1;
 }
 
