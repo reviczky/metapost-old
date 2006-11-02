@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
     "    if (i>=spare_size) return 0;\n"
     "    while (l-- > 0) strpool[poolptr++] = *s++;\n"
     "    g = makestring();\n"
+    "    strref[g]= 127;\n"
     "  }\n"
     "  return g;\n"
     "}\n");

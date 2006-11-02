@@ -16,17 +16,20 @@ XCPPFLAGS=-I.. -I$(srcdir)/.. -I../.. -I$(srcdir)/../..
 
 OBJS = mapfile.o avl.o avlstuff.o utils.o writeenc.o writet1.o writefont.o
 
-all: libmpost.a
+all: libmpost.a makecpool
 
 libmpost.a: $(OBJS)
 	rm -f $@
 	$(AR) $(ARFLAGS) $@  $(OBJS)
 	$(RANLIB) $@
 
+makecpool: makecpool.o
+	$(link_command) makecpool.o
+
 kpse_include ../make/clean.mk
 
 clean::
-	rm -f libmpost.a
+	rm -f libmpost.a makecpool
 
 depend:
 	rm -f $(OBJS)

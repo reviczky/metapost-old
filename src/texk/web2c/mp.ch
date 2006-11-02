@@ -551,51 +551,6 @@ end;
   not xprn[k]
 @z
 
-% [4.66] Open the pool file using a path, and can't do string
-% assignments directly.  (`strcpy' and `strlen' work here because
-% `pool_name' is a constant string, and thus ends in a null and doesn't
-% start with a space.)
-@x
-name_of_file:=pool_name; {we needn't set |name_length|}
-if a_open_in(pool_file) then
-@y
-name_length := strlen (pool_name);
-name_of_file := xmalloc_array (ASCII_code, 1 + name_length);
-strcpy (stringcast(name_of_file+1), pool_name); {copy the string}
-if a_open_in (pool_file, kpse_mppool_format) then
-@z
-
-@x [4.66,67,68] Make `MP.POOL' lowercase in messages.
-else  bad_pool('! I can''t read MP.POOL.')
-@y
-else  bad_pool('! I can''t read ', pool_name, '; bad path?')
-@z
-@x
-begin if eof(pool_file) then bad_pool('! MP.POOL has no check sum.');
-@.MP.POOL has no check sum@>
-read(pool_file,m,n); {read two digits of string length}
-@y
-begin if eof(pool_file) then bad_pool('! ', pool_name, ' has no check sum.');
-@.MP.POOL has no check sum@>
-read(pool_file,m); read(pool_file,n); {read two digits of string length}
-@z
-@x
-    bad_pool('! MP.POOL line doesn''t begin with two digits.');
-@y
-    bad_pool('! ', pool_name, ' line doesn''t begin with two digits.');
-@z
-@x
-  bad_pool('! MP.POOL check sum doesn''t have nine digits.');
-@y
-  bad_pool('! ', pool_name, ' check sum doesn''t have nine digits.');
-@z
-@x
-done: if a<>@$ then bad_pool('! MP.POOL doesn''t match; TANGLE me again.');
-@y
-done: if a<>@$ then
-  bad_pool('! ', pool_name, ' doesn''t match; tangle me again (or fix the path).');
-@z
-
 @x [5.69] error_line is a variable, so can't be a subrange array bound
 @!trick_buf:array[0..error_line] of ASCII_code; {circular buffer for
 @y

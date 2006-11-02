@@ -123,13 +123,13 @@ char **argv;
 int argc;
 
 /* If the user overrides argv[0] with -progname.  */
-static string user_progname;
+static string user_progname = NULL;
 
 /* The C version of what might wind up in DUMP_VAR.  */
-static const_string dump_name;
+static const_string dump_name = NULL;
 
 /* The C version of the jobname, if given. */
-static const_string job_name;
+static const_string job_name = NULL;
 
 /* Full source file name. */
 extern string fullnameoffile;
@@ -199,12 +199,13 @@ maininit P2C(int, ac, string *, av)
   ptexbanner = BANNER;
 #endif
 
+  fprintf(stderr,"HA DIE HANS: %s\n",argv[0]);
+
   /* If the user says --help or --version, we need to notice early.  And
      since we want the --ini option, have to do it before getting into
      the web (which would read the base file, etc.).  */
   parse_options (ac, av);
-  /*TH: perhaps?  if (!user_progname) user_progname = dump_name; */
-
+  
   /* Do this early so we can inspect program_invocation_name and
      kpse_program_name below, and because we have to do this before
      any path searching.  */
