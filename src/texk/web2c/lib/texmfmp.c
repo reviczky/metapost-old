@@ -199,8 +199,6 @@ maininit P2C(int, ac, string *, av)
   ptexbanner = BANNER;
 #endif
 
-  fprintf(stderr,"HA DIE HANS: %s\n",argv[0]);
-
   /* If the user says --help or --version, we need to notice early.  And
      since we want the --ini option, have to do it before getting into
      the web (which would read the base file, etc.).  */
