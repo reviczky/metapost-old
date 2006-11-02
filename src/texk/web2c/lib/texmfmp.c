@@ -340,7 +340,7 @@ maininit P2C(int, ac, string *, av)
 #endif /* TeX */
 }
 
-#ifndef WIN32
+#if !defined(WIN32) || defined(__MINGW32__)
 /* The entry point: set up for reading the command line, which will
    happen in `topenin', then call the main body.  */
 
