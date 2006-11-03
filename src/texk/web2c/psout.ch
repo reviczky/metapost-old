@@ -394,7 +394,7 @@ else if q<>h then
 @x
         print(" setgray");
 @y
-        print_cmd(" setgray"," B");
+        print_cmd(" setgray"," G");
 @z
 
 @x l. 21699
@@ -438,19 +438,19 @@ if (ww<>gs_width) or (adj_wx<>gs_adj_wx) then
 @x
     begin ps_print(" [] 0 setdash");
 @y
-    begin ps_print_cmd(" [] 0 setdash"," D");
+    begin ps_print_cmd(" [] 0 setdash"," rd");
 @z
 
 @x
   ps_print(" [] 0 setdash")
 @y
-  ps_print_cmd(" [] 0 setdash"," D")
+  ps_print_cmd(" [] 0 setdash"," rd")
 @z
 
 @x
   print(" setdash");
 @y
-  print_cmd(" setdash"," d");
+  print_cmd(" setdash"," sd");
 @z
 
 @x
@@ -466,7 +466,7 @@ if internal[mpprocset]=0 then begin
   if transformed then ps_print(" grestore");
   end 
 else begin
-  if fill_also then print_nl("I") else print_ln;
+  if fill_also then print_nl("B") else print_ln;
   if (txy<>0)or(tyx<>0) then
     begin {print_ln;}
     print(" [");
@@ -487,13 +487,13 @@ end;
 @x
   begin print_nl("gsave ");
 @y
-  begin print_ln; print_cmd("gsave ","g ");
+  begin print_ln; print_cmd("gsave ","q ");
 @z
 
 @x
     begin ps_print("gsave ");
 @y
-    begin ps_print_cmd("gsave ","g ");
+    begin ps_print_cmd("gsave ","q ");
 @z
 
 @x
@@ -638,9 +638,9 @@ end;
     print_nl("/hlw{0 dtransform exch truncate exch idtransform pop setlinewidth}bd");
     print_nl("/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
     print_nl("/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd/p{closepath}bd/n{newpath}bd");
-    print_nl("/C{setcmykcolor}bd/B{setgray}bd/R{setrgbcolor}bd/lj{setlinejoin}bd/ml{setmiterlimit}bd");
-    print_nl("/lc{setlinecap}bd/S{stroke}bd/F{fill}bd/g{gsave}bd/G{grestore}bd/s{scale}bd/t{concat}bd");
-    print_nl("/d{setdash}bd/D{[] 0 setdash}bd/P{showpage}bd/I{g F G}bd/w{clip}bd");
+    print_nl("/C{setcmykcolor}bd/G{setgray}bd/R{setrgbcolor}bd/lj{setlinejoin}bd/ml{setmiterlimit}bd");
+    print_nl("/lc{setlinecap}bd/S{stroke}bd/F{fill}bd/q{gsave}bd/Q{grestore}bd/s{scale}bd/t{concat}bd");
+    print_nl("/sd{setdash}bd/rd{[] 0 setdash}bd/P{showpage}bd/B{q F Q}bd/W{clip}bd");
     end
 
 
@@ -1057,14 +1057,14 @@ start_clip_code:begin print_nl("gsave ");
   end;
 stop_clip_code:begin print_nl("grestore");
 @y
-start_clip_code:begin print_nl(""); print_cmd("gsave ","g ");
+start_clip_code:begin print_nl(""); print_cmd("gsave ","q ");
   ps_path_out(path_p(p));
-  ps_print_cmd(" clip"," w");
+  ps_print_cmd(" clip"," W");
   print_ln;
   if internal[restore_clip_color]>0 then
     unknown_graphics_state(1);
   end;
-stop_clip_code:begin print_nl(""); print_cmd("grestore","G");
+stop_clip_code:begin print_nl(""); print_cmd("grestore","Q");
 @z
 
 @x l. 22547
@@ -1087,7 +1087,7 @@ print_ln
 transformed:=(txx_val(p)<>scf)or(tyy_val(p)<>scf)or@|
   (txy_val(p)<>0)or(tyx_val(p)<>0);
 if transformed then
-  begin print_cmd("gsave [", "g [");
+  begin print_cmd("gsave [", "q [");
   ps_pair_out(make_scaled(txx_val(p),scf),@|make_scaled(tyx_val(p),scf));
   ps_pair_out(make_scaled(txy_val(p),scf),@|make_scaled(tyy_val(p),scf));
   ps_pair_out(tx_val(p),ty_val(p));@/
