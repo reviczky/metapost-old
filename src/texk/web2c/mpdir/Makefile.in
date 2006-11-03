@@ -14,7 +14,7 @@ CXX = @CXX@
 
 XCPPFLAGS=-I.. -I$(srcdir)/.. -I../.. -I$(srcdir)/../..
 
-OBJS = mapfile.o avl.o avlstuff.o utils.o writeenc.o writet1.o writefont.o
+OBJS = mapfile.o avl.o avlstuff.o utils.o writeenc.o writet1.o writefont.o turningnumber.o
 
 all: libmpost.a makecpool
 

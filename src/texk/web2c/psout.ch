@@ -480,7 +480,7 @@ else begin
     print(" s");
     end;
   ps_print(" S");
-  if transformed then ps_print(" G");
+  if transformed then ps_print(" Q");
 end;
 @z
 

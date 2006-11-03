@@ -52,3 +52,6 @@ $Id$
 
 @define procedure setjobid();
 
+{ function from turningnumber.c }
+
+@define function bezierslope();
