@@ -2044,7 +2044,7 @@ MetaPost interpreter.  The exact rules for choosing among multiple
 intersection points are a little complicated, but it turns out that you
 get the time values $(0.25,1.77)$ in this example.  Smaller time values
 are preferred over larger ones so that $(t_a,t_b)$ is preferred to
-$(t'_a,t'_b)$ whenever $t'_a<t_a$ and $t_b<t'_b$.  When no single
+$(t'_a,t'_b)$ whenever $t_a<t'_a$ and $t_b<t'_b$.  When no single
 alternative minimizes both the $t_a$ and $t_b$ components the $t_a$
 component tends to get priority, but the rules get more complicated when
 there are no integers between $t_a$ and $t'_a$\index{intersection}.
