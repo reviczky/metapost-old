@@ -1067,6 +1067,12 @@ start_clip_code:begin print_nl(""); print_cmd("gsave ","q ");
 stop_clip_code:begin print_nl(""); print_cmd("grestore","Q");
 @z
 
+@x l. 22545
+if transformed then ps_print(" grestore")
+@y
+if transformed then ps_print_cmd(" grestore"," Q")
+@z
+
 @x l. 22547
 @ @<Shift or transform as necessary before outputting text node~|p| at...@>=
 transformed:=(txx_val(p)<>scf)or(tyy_val(p)<>scf)or@|
@@ -1091,11 +1097,11 @@ if transformed then
   ps_pair_out(make_scaled(txx_val(p),scf),@|make_scaled(tyx_val(p),scf));
   ps_pair_out(make_scaled(txy_val(p),scf),@|make_scaled(tyy_val(p),scf));
   ps_pair_out(tx_val(p),ty_val(p));@/
-  ps_print_cmd("] concat 0 0 ","] t 0 0");
+  ps_print_cmd("] concat 0 0 moveto","] t 0 0 m");
   end
 else begin ps_pair_out(tx_val(p),ty_val(p));
+  ps_print_cmd("moveto","m");
   end;
-ps_print_cmd("moveto","m");
 print_ln
 @z
 
