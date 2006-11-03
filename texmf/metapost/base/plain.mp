@@ -5,7 +5,7 @@
 % It contains all the features of plain METAFONT except those specific to
 % font-making.  (See The METAFONTbook by D.E. Knuth).
 % There are also a number of macros for labeling figures, etc.
-string base_name, base_version; base_name="plain"; base_version="0.9";
+string base_name, base_version; base_name="plain"; base_version="0.970";
 
 message "Preloading the plain mem file, version "&base_version;
 
@@ -476,10 +476,10 @@ enddef;
 
 def label = draw thelabel enddef;
 newinternal dotlabeldiam; dotlabeldiam:=3bp;
-vardef dotlabel@#(expr s,z) =
-  label@#(s,z);
+vardef dotlabel@#(expr s,z) text t_ =
+  label@#(s,z) t_;
   interim linecap:=rounded;
-  draw z withpen pencircle scaled dotlabeldiam;
+  draw z withpen pencircle scaled dotlabeldiam t_;
 enddef;
 def makelabel = dotlabel enddef;
 
