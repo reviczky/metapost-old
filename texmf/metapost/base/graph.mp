@@ -156,7 +156,7 @@ enddef;
 % Pair o is the value of p that makes tp (0,0).  This implements the trick
 % whereby using 1 instead of 0 for th the width or height or the setbounds path
 % for a label picture supresses shifting in x or y.
-vardef Gpconv_@#(expr q, o)(text tp) =
+vardef old_Gpconv_@#(expr q, o)(text tp) =
   save p;
   if stroked q:
     path p; p=pathpart q;
@@ -171,6 +171,32 @@ vardef Gpconv_@#(expr q, o)(text tp) =
     addto @# also q shifted ((tp)-llcorner q);
   fi
 enddef;
+% TH: new version from code found at sarovar tracker. This makes 
+%     grdaw clip the result to the window defined with setrange
+vardef Gpconv_@#(expr q, o)(text tp) =
+  save p, tp_geclipt; 
+  picture tp_geclipt; tp_geclipt:=nullpicture;
+  if stroked q:
+    path p; p=pathpart q;
+    %%%  --- SDV added
+      addto tp_geclipt doublepath tp Gwithpc_(q) dashed dashpart q;
+      clip tp_geclipt to origin--(xpart Z_.gdim,0)--Z_.gdim--(0, ypart Z_.gdim)--cycle;
+      addto @# also tp_geclipt;
+    %%%  
+    %%%  --- SDV deleted
+    %%addto @# doublepath tp Gwithpc_(q) dashed dashpart q;
+    %%%
+  elseif filled q:
+    path p; p=pathpart q;
+    addto @# contour tp Gwithpc_(q);
+  else:
+    interim truecorners:=0;
+    pair p; p=llcorner q;
+    if urcorner q<>p: p:=p+Gcmul_(o-p,urcorner q-p); fi
+    addto @# also q shifted ((tp)-llcorner q);
+  fi
+enddef;
+
 def Gcmul_(expr a,b) = (xpart a*xpart b, ypart a*ypart b) enddef;
 
 
