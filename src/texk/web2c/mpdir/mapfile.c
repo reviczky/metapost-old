@@ -319,13 +319,14 @@ int check_fm_entry (fm_entry * fm, boolean warn)
             }
         } else {                /* not a base font */
             /* if no font file given, drop this entry */
-            if (!is_fontfile (fm)) {
-			  /* if (warn)
+            /* if (!is_fontfile (fm)) {
+	         if (warn)
                     pdftex_warn
                         ("invalid entry for `%s': font file missing",
-						fm->tfm_name);*/
+						fm->tfm_name);
                 a += 2;
             }
+	    */
         }
     }
     if (is_truetype (fm) && is_reencoded (fm) && !is_subsetted (fm)) {
