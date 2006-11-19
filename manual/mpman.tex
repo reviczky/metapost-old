@@ -57,7 +57,7 @@
 \VerbatimFootnotes
 \author{John D. Hobby}
 \title{A User's Manual for MetaPost}
-\date{documented version: 0.99}
+\date{documented version: 0.9}
 \maketitle
 
 \begin{abstract}
@@ -190,7 +190,7 @@ if known mpversion:
 fi;
 \end{verbatim}
 $$
-prints `{\tt mp = 0.99}'.  (Incidentally, \texttt{>} does a simple ASCII
+prints `{\tt mp = 0.9}'.  (Incidentally, \texttt{>} does a simple ASCII
 comparison of strings; that works here, because of our particular
 version numbering---until and unless MetaPost reaches version 10!)
 \index{Creator comment in PostScript output}
@@ -894,10 +894,10 @@ tracingonline}\index{tracingonline?\texttt{tracingonline}}\label{Dtonline}.
 
 \subsection{Data Types}
 
-MetaPost actually has ten basic data types\index{types}: numeric,
-pair, path, transform, color, cmykcolor, string, boolean, picture, and
-pen.  Let us consider these one at a time beginning with the numeric
-type.
+MetaPost actually has nine basic data types\index{types}: numeric,
+pair, path, transform,
+color, string, boolean, picture, and pen.  Let us consider these one at a time
+beginning with the numeric type.
 
 Numeric\index{numeric type} quantities in MetaPost are represented in fixed
 point arithmetic\index{arithmetic} as
@@ -948,18 +948,6 @@ specified as {\tt 0.4white}.  There is no restriction against colors
 are snapped back to the $[0,1]$ range when a color is given in a
 PostScript\index{PostScript} output file.  MetaPost solves linear
 equations involving colors the same way it does for pairs.
-
-The cmykcolor\index{cmykcolor type} type is a lot like the color type,
-except that it has four components instead of two.  Like pairs and
-colors, cmyk colors can be added, subtracted, used in mediation
-expressions, or multiplied or divided by numerics.  Cmyk colors have
-cyan, magenta, yellow, and black components.  Because the cmyk color
-model simulates ink on a page, black is {\tt (1,1,1,1)} and white is
-{\tt (0,0,0,0)}.  There is no restriction against cmyk colors
-``blacker than black'' or ``whiter than white'' except all components
-are snapped back to the $[0,1]$ range when a cmykcolor is given in a
-PostScript\index{PostScript} output file.  MetaPost solves linear
-equations involving cmyk colors the same way it does for pairs.
 
 A string\index{string type} represents a sequence of characters.
 String constants\index{string constants} are given
@@ -1464,7 +1452,6 @@ $$
 \label{fig16}
 \end{figure}
 
-%TH CHeck this!
 Figure~\ref{fig16} also illustrates the
 {\tt dotlabel}\index{dotlabel?\texttt{dotlabel}}\label{Ddotlab}
 statement.  This is effectively
@@ -1670,7 +1657,7 @@ Laboratories.}\index{Unix\reg} and other Web2C-based systems, the option
 {\tt etex} and {\tt verbatimtex} $\ldots$ {\tt etex} blocks are in
 troff\index{troff} instead of \TeX.  When using this option, it is a
 good idea to start your MetaPost input file with the assignment {\tt
-prologues:=1}\index{prologues?\texttt{prologues}}. 
+prologues:=1}\index{prologues?\texttt{prologues}}.
 
 \label{Dprologues}
 Setting \ttt{prologues} can be useful with \TeX, too, not just troff.
@@ -1690,23 +1677,10 @@ on the assumption that text comes from PostScript fonts provided by the
 ``environment'', that is, the document viewer or embedded application
 using the output.
 
-%TH rewrite the next par
-\item If you set \ttt{prologues} to~2, the MetaPost
-output files will also be so-called ``structured
-PostScript''\index{PostScript!structured} (EPSF\index{EPSF}), generated
-on the assumption that text comes from PostScript fonts provided by the
-``environment'', that is, the document viewer or embedded application
-using the output.
-
-\item If you set \ttt{prologues} to~3, the MetaPost
-output files will include any PostScript fonts it nows about from
-reading the font map file. Assuming the map file is complete and 
-the font files are  available, the output is completely selfcontained.
-\end{itemize}
-
-The \ttt{prologues} variable is irrelevant when processing MetaPost
+\item The \ttt{prologues} variable is irrelevant when processing MetaPost
 files through the \ttindex{mptopdf} utility (part of the \ConTeXt\
 distribution), because PDF files are by nature stand-alone.
+\end{itemize}
 
 The details on how to include PostScript figures in a paper done in
 \TeX\ or troff are system-dependent.  They can generally be found in
@@ -2868,7 +2842,6 @@ currentpicture}\index{currentpicture?\texttt{currentpicture}}\label{Dcurpic}.
 The syntax for the primitive drawing statements that allow you to
 specify a picture variable is shown in Figure~\ref{sydraw}.
 
-%TH check table!
 \begin{figure}[htp]
 \begin{ctabbing}
 $\tt \descr{addto command} \rightarrow$\\
@@ -2881,12 +2854,6 @@ $\tt \qquad \;|\; addto \descr{picture variable}
 $\tt \descr{option list} \rightarrow \descr{empty} \;|\;
         \descr{drawing option} \descr{option list}$\\
 $\tt \descr{drawing option} \rightarrow withcolor \descr{color expression}$\\
-$\tt \qquad \;|\; withrgbcolor \descr{rgb color expression} \;|\;
-        withcmykcolor \descr{cmyk color expression}$\\
-$\tt \qquad \;|\; withgreyscale \descr{numeric} \;|\;
-        withoutcolor $\\
-$\tt \qquad \;|\; withprescript \descr{string} \;|\;
-        withpostscript \desc{string} $\\
 $\tt \qquad \;|\; withpen \descr{pen expression} \;|\;
         dashed \descr{picture expression}$
 \end{ctabbing}
@@ -4631,9 +4598,6 @@ $$\begin{tabular}{|l|r|l|}
         clearance around contents of a circular or oval box\\\hline
 \tt     day&    --&
         the current day of the month\\\hline
-\tt     defaultcolormodel&    --& %TH fix this! not numeric
-        the color model that is implied when metapost starts:
-        "rgb", "cmyk", "grey", or "none" (default "rgb")\\\hline
 \bx\tt  defaultdx&      \pageref{Ddefaultdx}&
         usual horizontal space around box contents (default 3{\tt bp})\\\hline
 \bx\tt  defaultdy&      \pageref{Ddefaultdy}&
@@ -4652,9 +4616,6 @@ $$\begin{tabular}{|l|r|l|}
         controls miter length as in PostScript\\\hline
 \tt     month&  --&
         the current month (e.g, 3 $\equiv$ March)\\\hline
-\tt     mpprocset&  --&
-        Set to 1 for the inclusion of a metapost procset in the output file, 
-        potentially reducing its size\\\hline
 \tt     pausing&        --&
         ${}>0$ to display lines on the terminal before they are read\\\hline
 \tt     prologues&      \pageref{Dprologues}&
@@ -4686,9 +4647,7 @@ $$\begin{tabular}{|l|r|l|}
 \tt     tracingstats&   \pageref{Dtstats}&
         ${}>0$ to show memory usage at end of job\\\hline
 \tt     tracingtitles&  --&
-        ${}>0$ to show titles online when they appear\\\hline\
-\tt     troffmode&  --& %TH test 
-        Can be used to check whether `-troff' was given as a commandline option\\\hline
+        ${}>0$ to show titles online when they appear\\\hline
 \tt     truecorners&    \pageref{Dtruecorn}&
         ${}>0$ to make {\tt llcorner} etc. ignore {\tt setbounds}\\\hline
 \tt     warningcheck&   \pageref{Dwarncheck}&
@@ -5887,7 +5846,6 @@ troff\index{troff} commands in {\tt mpx}\index{files!mpx?{\tt mpx}}
 files. It should be of no concern to users since {\tt mpx} files are
 generated automatically.
 
-%TH there are many more now
 \begin{table}[htp]
 $$
 \renewcommand{\FancyVerbFormatLine}[1]{\hbox{#1}\strut}
@@ -5943,7 +5901,7 @@ $$
 \end{document}
 
 % Copyright 1990 - 1995 by AT&T Bell Laboratories.
-% Updated 2005--2006 by Taco Hoekwater, Karl Berry, and others.
+% Updated 2005 by Taco Hoekwater, Karl Berry, and others.
 
 % Permission to use, copy, modify, and distribute this software
 % and its documentation for any purpose and without fee is hereby
