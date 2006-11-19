@@ -92,11 +92,15 @@ vardef Fsci_o_(expr x, e) =
 enddef;
 
 
-% Assume prologues=1 implies troff mode.  TeX users who what prologues on
-% should use some other positive value.  The mpx file mechanism requires
-% separate input files here.
-if prologues=1:  input troffnum
-else:  input texnum
+% Assume troffmode=1 implies troff mode. This internal is present
+% since version 0.99, and should be set in the change file.  
+% As a default, fall back to the previous 'prologues=1' test.
+% The mpx file mechanism requires separate input files here.
+if troffmode=1:  input troffnum
+else:  
+  if prologues=1:  input troffnum
+  else:            input texnum
+  fi
 fi
 
 

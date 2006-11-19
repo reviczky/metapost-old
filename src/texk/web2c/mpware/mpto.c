@@ -280,7 +280,7 @@ main(int argc, char **argv)
         exit (0);
     } else if (argc > 1 && (strcmp (argv[1], "--version") == 0
                             || strcmp (argv[1], "-version") == 0)) {
-        printf ("mpto 0.902\n\
+        printf ("mpto 0.99\n\
 This program is in the public domain.\n\
 Primary author of mpto: John Hobby.\n");
         exit (0);

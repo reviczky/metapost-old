@@ -3,7 +3,7 @@
 
 % This is the plain MetaPost base that's look like what's described
 % in The METAFONTbook.
-string base_name, base_version; base_name="mfplain"; base_version="0.9";
+string base_name, base_version; base_name="mfplain"; base_version="0.99";
 
 message "Preloading the plain base, version "&base_version&": preliminaries,";
 

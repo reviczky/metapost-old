@@ -2,6 +2,9 @@
 %
 % This file improves the PostScript output when prologues is 2 or 3.
 % The actual font inclusion is done in C source files.
+%
+% This file also defines the internal |troffmode|, because the old
+% assumption that troff mode equals prologues = 1 is no longer true
 
 @x l. 406
 @d found2=42 {like |found|, when there's more than two per routine}
@@ -23,7 +26,8 @@
 @y
 @d restore_clip_color=35
 @d mpprocset=36 {wether or not create PostScript command shortcuts}
-@d max_given_internal=36
+@d troffmode=37 {whether the user specified |-troff| on the command line}
+@d max_given_internal=37
 @z
 
 @x l. 4480
@@ -34,6 +38,8 @@ primitive("truecorners",internal_quantity,true_corners);@/
 @!@:true_corners_}{\&{truecorners} primitive@>
 primitive("mpprocset",internal_quantity,mpprocset);@/
 @!@:mpprocset_}{\&{mpprocset} primitive@>
+primitive("troffmode",internal_quantity,troffmode);@/
+@!@:troffmode_}{\&{troffmode} primitive@>
 @z
 
 @x l. 4521
@@ -41,6 +47,7 @@ int_name[default_color_model]:="defaultcolormodel";
 @y
 int_name[default_color_model]:="defaultcolormodel";
 int_name[mpprocset]:="mpprocset";
+int_name[troffmode]:="troffmode";
 @z
 
 @x l. 4892

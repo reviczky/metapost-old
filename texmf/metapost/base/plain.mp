@@ -5,7 +5,7 @@
 % It contains all the features of plain METAFONT except those specific to
 % font-making.  (See The METAFONTbook by D.E. Knuth).
 % There are also a number of macros for labeling figures, etc.
-string base_name, base_version; base_name="plain"; base_version="0.970";
+string base_name, base_version; base_name="plain"; base_version="0.99";
 
 message "Preloading the plain mem file, version "&base_version;
 

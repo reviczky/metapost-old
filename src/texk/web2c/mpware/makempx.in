@@ -6,7 +6,7 @@
 # Public domain.
 #
 # 
-version=0.9
+version=0.99
 
 : ${DMP=dmp}
 : ${DVITOMP=dvitomp}
@@ -17,7 +17,7 @@ version=0.9
 : ${NEWER=newer}
 # This is oriented towards GNU roff: old value was
 # 'eqn -Tpost -d\$\$ | troff -Tpost'
-: ${TROFF='eqn -Tps -d\$\$ | troff -Tps'}
+: ${TROFF='soelim -k | eqn -Tps -d\$\$ | troff -Tps'}
 
 # convert relative path to absolute in $MAKEMPX_BINDIR:
 case "$MAKEMPX_BINDIR" in

@@ -1961,7 +1961,10 @@ end;
 history:=spotless; {ready to go!}
 @y
 history:=spotless; {ready to go!}
-if troff_mode then @+internal[prologues]:=unity;
+if troff_mode then begin 
+  internal[troffmode]:=unity; 
+  internal[prologues]:=unity; 
+end;
 @z
 
 @x [46.1298] Call do_final_end.
