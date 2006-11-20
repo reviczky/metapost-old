@@ -26,7 +26,7 @@
 @y
 @d restore_clip_color=35
 @d mpprocset=36 {wether or not create PostScript command shortcuts}
-@d troffmode=37 {whether the user specified |-troff| on the command line}
+@d gtroffmode=37 {whether the user specified |-troff| on the command line}
 @d max_given_internal=37
 @z
 
@@ -38,7 +38,7 @@ primitive("truecorners",internal_quantity,true_corners);@/
 @!@:true_corners_}{\&{truecorners} primitive@>
 primitive("mpprocset",internal_quantity,mpprocset);@/
 @!@:mpprocset_}{\&{mpprocset} primitive@>
-primitive("troffmode",internal_quantity,troffmode);@/
+primitive("troffmode",internal_quantity,gtroffmode);@/
 @!@:troffmode_}{\&{troffmode} primitive@>
 @z
 
@@ -47,7 +47,7 @@ int_name[default_color_model]:="defaultcolormodel";
 @y
 int_name[default_color_model]:="defaultcolormodel";
 int_name[mpprocset]:="mpprocset";
-int_name[troffmode]:="troffmode";
+int_name[gtroffmode]:="troffmode";
 @z
 
 @x l. 4892
