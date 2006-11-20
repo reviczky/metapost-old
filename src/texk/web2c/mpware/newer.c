@@ -79,7 +79,7 @@ main(int argc, char **argv)
 \n\
 --help      Display this help and exit\n\
 --quiet     Do not print anything\n\
---verbose   List missing files, incuding missing target files\n\
+--verbose   List missing files, including missing target files\n\
 --version   Output version information and exit\n\n", stdout);
             fputs ("Email bug reports to metapost@tug.org.\n", stdout);
             exit(0);

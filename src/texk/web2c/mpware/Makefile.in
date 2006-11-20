@@ -14,9 +14,9 @@ all: $(programs)
 dmp: dmp.o dmp_ffile.o
 	$(kpathsea_link) dmp.o dmp_ffile.o $(LOADLIBES)
 mpto: mpto.o
-	$(kpathsea_link) mpto.o $(LOADLIBES)
+	$(kpathsea_link) mpto.o
 newer: newer.o
-	$(link_command) newer.o $(proglib) $(LIBS) $(XLOADLIBES)
+	$(link_command) newer.o
 makempx: makempx.in Makefile.in
 	sed -e 's,@BINDIR@,$(bindir),g' -e 's,@web2cver@,@WEB2CVERSION@,g' \
 	    <$(srcdir)/makempx.in >$@
