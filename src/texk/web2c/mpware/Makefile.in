@@ -12,7 +12,7 @@ default: all
 all: $(programs) 
 
 dmp: dmp.o dmp_ffile.o
-	$(kpathsea_link) dmp.o dmp_ffile.o $(LOADLIBES)
+	$(kpathsea_link) dmp.o dmp_ffile.o $(LIBS)
 mpto: mpto.o
 	$(kpathsea_link) mpto.o
 newer: newer.o
