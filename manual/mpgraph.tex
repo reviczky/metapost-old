@@ -5,7 +5,7 @@
 \usepackage{fancyvrb}
 \usepackage{ctabbing}
 \RecustomVerbatimEnvironment{verbatim}{BVerbatim}{baseline=c}
-\usepackage{epsf}
+\usepackage{graphics}
 \usepackage[textwidth=6in,textheight=8.75in]{geometry}
 
 \newcommand\descr[1]{{\langle\hbox{\rm#1}\rangle}}
@@ -121,7 +121,7 @@ $$
 Americans of that age in 1991 \cite{Census92}.)
 
 \begin{figure}[htp]
-$$ \epsfbox{mpgraph.1} $$
+$$ \includegraphics{mpgraph-1.mps} $$
 \caption{A graph of the 1991 age distribution in the United States}
 \label{fig1}
 \end{figure}
@@ -167,10 +167,27 @@ generates only bullets as shown in Figure~\ref{fig2}.
 cause the line to reappear superimposed on the plotting symbols.)
 
 \begin{figure}[htp]
-$$ \epsfbox{mpgraph.2} $$
+$$ \includegraphics{mpgraph-2.mps} $$
 \caption{The 1991 age distribution plotted with bullets}
 \label{fig2}
 \end{figure}
+
+Watch out for the following: the \tdescr{picture expression} is placed
+with the lower-left corner at the path knot, not it's center. If you
+want it to be dead-center, you have to correct the placement
+yourself. For the example above, you need something like this instead:
+
+\medskip
+\begin{verbatim}
+def MPbullet = 
+   btex \lower\fontdimen22\cmsy \hbox to 0pt{\hss\cmsy\char15\hss} etex 
+enddef;
+\end{verbatim}
+
+\medskip\noindent
+followed by:
+$$ \hbox{\verb|gdraw "agepop91.d" plot MPbullet|} $$
+
 
 % glabel, gdotlabel, OUT
 
@@ -213,7 +230,7 @@ large numbers.  We shall see later that simple transformations such as this can
 be achieved without generating new data files.
 
 \begin{figure}[htp]
-$$ \epsfbox{mpgraph.3} $$
+$$ \includegraphics{mpgraph-3.mps} $$
 \caption{An improved version of the 1991 age distribution graph}
 \label{fig3}
 \end{figure}
@@ -272,7 +289,7 @@ draw begingraph(3in,2in);
  endgraph;
 \end{verbatim}
 \atop
-\epsfbox{mpgraph.4}
+\includegraphics{mpgraph-4.mps}
 $$
 \caption{The 1991 age distribution graph and the input that creates it.}
 \label{fig4}
@@ -340,7 +357,7 @@ Since each line gives one $x$~coordinate and one $y$~coordinate, commentary
 material after the second data field on a line is ignored.
 
 \begin{figure}[htp]
-$$ \mathcenter{\epsfbox{mpgraph.5}}
+$$ \mathcenter{\includegraphics{mpgraph-5.mps}}
  \quad
 \begin{BVerbatim}[baseline=c]
 draw begingraph(2.3in,2in);
@@ -388,7 +405,7 @@ draw begingraph(6.5cm,4.5cm);
  endgraph;
 \end{verbatim}
   \atop
-\mathcenter{\epsfbox{mpgraph.6}}
+\mathcenter{\includegraphics{mpgraph-6.mps}}
 $$
 \caption{Annual lead emissions and average level at atmospheric monitoring
         stations in the United States.  The MetaPost input is shown above
@@ -476,7 +493,7 @@ draw begingraph(3in,2in);
  endgraph;
 \end{verbatim}
    \atop
-   \epsfbox{mpgraph.7}
+   \includegraphics{mpgraph-7.mps}
 $$
 \caption{Population of the United States in millions versus time with the
         population re-expressed as $p/75+\ln p$.  The MetaPost input shown
@@ -566,7 +583,7 @@ draw begingraph(3in,2in);
   endgraph;
 \end{verbatim}
  \atop
- \epsfbox{mpgraph.8}
+ \includegraphics{mpgraph-8.mps}
 $$
 \caption{A scatter plot and the commands that generated it}
 \label{fig8}
@@ -640,7 +657,7 @@ draw begingraph(3in,2in);
   endgraph;
 \end{verbatim}
  \atop
- \epsfbox{mpgraph.9}
+ \includegraphics{mpgraph-9.mps}
 $$
 \caption{A graph of U.S. annual energy production
         and the commands that generated it}
@@ -728,10 +745,10 @@ $$ \hbox{\tt format($\descr{string expression}$,\,%
 does this.  You must first {\tt input graph} or {\tt input format} to load the
 macro file.  The macro takes a format string and a number to typeset and returns
 a picture containing the typeset result.  Thus
-$$ \hbox{\verb|format("%g",2+2)|}\quad {\rm yields}\quad \epsfbox{mpgraph.10} $$
+$$ \hbox{\verb|format("%g",2+2)|}\quad {\rm yields}\quad \includegraphics{mpgraph-10.mps} $$
 and
 $$ \hbox{\verb|format("%3g","6.022e23")|}
-        \quad {\rm yields}\quad \epsfbox{mpgraph.11}
+        \quad {\rm yields}\quad \includegraphics{mpgraph-11.mps}
 $$
 
 A format string consists of

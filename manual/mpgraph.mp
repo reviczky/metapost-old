@@ -3,6 +3,8 @@
 
 input graph
 
+filenametemplate "%j-%c.mps";
+
 %if false:  %% Begin skipping already debugged figures
 %fi input sarith %% End skipping of already debugged figures
 
@@ -79,11 +81,12 @@ draw begingraph(3in,2in);
  glabel.lft(btex \vbox{\hbox{Population} \hbox{in millions}} etex, OUT);
  path p;
  gdata("timepop.d", $, augment.p($1, newy(Scvnum $2)); );
- gdraw p;
+ gdraw p withpen nullpen;
  for y=5,10,20,50,100,150,200,250:
    grid.lft(format("%g",y), newy(y)) withcolor .85white;
  endfor
  autogrid(grid.bot,) withcolor .85white;
+ gdraw p;
  frame.llft;
  endgraph;
 endfig;

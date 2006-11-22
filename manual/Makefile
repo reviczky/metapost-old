@@ -12,16 +12,17 @@
 	dvips -t letter $< -o $@ || rm -f $@
 
 latex = latex '\nonstopmode\input'
+pdflatex = pdflatex '\nonstopmode\input'
 mpost = TEX=tex mpost
 
 all: mpman.pdf mpgraph.pdf
 
-mpgraph.dvi: mpgraph.tex mpgraph.bib mpgraph.mp
+mpgraph.pdf: mpgraph.tex mpgraph.bib mpgraph.mp
 	$(mpost) mpgraph
-	$(latex) mpgraph
+	$(pdflatex) mpgraph
 	bibtex mpgraph
-	$(latex) mpgraph
-	$(latex) mpgraph
+	$(pdflatex) mpgraph
+	$(pdflatex) mpgraph
 
 mpman.dvi: mpman.tex mpman.bib mpman.ist manfig.mp 
 	$(mpost) manfig
@@ -33,6 +34,6 @@ mpman.dvi: mpman.tex mpman.bib mpman.ist manfig.mp
 	$(latex) mpman
 
 clean distclean:
-	rm -f manfig.[0-9]* mpgraph.[0-9]*
-	rm -f *.aux *.bbl *.blg *.dvi *.log *.mpx *.pdf *.ps
+	rm -f manfig.[0-9]* *.mps
+	rm -f *.aux *.bbl *.blg *.dvi *.log *.mpx *.ps
 	rm -f *.idx *.ilg *.ind *.toc
