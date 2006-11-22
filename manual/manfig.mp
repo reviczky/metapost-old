@@ -1,6 +1,8 @@
 % $Id: manfig.mp,v 1.4 2005/03/27 17:29:22 karl Exp $
 % Figures for MetaPost manual, by John Hobby.  Public domain.
 
+filenametemplate "%j-%c.mps";
+
 beginfig(0);
 draw (20,20)--(0,0)--(0,30)--(30,0)--(0,0);
 endfig;

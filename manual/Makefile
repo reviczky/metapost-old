@@ -5,14 +5,7 @@
 # (In TeX Live, another Makefile has rules for building grdemo and mpintro.)
 #
 
-%.pdf: %.ps
-	ps2pdf $< || rm -f $@
-
-%.ps: %.dvi
-	dvips -t letter $< -o $@ || rm -f $@
-
-latex = latex '\nonstopmode\input'
-pdflatex = pdflatex '\nonstopmode\input'
+pdflatex = pdflatex
 mpost = TEX=tex mpost
 
 all: mpman.pdf mpgraph.pdf
@@ -24,16 +17,15 @@ mpgraph.pdf: mpgraph.tex mpgraph.bib mpgraph.mp
 	$(pdflatex) mpgraph
 	$(pdflatex) mpgraph
 
-mpman.dvi: mpman.tex mpman.bib mpman.ist manfig.mp 
+mpman.pdf: mpman.tex mpman.bib mpman.ist manfig.mp 
 	$(mpost) manfig
-	$(latex) mpman
+	$(pdflatex) mpman
 	bibtex mpman
-	$(latex) mpman
-	$(latex) mpman
+	$(pdflatex) mpman
+	$(pdflatex) mpman
 	makeindex -s mpman.ist mpman
-	$(latex) mpman
+	$(pdflatex) mpman
 
 clean distclean:
-	rm -f manfig.[0-9]* *.mps
-	rm -f *.aux *.bbl *.blg *.dvi *.log *.mpx *.ps
+	rm -f *.aux *.bbl *.blg *.dvi *.log *.mpx *.mps
 	rm -f *.idx *.ilg *.ind *.toc

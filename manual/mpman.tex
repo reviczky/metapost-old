@@ -7,7 +7,7 @@
 \usepackage{ctabbing}
 \RecustomVerbatimEnvironment
   {verbatim}{BVerbatim}{baseline=c}
-\usepackage{epsf}
+\usepackage{graphicx}
 \usepackage[textwidth=6in,textheight=8.65in]{geometry}
 \usepackage{tocloft}
   \setlength\cftbeforesecskip{1.3ex plus 0.3ex minus 0.3ex}
@@ -57,7 +57,7 @@
 \VerbatimFootnotes
 \author{John D. Hobby}
 \title{A User's Manual for MetaPost}
-\date{documented version: 0.9}
+\date{documented version: 0.99}
 \maketitle
 
 \begin{abstract}
@@ -233,7 +233,7 @@ $$ \hbox{\verb|draw (20,20)--(0,0)|} $$
 draws\index{draw?\texttt{draw}} a diagonal line and
 $$ \hbox{\verb|draw (20,20)--(0,0)--(0,30)--(30,0)--(0,0)|} $$
 draws a polygonal line like this:
-$$ \epsfbox{manfig.0} $$
+$$ \includegraphics{manfig-0} $$
 
 \label{Ddrawdot}MetaPost also has a \ttt{drawdot} command to print a
 single point, as in \ttt{drawdot(30,0)}.
@@ -306,7 +306,7 @@ for i=0 upto 2:
 endfor
 endfig;
 \end{verbatim}
-\quad \mathcenter{\epsfbox{manfig.2}}
+\quad \mathcenter{\includegraphics{manfig-2}}
 $$
 \caption{MetaPost commands and the resulting output}
 \label{fig1}
@@ -348,6 +348,47 @@ $$ \hbox{\verb|.BP fig.1 3c 3c|} $$
 includes {\tt fig.1} and specifies that its height and width are both three
 centimeters.
 
+\subsection{Filename templates}
+
+Metapost has support for output file-name templates. These templates
+use \ttt{printf}-style escape sequences and are re-evaluated before
+each figure is written to disk. 
+
+The command to use is \ttt{filenametemplate}, and it accepts a string
+as argument. The syntax is as simple as:
+
+\begin{verbatim}
+filenametemplate "%j-%3c.mps";
+beginfig(1);
+  draw p;
+endfig;
+\end{verbatim}
+
+If the file is saved as \ttt{fig.mp}, then this will create the output
+file \ttt{fig-001.mps} instead of \ttt{fig.1}.  A small set of escape
+sequences are possible, see table~\ref{tab:fntmpl} for details.
+
+\def\d{$\langle$0-9$\rangle$}
+
+\begin{table}
+\begin{tabular}{ll}
+\%\%    & A percent sign \\
+\%j     & The current jobname\\
+\%\d  c & The charcode value\\
+\%\d  y & The current year\\
+\%\d  m & The numeric month\\
+\%\d  d & The day of the month\\
+\%\d  H & The hour\\
+\%\d  M &  The minute\\
+\end{tabular}
+\caption{Allowed escape sequences for \ttt{filenametemplate}}
+\label{tab:fntmpl}
+\end{table}
+
+To ensure compatibility with older files, the default value of
+\ttt{filenametemplate} is \verb|%j.%c|.
+If you assign an empty string, it will revert to that default.
+
 
 \section{Curves}
 \label{curves}
@@ -367,7 +408,7 @@ Figure~\ref{fig2} shows the curve with points \verb|z0| through \verb|z4|
 labeled.
 
 \begin{figure}[htp]
-$$ \epsfbox{manfig.3}
+$$ \includegraphics{manfig-3}
 $$
 \caption[A curve through points 0, 1, 2, 3, and 4]
         {The result of {\tt draw z0..z1..z2..z3..z4}}
@@ -392,8 +433,8 @@ as having two draw statements
 \end{eqnarray*}
 
 \begin{figure}[htp]
-$$ {\epsfbox{manfig.104} \atop (a)}
-  \qquad {\epsfbox{manfig.204} \atop (b)}
+$$ {\includegraphics{manfig-104} \atop (a)}
+  \qquad {\includegraphics{manfig-204} \atop (b)}
 $$
 \caption[Closed curves through five points]
         {(a)~The result of {\tt draw z0..\linebreak[0]z1..\linebreak[0]%
@@ -446,7 +487,7 @@ draw (0,0)..controls (26.8,-1.8) and (51.4,14.6)
 $$
 
 \begin{figure}[htp]
-$$ \epsfbox{manfig.5}
+$$ \includegraphics{manfig-5}
 $$
 \caption[A curve and the control polygon]
         {The result of {\tt draw z0..z1..z2..z3..z4} with the
@@ -474,7 +515,7 @@ would have chosen a direction designed to make the curvature above
 \verb|z1| almost the same as the curvature below that point.
 
 \begin{figure}[htp]
-$$ \epsfbox{manfig.6}
+$$ \includegraphics{manfig-6}
 $$
 \caption[A curve and the control polygon]
         {The result of {\tt draw z0..z1\char`\{up\char`\}..z2\char`\{left\char`\}%
@@ -489,7 +530,7 @@ directions there.  Figures \ref{fig6} and~\ref{fig7} give a good idea of what
 this family of curves is like.
 
 \begin{figure}[htp]
-$$ \mathcenter{\epsfbox{manfig.7}} \quad
+$$ \mathcenter{\includegraphics{manfig-7}} \quad
 \begin{verbatim}
 beginfig(7)
 for a=0 upto 9:
@@ -503,7 +544,7 @@ $$
 \end{figure}
 
 \begin{figure}[htp]
-$$ \mathcenter{\epsfbox{manfig.8}} \quad
+$$ \mathcenter{\includegraphics{manfig-8}} \quad
 \begin{verbatim}
 beginfig(8)
 for a=0 upto 7:
@@ -549,10 +590,10 @@ endpoint directions make this impossible.''  (It would be possible to
 avoid inflections in Figure~\ref{fig6}, but not in Figure~\ref{fig7}).
 
 \begin{figure}[htp]
-$$ {\mathcenter{\epsfbox{manfig.109}} \atop
+$$ {\mathcenter{\includegraphics{manfig-109}} \atop
     \hbox{\verb|draw z0{up}..z1{right}..z2{down}|}}
   \quad
-   {\mathcenter{\epsfbox{manfig.209}} \atop
+   {\mathcenter{\includegraphics{manfig-209}} \atop
     \hbox{\verb|draw z0{up}...z1{right}...z2{down}|}}
 $$
 \caption{Two {\tt draw} statements and the resulting curves.}
@@ -573,11 +614,11 @@ $$ \hbox{\verb|draw z0..z1..tension 1.6 and 1..z2..z3|} $$
 The tension parameter can be less than one, but it must be at least $3\over4$.
 
 \begin{figure}[htp]
-$$ {\mathcenter{\epsfbox{manfig.110}} \atop (a)}
+$$ {\mathcenter{\includegraphics{manfig-110}} \atop (a)}
   \quad
-   {\mathcenter{\epsfbox{manfig.210}} \atop (b)}
+   {\mathcenter{\includegraphics{manfig-210}} \atop (b)}
   \quad
-   {\mathcenter{\epsfbox{manfig.310}} \atop (c)}
+   {\mathcenter{\includegraphics{manfig-310}} \atop (c)}
 $$
 \caption[Effects of changing the tension parameter]
         {Results of {\tt draw z0..z1..tension} $\alpha$ {\tt and} $\beta$
@@ -601,13 +642,13 @@ shown in Figure~\ref{fig10}.  In particular, a curl value of zero makes
 the curvature approach zero.
 
 \begin{figure}[htp]
-$$ {\mathcenter{\epsfbox{manfig.111}} \atop c=0}
+$$ {\mathcenter{\includegraphics{manfig-111}} \atop c=0}
   \qquad
-   {\mathcenter{\epsfbox{manfig.211}} \atop c=1}
+   {\mathcenter{\includegraphics{manfig-211}} \atop c=1}
   \qquad
-   {\mathcenter{\epsfbox{manfig.311}} \atop c=2}
+   {\mathcenter{\includegraphics{manfig-311}} \atop c=2}
   \qquad
-   {\mathcenter{\epsfbox{manfig.411}} \atop c=\infty}
+   {\mathcenter{\includegraphics{manfig-411}} \atop c=\infty}
 $$
 \caption[Effects of changing the curl parameter]
         {Results of {\tt draw z0\char`\{curl c\char`\}..z1..%
@@ -778,7 +819,7 @@ draw z1--z2;
 draw z3--z6;
 endfig;
 \end{verbatim}
-\quad \mathcenter{\epsfbox{manfig.13}}
+\quad \mathcenter{\includegraphics{manfig-13}}
 $$
 \caption[MetaPost code and figure using linear equations]
         {MetaPost commands and the resulting figure.  Point labels have been
@@ -894,10 +935,10 @@ tracingonline}\index{tracingonline?\texttt{tracingonline}}\label{Dtonline}.
 
 \subsection{Data Types}
 
-MetaPost actually has nine basic data types\index{types}: numeric,
-pair, path, transform,
-color, string, boolean, picture, and pen.  Let us consider these one at a time
-beginning with the numeric type.
+MetaPost actually has ten basic data types\index{types}: numeric,
+pair, path, transform, (rgb)color, cmykcolor, string, boolean, picture, and
+pen.  Let us consider these one at a time beginning with the numeric
+type.
 
 Numeric\index{numeric type} quantities in MetaPost are represented in fixed
 point arithmetic\index{arithmetic} as
@@ -948,6 +989,23 @@ specified as {\tt 0.4white}.  There is no restriction against colors
 are snapped back to the $[0,1]$ range when a color is given in a
 PostScript\index{PostScript} output file.  MetaPost solves linear
 equations involving colors the same way it does for pairs.
+
+The type `rgbcolor' is an alias of type `color'.
+
+The cmykcolor\index{cmykcolor type} type is a lot like the color type,
+except that it has four components instead of three.  Like colors,
+cmykcolors can be added, subtracted, used in mediation expressions, or
+multiplied or divided by numerics.  Colors can be specified by giving
+the cyan, magenta, yellow, and black components explicitly.  There is
+no restriction against cmykcolors ``blacker than black'' or ``whiter than
+white'' except all components are snapped back to the $[0,1]$ range
+when a cmykcolor is given in a PostScript\index{PostScript} output file.
+MetaPost solves linear equations involving cmykcolors the same way it does
+for colors. 
+
+Because cmykcolors deal with pigments instead of light rays, the color
+black would be expressed as {\tt (1,1,1,1)} and white as {\tt (0,0,0,0)}.
+
 
 A string\index{string type} represents a sequence of characters.
 String constants\index{string constants} are given
@@ -1088,7 +1146,7 @@ is written on a piece of graph paper so that the first character
 occupies $x$~coordinates between zero and one and the next character
 covers the range $1\le x\le2$, etc.  Thus the string \verb|"abcde"|
 should be thought of like this
-$$ \epsfbox{manfig.14} $$
+$$ \includegraphics{manfig-14} $$
 and {\tt substring (2,4) of "abcde"} is {\tt "cd"}.  This takes a little
 getting used to but it tends to avoid annoying ``off by one'' errors.
 
@@ -1193,15 +1251,18 @@ return boolean results.  A type name such as {\tt
 pair}\index{pair?\texttt{pair}} can operate on any type of
 \tdescr{primary} and return a boolean result indicating whether the
 argument is a {\tt pair}\label{Dpairop}.  Similarly, each of the
-following can be used as a unary operator: {\tt
-numeric}\index{numeric?\texttt{numeric}}\label{Dnumop}, {\tt
-boolean}\index{boolean?\texttt{boolean}}\label{Dboolop}, {\tt
-color}\index{color?\texttt{color}}\label{Dcolrop}, {\tt
-string}\index{string?\texttt{string}}\label{Dstrgop}, {\tt
-transform}\index{transform?\texttt{transform}}\label{Dtrnfop}, {\tt
-path}\index{path?\texttt{path}}\label{Dpathop}, {\tt
-pen}\index{pen?\texttt{pen}}\label{Dpenop}, and {\tt
-picture}\index{picture?\texttt{picture}}\label{Dpictop}.  Besides just
+following can be used as a unary operator: 
+{\tt numeric}\index{numeric?\texttt{numeric}}\label{Dnumop}, 
+{\tt boolean}\index{boolean?\texttt{boolean}}\label{Dboolop}, 
+{\tt cmykcolor}\index{cmykcolor?\texttt{cmykcolor}}\label{Dccolrop}, 
+{\tt color}\index{color?\texttt{color}}\label{Dcolrop}, 
+{\tt string}\index{string?\texttt{string}}\label{Dstrgop}, 
+{\tt transform}\index{transform?\texttt{transform}}\label{Dtrnfop}, 
+{\tt path}\index{path?\texttt{path}}\label{Dpathop}, 
+{\tt pen}\index{pen?\texttt{pen}}\label{Dpenop}, 
+{\tt picture}\index{picture?\texttt{picture}}\label{Dpictop}, and
+{\tt rgbcolor}\index{rgbcolor?\texttt{rgbcolor}}\label{Drcolrop}.
+Besides just
 testing the type of a \tdescr{primary}, you can use the {\tt
 known}\index{known?\texttt{known}}\label{Dknown} and {\tt
 unknown}\index{unknown?\texttt{unknown}}\label{Dunknwn} operators to
@@ -1215,18 +1276,24 @@ or another \tdescr{number or fraction} can serve as a \tdescr{primary
 binop}.  Thus {\tt 2/3x}\index{parsing irregularities} is two thirds of
 {\tt x} but {\tt (2)/3x} is $2\over3x$ and {\tt 3 3} is illegal.
 
-There are also operators for extracting numeric subfields from pairs, colors,
-and even transforms.  If {\tt p} is a \tdescr{pair primary},
-{\tt xpart p}\index{xpart?\texttt{xpart}}\label{Dxprt} and
-{\tt ypart p}\index{ypart}\label{Dyprt} extract its
-components so that
-$$ \hbox{\tt (xpart p, ypart p)} $$
-is equivalent to~{\tt p} even if {\tt p} is an unknown pair that is
-being used in a linear equation.  Similarly, a color {\tt c} is
-equivalent
-to\index{redpart?\texttt{redpart}}\index{greenpart?\texttt{greenpart}}\index{bluepart?\texttt{bluepart}}\label{Drgbprt}
-$$ \hbox{\tt (redpart c, greenpart c, bluepart c)} $$
-The part specifiers for transforms will be discussed later.
+There are also operators for extracting numeric subfields from pairs,
+colors, cmykcolors, and even transforms.  If {\tt p} is a \tdescr{pair
+primary}, {\tt xpart p}\index{xpart?\texttt{xpart}}\label{Dxprt} and
+{\tt ypart p}\index{ypart}\label{Dyprt} extract its components so that
+$$ \hbox{\tt (xpart p, ypart p)} $$ is equivalent to~{\tt p} even if
+{\tt p} is an unknown pair that is being used in a linear equation.
+Similarly, a color {\tt c} is equivalent
+to\index{redpart?\texttt{redpart}}%
+\index{greenpart?\texttt{greenpart}}%
+\index{bluepart?\texttt{bluepart}}\label{Drgbprt}
+$$ \hbox{\tt (redpart c, greenpart c, bluepart c)} $$.
+For a cmykcolor {\tt c},  the parts are:\index{cyanpart?\texttt{cyanpart}}%
+\index{magentapart?\texttt{magentapart}}%
+\index{yellowpart?\texttt{yellowpart}}%
+\index{blackpart?\texttt{blackpart}}\label{Dcmykprt}
+$$ \hbox{\tt (cyanpart c, magentapart c, yellowpart c, blackpart c)} $$ 
+The part
+specifiers for transforms will be discussed later.
 
 
 \section{Variables}
@@ -1446,7 +1513,7 @@ label.lft("b", .5[z0,z2]);
 dotlabel.bot("(0,0)", z0);
 endfig;
 \end{verbatim}
-\qquad \mathcenter{\epsfbox{manfig.17}}
+\qquad \mathcenter{\includegraphics{manfig-17}}
 $$
 \caption{MetaPost code and the resulting output}
 \label{fig16}
@@ -1459,9 +1526,6 @@ like a {\tt label} statement followed by a statement drawing a dot at
 the indicated coordinates.  For example
 $$ \hbox{\tt dotlabel.bot("(0,0)", z0)} $$
 places a dot at {\tt z0} and then puts the label ``(0,0)'' just below the dot.
-(Since {\tt dotlabel} expands to two statements, it cannot be followed
-by a {\tt withcolor} statement, for example; draw the dot separately for
-such effects.)
 
 Another alternative is the macro
 {\tt thelabel}\index{thelabel?\texttt{thelabel}}\label{Dthelab}.  This has
@@ -1530,9 +1594,9 @@ about font names and TeX.  A \TeX\index{TeX fonts?\TeX\ fonts} font such
 as {\tt cmr10} is a little dangerous because it does not have a space
 character or certain ASCII symbols.
 
-MetaPost does not use the
-ligatures\index{ligatures} and kerning\index{kerning} information that
-comes with a \TeX\ font.
+MetaPost does not use the ligatures\index{ligatures} and
+kerning\index{kerning} information that comes with a \TeX\ font. 
+Further, MetaPost does not interpret virtual fonts.
 
 
 \subsection{Typesetting Your Labels}
@@ -1567,7 +1631,7 @@ label.bot(btex $x$ etex, (2u,0));
 label.lft(btex $y$ etex, (0,u));
 endfig;
 \end{verbatim}
-\qquad \mathcenter{\epsfbox{manfig.18}}
+\qquad \mathcenter{\includegraphics{manfig-18}}
 $$
 \caption{Arbitrary \TeX\ as labels}
 \label{fig17}
@@ -1603,7 +1667,7 @@ label.lft(
   (120ux, 4uy));
 endfig;
 \end{verbatim}
-\qquad \mathcenter{\epsfbox{manfig.19}}
+\qquad \mathcenter{\includegraphics{manfig-19}}
 $$
 \caption{\TeX\ labels with display math, and rotated by MetaPost}
 \label{fig18}
@@ -1633,6 +1697,10 @@ saved in the file {\tt mpxerr.tex}\index{mpxerr.tex?\texttt{mpxerr.tex}}
 and the error messages appear in {\tt
 mpxerr.log}\index{mpxerr.log?\texttt{mpxerr.log}}.
 
+The preprocessor for \TeX\ labels {\it does\/} understand virtual
+fonts, so you can use your normal \TeX\ font switching commands inside
+the label.
+
 \label{Dverbatimtex}
 \TeX\ macro definitions or any other auxiliary \TeX\ commands can be
 enclosed in a {\tt verbatimtex}\index{verbatimtex?\texttt{verbatimtex}}
@@ -1652,12 +1720,12 @@ something like this:
 \end{eqnarray*}
 
 On Unix\footnote{Unix is a registered trademark of Unix Systems
-Laboratories.}\index{Unix\reg} and other Web2C-based systems, the option
-{\tt -troff} to MetaPost tells the preprocessor that {\tt btex} $\ldots$
-{\tt etex} and {\tt verbatimtex} $\ldots$ {\tt etex} blocks are in
-troff\index{troff} instead of \TeX.  When using this option, it is a
-good idea to start your MetaPost input file with the assignment {\tt
-prologues:=1}\index{prologues?\texttt{prologues}}.
+Laboratories.}\index{Unix\reg} and other Web2C-based systems, the
+option {\tt -troff} to MetaPost tells the preprocessor that {\tt btex}
+$\ldots$ {\tt etex} and {\tt verbatimtex} $\ldots$ {\tt etex} blocks
+are in troff\index{troff} instead of \TeX.  When using this option,
+MetaPost sets the internal variable
+\ttindex{troffmode} to~1\index{prologues?\texttt{prologues}}.
 
 \label{Dprologues}
 Setting \ttt{prologues} can be useful with \TeX, too, not just troff.
@@ -1670,12 +1738,27 @@ you view such a \ttt{.ps} file by itself, not in the context of a
 surrounding document, the text will probably appear in
 Courier\index{Courier} or Times-Roman\index{Times-Roman}.
 
-\item If you set \ttt{prologues} to~1, the MetaPost
+\item If you set \ttt{prologues} to~2, the MetaPost
 output files will be so-called ``structured
-PostScript''\index{PostScript!structured} (EPSF\index{EPSF}), generated
-on the assumption that text comes from PostScript fonts provided by the
-``environment'', that is, the document viewer or embedded application
-using the output.
+PostScript''\index{PostScript!structured} (EPSF\index{EPSF}),
+generated on the assumption that text comes from PostScript fonts
+provided by the ``environment'', that is, the document viewer or
+embedded application using the output. The output file will attempt to
+reencode the font correctly, based on \ttt{fontmapfile} and
+\ttt{fontmapline} commands.
+
+\item If you set \ttt{prologues} to~3, the MetaPost
+output files will be so-called ``structured
+PostScript''\index{PostScript!structured} (EPSF\index{EPSF}) also, but
+the output will also contain the actual PostScript font(s) used or a
+subset of it,, based on \ttt{fontmapfile} and
+\ttt{fontmapline} commands.
+
+\item If you set \ttt{prologues} to~1, the MetaPost output claims to be
+EPSF, but it is not really conformant. This variant is kept for backward
+compatibility mode with old (troff) documents, but use is deprecated: 
+For historical reasons, MetaPost sets  {\tt prologues:=1} when the {\tt
+-troff} option is given on the commandline.
 
 \item The \ttt{prologues} variable is irrelevant when processing MetaPost
 files through the \ttindex{mptopdf} utility (part of the \ConTeXt\
@@ -1698,6 +1781,70 @@ if the environment variable \ttindex{MPTEXPRE} is set to the name of an
 existing file, {\tt makempx} will prepend it to the output.  You can use
 this to include \LaTeX\ preambles, for instance.  The \ttt{TEX}
 macro described on p.\ \pageref{dTEX} provides another way to handle this.
+
+
+\subsection{Font map files}
+\label{Sfontmapfile}\label{Sfontmapline}
+
+If \ttt{prologues} is set to~2, any used fonts in the output file are
+automatically re-encoded, and the encoding vector file specified in
+the fontmap entry will be embedded in the output file. If
+\ttt{prologues} is set to~3, MetaPost will also attempt to include
+(a subset of) the used PostScript fonts. For this to work, it needs to
+acquire font map information. 
+
+The code is based on the font library used by pdf\TeX. Following in
+the footsteps of pdf\TeX, there are two new associated primitives:
+\ttindex{fontmapfile} and \ttindex{fontmapline}. Here is a simple
+example, specifying the map file for Latin Modern fonts in \LaTeX\
+(T1) encoding:\\
+\begin{verbatim}
+prologues := 2;
+fontmapfile "ec-public-lm.map";
+beginfig(1);
+  draw "Helló, világ" infont "ec-lmr10";
+endfig;
+\end{verbatim}
+
+
+Using \ttt{fontmapline}, you can specify font mapping information
+inside the figure:\\
+\begin{verbatim}
+prologues := 2;
+fontmapline "pplbo8r URWPalladioL-Bold  "&ditto&
+                ".167 SlantFont"&ditto&" <8r.enc <uplb8a.pfb";
+beginfig(1);
+  draw "Hello, world" infont "pplbo8r";
+endfig;
+\end{verbatim}
+this will attempt to reencode the PostScript font URWPalladioL-Bold
+whose tfm file is pplbo8r.tfm. The encoding is found in the file
+8r.enc, and will be included into the output file.
+
+If the same example was run with \ttt{prologues := 3}, MetaPost would
+include a subset of the font that resides in uplb8a.pfb into the
+output. In this case, the subset of the font is reorganized so that it
+has the correct encoding internally, 8r.enc will not be embedded also.
+
+The argument to both commands has an optional flag character at the very
+beginning. This optional flag has the same meaning as in pdf\TeX: 
+$$\begin{tabular}{|c|l|} \hline
+\multicolumn1{|c|}{option}&  \multicolumn1{c|}{meaning}\\ \hline
+    +    & extend the font list, but ignore duplicates \\
+    =    & extend the font list, replacing duplicates \\
+    $-$  & remove all matching fonts from the font list \\
+\hline
+\end{tabular}
+$$
+without any option, the current list will be completely replaced.
+
+If there are no \ttt{fontmapfile} statements at all, MetaPost will try
+to find a default map file. In order, it will attempt to read {\tt
+mpost.map} and {\tt pdftex.map}.
+
+Note: if \ttt{prologues} is set to~1, MetaPost attempts to read a file
+called {\tt psfonts.map}, regardless of any {\tt fontmapfile}
+statement. Again, this is for backward compatibility only.
 
 
 \subsection{The {\tt infont} operator}
@@ -1758,7 +1905,7 @@ variables}\index{variables!internal} {\tt
 bboxmargin}\index{bboxmargin?\texttt{bboxmargin}}\label{Dbbmargin}.
 
 \begin{figure}[htp]
-$$ \epsfbox{manfig.20} $$
+$$ \includegraphics{manfig-20} $$
 \caption{A bounding box and its corner points.}
 \label{bbox}
 \end{figure}
@@ -1818,7 +1965,7 @@ fill p{up}..(0,0){-1,-2}..{up}cycle;
 draw p..(0,1cm)..cycle;
 endfig;
 \end{verbatim}
-\qquad \mathcenter{\epsfbox{manfig.21}}
+\qquad \mathcenter{\includegraphics{manfig-21}}
 $$
 \caption{MetaPost code and the corresponding output.}
 \label{fig20}
@@ -1829,7 +1976,54 @@ $$ {\tt fill}\, \descr{path expression}\,
         {\tt withcolor}\, \descr{color expression}
 $$
 specifies a shade of gray or (if you have a color printer) some
-rainbow color.
+rainbow color. The $\descr{color expression}$ can have five possible
+values, mapping to four possible color models:
+
+$$
+\begin{tabular}{|l|l|}
+Actual input                          & Remapped meaning\\
+{\tt withcolor} $\descr{rgbcolor} c$  & withrgbcolor $c$\\
+{\tt withcolor} $\descr{cmykcolor} c$ & withcmykcolor $c$\\
+{\tt withcolor} $\descr{numeric} c$   & withgreyscale $c$\\
+{\tt withcolor} $\descr{false}$         & withoutcolor \\
+{\tt withcolor} $\descr{true}$          & $\descr{current default color model}$\\
+\end{tabular}
+$$
+
+For the specific color models, there are also:
+$$ {\tt fill}\, \descr{path expression}\,
+        {\tt withrgbcolor}\, \descr{rgbcolor expression}
+$$
+$$ {\tt fill}\, \descr{path expression}\,
+        {\tt withcmykcolor}\, \descr{cmykcolor expression}
+$$
+$$ {\tt fill}\, \descr{path expression}\,
+        {\tt withgreyscale}\, \descr{numeric}
+$$
+$$ {\tt fill}\, \descr{path expression}\,
+        {\tt withoutcolor}
+$$
+
+An image object cannot have more then one color model, the last
+\ttt{withcolor}, \ttt{withrgbcolor}, \ttt{withcmykcolor},
+\ttt{withgreyscale} or \ttt{withoutcolor} specification sets the color
+model for any particular object.
+
+The model \ttt{withoutcolor} needs a bit more explanation: selecting
+this model means that MetaPost will not write a color selection
+statement to the PostScript output file for this object.
+
+The `current default' color model can be set up using the internal
+parameter \ttindex{defaultcolormodel}. Valid values are:
+$$
+\begin{tabular}{|l|l|}
+1  & no model\\
+3  & greyscale\\
+5  & rgb (default)\\
+7  & cmyk\\
+\end{tabular}
+$$
+
 
 Figure~\ref{fig21} illustrates several applications of the fill command
 to fill areas with shades of gray.  The paths involved are intersecting
@@ -1866,7 +2060,7 @@ label.lft(btex $U$ etex, (-1cm,.5cm));
 draw bbox currentpicture;
 endfig;
 \end{verbatim}
-\qquad \mathcenter{\epsfbox{manfig.22}}
+\qquad \mathcenter{\includegraphics{manfig-22}}
 $$
 \caption{MetaPost code and the corresponding output.}
 \index{fullcircle?\texttt{fullcircle}}\index{halfcircle?\texttt{halfcircle}}\index{buildcycle?\texttt{buildcycle}}
@@ -1930,8 +2124,8 @@ little confusing.
 
 
 \begin{figure}[htp]
-$$ {\epsfbox{manfig.123} \atop (a)}
- \qquad {\epsfbox{manfig.223} \atop (b)}
+$$ {\includegraphics{manfig-123} \atop (a)}
+ \qquad {\includegraphics{manfig-223} \atop (b)}
 $$
 \caption[A demonstration of cycle building]
         {(a)~The semicircular path~{\tt aa}
@@ -1978,7 +2172,7 @@ dotlabel.lft(btex $R$ etex, p4 intersectionpoint q1.5);
 dotlabel.bot(btex $S$ etex, p4 intersectionpoint q0.5);
 endfig;
 \end{verbatim}
-\atop \mathcenter{\epsfbox{manfig.24}}
+\atop \mathcenter{\includegraphics{manfig-24}}
 $$
 \caption{MetaPost code and the corresponding output.}
 \label{fig23}
@@ -2051,7 +2245,7 @@ there are no integers between $t_a$ and $t'_a$\index{intersection}.
 (For more details, see {\sl The \MF book} \cite[Chapter 14]{kn:c}).
 
 \begin{figure}[htp]
-$$ \epsfbox{manfig.25} $$
+$$ \includegraphics{manfig-25} $$
 \caption{Two intersecting paths with time values marked on each path.}
 \label{fig24}
 \end{figure}
@@ -2152,7 +2346,7 @@ pickup pencircle scaled 1pt;
 draw fun;
 endfig;
 \end{verbatim}
-\atop \epsfbox{manfig.26}
+\atop \includegraphics{manfig-26}
 $$
 \caption{MetaPost code and the resulting figure}
 \label{fig25}
@@ -2370,7 +2564,7 @@ endfor
 dotlabels.top(1,2,3); dotlabels.bot(4);
 endfig;
 \end{verbatim}
-\quad \mathcenter{\epsfbox{manfig.28}}
+\quad \mathcenter{\includegraphics{manfig-28}}
 $$
 \caption{MetaPost code and the resulting ``fractal'' figure}
 \label{fig27}
@@ -2398,7 +2592,7 @@ can be scaled\index{scaled?\texttt{scaled}} as shown in
 Figure~\ref{fig28}.
 
 \begin{figure}[htp]
-$$ \epsfbox{manfig.29} $$
+$$ \includegraphics{manfig-29} $$
 \caption[Dashed lines and the corresponding dash patters]
         {Dashed lines each labeled with the \tdescr{dash pattern} used to create
         it.}
@@ -2415,7 +2609,7 @@ $y$~axis is laid out along the path to be dashed\index{dash
 pattern?\tdescr{dash pattern}}.
 
 \begin{figure}[htp]
-$$ \epsfbox{manfig.30} $$
+$$ \includegraphics{manfig-30} $$
 \caption[Dashed lines and the corresponding dash patters]
         {Dashed lines and the MetaPost statements for drawing them where {\tt e4}
         refers to the dash pattern {\tt evenly scaled 4}.}
@@ -2458,7 +2652,7 @@ $$ \hbox{\tt dashpattern(on 6bp  off 12bp  on 6bp)}, $$
 then {\tt llcorner d} is $(0,24)$ and {\tt urcorner d} is $(24,24)$.
 Drawing {\tt d} directly without using it as a dash pattern produces two
 thin horizontal line segments like this:
-$$ \epsfbox{manfig.31} $$
+$$ \includegraphics{manfig-31} $$
 The lines in this example are specified as having width zero, but this
 does not matter because the line width is ignored when a picture is used
 as a dash pattern.
@@ -2500,7 +2694,7 @@ currentpicture:=nullpicture;
 draw fullcircle scaled 1cm xscaled 3 dashed p;
 endfig;
 \end{verbatim}
-\quad \mathcenter{\epsfbox{manfig.32}}
+\quad \mathcenter{\includegraphics{manfig-32}}
 $$
 \caption{MetaPost code for dashed patterns and the corresponding output}
 \label{fig32}
@@ -2515,6 +2709,22 @@ paths created by polygonal pens.  See Section~\ref{sec.pens}, p.\
 \pageref{sec.pens}.
 
 %\newpage
+
+\subsection{Local specials}
+
+If you want to attach a special bit of PostScript code, you can use 
+$$
+{\tt withprescript} \descr{string expression}
+$$
+and 
+$$ 
+{\tt withpostcript} \descr{string expression}
+$$ 
+the strings will be written to the output file before and after the
+current object, each beginning on their own line. You can specify
+multiple {\tt withprescript} or {\tt withpostscript} options if you
+like.
+
 \subsection{Other Options}
 \label{oopt}
 
@@ -2556,7 +2766,7 @@ dotlabels.top(0,1,2,3,4,5);
 endfig; linecap:=rounded;
 \end{verbatim}
 \qquad
-\mathcenter{\epsfbox{manfig.33}}
+\mathcenter{\includegraphics{manfig-33}}
 $$
 \caption{MetaPost code and the corresponding output}
 \label{fig33}
@@ -2589,7 +2799,7 @@ dotlabels.bot(0,1,2,3,4,5,6,7,8);
 endfig; linejoin:=rounded;
 \end{verbatim}
 \qquad
-\mathcenter{\epsfbox{manfig.34}}
+\mathcenter{\includegraphics{manfig-34}}
 $$
 \caption{MetaPost code and the corresponding output}
 \label{fig34}
@@ -2606,7 +2816,7 @@ default value of 10.0 and line joins revert to beveled when the ratio of
 miter length to line width reaches this value.
 
 \begin{figure}[htp]
-$$ \epsfbox{manfig.35} $$
+$$ \includegraphics{manfig-35} $$
 \caption{The miter length and line width whose ratio is limited by
         {\tt miterlimit}.}
 \label{fig35}
@@ -2621,7 +2831,7 @@ width and is quite subtle at the default line width of 0.5bp as shown in
 Figure~\ref{fig36}.
 
 \begin{figure}[htp]
-$$\epsfbox{manfig.36}$$
+$$\includegraphics{manfig-36}$$
 \caption{Three ways of drawing arrows.}
 \label{fig36}
 \end{figure}
@@ -2657,7 +2867,7 @@ parameter that controls the angle at the tip of the arrowhead.  The
 default value of this angle is 45 degrees as shown in the figure.
 
 \begin{figure}[htp]
-$$ \epsfbox{manfig.37} $$
+$$ \includegraphics{manfig-37} $$
 \caption[A large arrowhead with key parameters labeled.]
         {A large arrowhead with key parameters labeled and paths used to
         draw it marked with white lines.}
@@ -2771,7 +2981,7 @@ draw z0--z1--z2--z3--z4--z5--z6 withcolor .7white;
 dotlabels.top(0,1,2,3,4,5,6);
 endfig;
 \end{verbatim}
-\quad \mathcenter{\epsfbox{manfig.38}}
+\quad \mathcenter{\includegraphics{manfig-38}}
 $$
 \caption{MetaPost code and the resulting ``calligraphic'' figure.}
 \label{fig38}\index{lft?\texttt{lft}}\index{bot?\texttt{bot}}\index{top?\texttt{top}}
@@ -2854,6 +3064,12 @@ $\tt \qquad \;|\; addto \descr{picture variable}
 $\tt \descr{option list} \rightarrow \descr{empty} \;|\;
         \descr{drawing option} \descr{option list}$\\
 $\tt \descr{drawing option} \rightarrow withcolor \descr{color expression}$\\
+$\tt \qquad \;|\; withrgbcolor \descr{rgbcolor expression} \;|\;
+        withcmykcolor \descr{cmykcolor expression}$\\
+$\tt \qquad \;|\; withgreyscale  \descr{numeric expression} \;|\;
+        withoutcolor$\\
+$\tt \qquad \;|\; withprescript  \descr{string expression} \;|\;
+        withpostscript \descr{string expression}$\\
 $\tt \qquad \;|\; withpen \descr{pen expression} \;|\;
         dashed \descr{picture expression}$
 \end{ctabbing}
@@ -2948,7 +3164,7 @@ draw p3;
 endfig;
 \end{verbatim}
 \qquad
-\mathcenter{\epsfbox{manfig.40}}
+\mathcenter{\includegraphics{manfig-40}}
 $$
 \caption{MetaPost code and the resulting ``clipped'' figure.}
 \label{fig40}
@@ -3240,7 +3456,7 @@ mark_rt_angle(z.p, z0, a);
 mark_rt_angle(z.p, z1, b);
 endfig;
 \end{verbatim}
-\quad \mathcenter{\epsfbox{manfig.42}}
+\quad \mathcenter{\includegraphics{manfig-42}}
 $$
 \caption{MetaPost code and the corresponding figure}
 \label{fig42}
@@ -3435,7 +3651,7 @@ for i=0 upto 3:
 endfor
 endfig;
 \end{verbatim}
-\quad \mathcenter{\epsfbox{manfig.45}}
+\quad \mathcenter{\includegraphics{manfig-45}}
 $$
 \caption{MetaPost code and the corresponding figure}
 \label{fig45}
@@ -3928,7 +4144,7 @@ defaultdx}\index{defaultdx?\texttt{defaultdx}}\label{Ddefaultdx} and
 {\tt defaultdy}\index{defaultdy?\texttt{defaultdy}}\label{Ddefaultdy}.
 
 \begin{figure}[htp]
-$$ \epsfbox{manfig.48} $$
+$$ \includegraphics{manfig-48} $$
 \caption[How a {\tt boxit} picture relates to the associated variables]
         {The relationship between the picture given to {\tt boxit} and the
         associated variables.  The picture is indicated by a gray rectangle.}
@@ -3998,7 +4214,7 @@ drawarrow subpath (0,.7) of (z.ptr..{left}ndc3.c) dashed evenly;
 label.rt(btex \strut ndblock etex, z.ptr); endfig;
 \end{verbatim}
 $}
-\atop \vcenter{\vskip8pt\hbox{\epsfbox{manfig.49}}}
+\atop \vcenter{\vskip8pt\hbox{\includegraphics{manfig-49}}}
 $$
 \caption{MetaPost code and the corresponding figure}
 \label{fig49}
@@ -4086,7 +4302,7 @@ a.n}, {\tt a.w} and distances {\tt a.dx} and {\tt a.dy}.  Together with
 centered in an oval as can be seen from the Figure~\ref{fig50}.
 
 \begin{figure}[htp]
-$$ \epsfbox{manfig.50} $$
+$$ \includegraphics{manfig-50} $$
 \caption[How a {\tt circleit} picture relates to the associated variables]
         {The relationship between the picture given to {\tt circleit} and the
         associated variables.  The picture is indicated by a gray rectangle.}
@@ -4124,7 +4340,7 @@ drawshadowed(a,b);
 drawarrow a.s -- b.n;
 endfig;
 \end{verbatim}
-\qquad \mathcenter{\epsfbox{manfig.51}} $$
+\qquad \mathcenter{\includegraphics{manfig-51}} $$
 \caption[MetaPost code and the resulting figure.]  {MetaPost code and
         the resulting figure.  Note that the {\tt drawshadowed} macro
         used here is not part of the {\tt boxes.mp} macro package.}
@@ -4182,7 +4398,7 @@ label.urt(btex$b$etex, cuta(ee,cc) ee.c{(cc.c-ee.c)rotated-15}..cc.c);
 endfig;
 \end{verbatim}
 $}
-\atop \vcenter{\vskip8pt\hbox{\epsfbox{manfig.52}}}
+\atop \vcenter{\vskip8pt\hbox{\includegraphics{manfig-52}}}
 $$
 \caption{MetaPost code and the corresponding figure}
 \label{fig52}
@@ -4598,6 +4814,8 @@ $$\begin{tabular}{|l|r|l|}
         clearance around contents of a circular or oval box\\\hline
 \tt     day&    --&
         the current day of the month\\\hline
+\tt     defaultcolormodel&    --&
+        the initial color model  (default: 5, rgb)\\\hline
 \bx\tt  defaultdx&      \pageref{Ddefaultdx}&
         usual horizontal space around box contents (default 3{\tt bp})\\\hline
 \bx\tt  defaultdy&      \pageref{Ddefaultdy}&
@@ -4616,10 +4834,15 @@ $$\begin{tabular}{|l|r|l|}
         controls miter length as in PostScript\\\hline
 \tt     month&  --&
         the current month (e.g, 3 $\equiv$ March)\\\hline
+\tt     mpprocset&  --&
+        \vtop{\hbox{set this to~1 if you want to include a PostScript
+dictionary}\hbox{of      abbreviations in the output}}\\\hline
 \tt     pausing&        --&
         ${}>0$ to display lines on the terminal before they are read\\\hline
 \tt     prologues&      \pageref{Dprologues}&
         ${}>0$ to output conforming PostScript using built-in fonts\\\hline
+\tt     restoreclipcolor&    --&
+        restore the graphics state after clip operations (default: 1)\\\hline
 \tt     showstopping&   --&
         ${}>0$ to stop after each {\tt show} command\\\hline
 \tt     time&   --&
@@ -4648,6 +4871,8 @@ $$\begin{tabular}{|l|r|l|}
         ${}>0$ to show memory usage at end of job\\\hline
 \tt     tracingtitles&  --&
         ${}>0$ to show titles online when they appear\\\hline
+\tt     troffmode&    \pageref{Dtroffmode}&
+        set to~1 if a {\tt -troff} or {\tt -T} option was given\\\hline
 \tt     truecorners&    \pageref{Dtruecorn}&
         ${}>0$ to make {\tt llcorner} etc. ignore {\tt setbounds}\\\hline
 \tt     warningcheck&   \pageref{Dwarncheck}&
@@ -4798,13 +5023,13 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         Concatenation---works for paths $l\hbox{\tt\&}r$ if\\
 &       path&   path&   path&   &
         $r$ starts exactly where the $l$ ends\\\hline
-\tt \verb|*|&   numeric&        color&  color&  \pageref{Dmldiv}&
+\tt \verb|*|&   numeric&        (cmyk)color&  (cmyk)color&  \pageref{Dmldiv}&
         Multiplication\\
 &       &       numeric&        numeric&        &
         \\
 &       &       pair&   pair&   &
         \\\hline
-\tt \verb|*|&   color&  numeric&        color&  \pageref{Dmldiv}&
+\tt \verb|*|&   (cmyk)color&  numeric&        (cmyk)color&  \pageref{Dmldiv}&
         Multiplication\\
 &       numeric&        &       numeric&        &
         \\
@@ -4812,7 +5037,7 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         \\\hline
 \tt \verb|**|&  numeric&        numeric&        numeric&        \pageref{Dpow}&
         Exponentiation\\\hline
-\tt \verb|+|&   color&  color&  color&  \pageref{Dadd}&
+\tt \verb|+|&   (cmyk)color&  (cmyk)color&  (cmyk)color&  \pageref{Dadd}&
         Addition\\
 &       numeric&        numeric&        numeric&        &
         \\
@@ -4822,19 +5047,19 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         Pythagorean addition $\sqrt{l^2+r^2}$\\\hline
 \tt \verb|+-+|& numeric&        numeric&        numeric&        \pageref{Dpysub}&
         Pythagorean subtraction $\sqrt{l^2-r^2}$\\\hline
-\tt \verb|-|&   color&  color&  color&  \pageref{Dadd}&
+\tt \verb|-|&   (cmyk)color&  (cmyk)color&  (cmyk)color&  \pageref{Dadd}&
         Subtraction\\
 &       numeric&        numeric&        numeric&        &
         \\
 &       pair&   pair&   pair&   &
         \\\hline
-\tt \verb|-|&   --&     color&  color&  \pageref{Dneg}&
+\tt \verb|-|&   --&     (cmyk)color&  (cmyk)color&  \pageref{Dneg}&
         Negation\\
 &       &       numeric&        numeric&        &
         \\
 &       &       pair&   pair&   &
         \\\hline
-\tt \verb|/|&   color&  numeric&        color&  \pageref{Dmldiv}&
+\tt \verb|/|&   (cmyk)color&  numeric&        (cmyk)color&  \pageref{Dmldiv}&
         Division\\
 &       numeric&        &       numeric&        &
         \\
@@ -4846,7 +5071,7 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         \\
 \tt \verb|<>|&  pair&   pair&   &       &
         \\
-&       color&  color&  &       &
+&       (cmyk)color&  (cmyk)color&  &       &
         \\
 &       transform&      transform&      &       &
         \\\hline
@@ -4872,6 +5097,8 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         box\\
 &       &       pen&    &       &
         \\\hline
+\tt \verb|blackpart|&   --&   cmykcolor&  numeric&        \pageref{Dcmykprt}&
+        Extract the fourth component\\\hline
 \tt \verb|bluepart|&    --&     color&  numeric&        \pageref{Drgbprt}&
         Extracts the third component\\\hline
 \tt \verb|boolean|&     --&     any&    boolean&        \pageref{Dboolop}&
@@ -4906,6 +5133,10 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
 \hline
 \tt \verb|char|&        --&     numeric&        string& \pageref{Dchar}&
         Character with a given ASCII code\\\hline
+\tt \verb|cmykcolor|&       --&     any&    boolean&        \pageref{Dccolrop}&
+        Is the expression of type cmykcolor?\\\hline
+\tt \verb|colormodel|&       --&     image object&    numeric&        --&
+        What is the color model of the image object?\\\hline
 \tt \verb|color|&       --&     any&    boolean&        \pageref{Dcolrop}&
         Is the expression of type color?\\\hline
 \tt \verb|cosd|&        --&     numeric&        numeric&        \pageref{Dcosd}&
@@ -4918,6 +5149,8 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         Left argument with part before the\\
 &       &       &       &       &
         intersection dropped\\\hline
+\tt \verb|cyanpart|&   --&   cmykcolor&  numeric&        \pageref{Dcmykprt}&
+        Extract the first component\\\hline
 \tt \verb|cycle|&       --&     path&   boolean&        \pageref{Dcycop}&
         Determines whether a path is cyclic\\\hline
 \tt \verb|decimal|&     --&     numeric&        string& \pageref{Ddecop}&
@@ -4946,6 +5179,8 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         The point size of a font\\\hline
 \tt \verb|greenpart|&   --&     color&  numeric&        \pageref{Drgbprt}&
         Extract the second component\\\hline
+\tt \verb|greypart|&   --&     numeric&  numeric&       --&
+        Extract the first (only) component\\\hline
 \tt \verb|hex|& --&     string& numeric&        --&
         Interpret as a hexadecimal number\\\hline
 \tt \verb|infont|&      string& string& picture&        \pageref{Sinfont}&
@@ -4980,6 +5215,8 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         \\
 &       &       pen&    &       &
         \\\hline
+\tt \verb|magentapart|&   --&   cmykcolor&  numeric&        \pageref{Dcmykprt}&
+        Extract the second component\\\hline
 \tt \verb|makepath|&    --&     pen&    path&   \pageref{Dmkpath}&
         Cyclic path bounding the pen shape\\\hline
 \tt \verb|makepen|&     --&     path&   pen&    \pageref{Dmkpen}&
@@ -5045,12 +5282,14 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         Last B\'ezier control point on path\\
 \tt \verb|of|&  &       &       &       &
         segment ending at the given time\\\hline
-\tt \verb|redpart|&     --&     color&  numeric&        \pageref{Drgbprt}&
+\tt \verb|redpart|&     --&    color&  numeric&        \pageref{Drgbprt}&
         Extract the first component\\\hline
 \tt \verb|reverse|&     --&     path&   path&   \pageref{Drevrse}&
         `time'-reversed path, beginning\\
 &       &       &       &       &
         swapped with ending\\\hline
+\tt \verb|rgbcolor|&       --&     any&    boolean&        \pageref{Drcolrop}&
+        Is the expression of type color?\\\hline
 \tt \verb|rotated|&     picture&        numeric&        picture&        \pageref{Dtranop}&
         Rotate counterclockwise a given\\
 &       path&   &       path&   &
@@ -5193,6 +5432,8 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         $t_{xx}$ entry in transformation matrix\\\hline
 \tt \verb|xypart|&      --&     transform&      number& \pageref{Dtrprt}&
         $t_{xy}$ entry in transformation matrix\\\hline
+\tt \verb|yellowpart|&   --&   cmykcolor&  numeric&        \pageref{Dcmykprt}&
+        Extract the third component\\\hline
 \tt \verb|ypart|&       --&     pair&   number& \pageref{Dyprt}&
         $y$ or $t_y$ component\\
 &       &       transform&      &       &
@@ -5455,14 +5696,14 @@ $\tt $\\
 $\tt \descr{nullary op} \rightarrow false \;|\; normaldeviate \;|\; nullpicture \;|\; pencircle$\\
 $\tt \qquad \;|\; true \;|\; whatever$\\
 $\tt \descr{unary op} \rightarrow \descr{type}$\\
-$\tt \qquad \;|\; abs \;|\; angle \;|\; arclength \;|\; ASCII \;|\; bbox \;|\; bluepart \;|\; bot \;|\; ceiling$\\
-$\tt \qquad \;|\; center \;|\; char \;|\; cosd \;|\; cycle \;|\; decimal \;|\; dir \;|\; floor \;|\; fontsize$\\
-$\tt \qquad \;|\; greenpart \;|\; hex \;|\; inverse \;|\; known \;|\; length \;|\; lft \;|\; llcorner$\\
-$\tt \qquad \;|\; lrcorner\;|\; makepath \;|\; makepen \;|\; mexp \;|\; mlog \;|\; not \;|\; oct \;|\; odd$\\
+$\tt \qquad \;|\; abs \;|\; angle \;|\; arclength \;|\; ASCII \;|\; bbox \;|\; blackpart \;|\; bluepart \;|\; bot \;|\; ceiling$\\
+$\tt \qquad \;|\; center \;|\; char \;|\; cosd \;|\; cyanpart  \;|\; cycle \;|\; decimal \;|\; dir \;|\; floor \;|\; fontsize$\\
+$\tt \qquad \;|\; greenpart \;|\; greypart \;|\; hex \;|\; inverse \;|\; known \;|\; length \;|\; lft \;|\; llcorner$\\
+$\tt \qquad \;|\; lrcorner\;|\; magentapart \;|\; makepath \;|\; makepen \;|\; mexp \;|\; mlog \;|\; not \;|\; oct \;|\; odd$\\
 $\tt \qquad \;|\; redpart \;|\; reverse \;|\; round \;|\; rt \;|\; sind \;|\; sqrt \;|\; top \;|\; ulcorner$\\
 $\tt \qquad \;|\; uniformdeviate \;|\; unitvector \;|\; unknown \;|\; urcorner \;|\; xpart \;|\; xxpart$\\
-$\tt \qquad \;|\; xypart \;|\; ypart \;|\; yxpart \;|\; yypart$\\
-$\tt \descr{type} \rightarrow boolean \;|\; color \;|\; numeric \;|\; pair$\\
+$\tt \qquad \;|\; xypart \;|\; yellowpart \;|\; ypart \;|\; yxpart \;|\; yypart$\\
+$\tt \descr{type} \rightarrow boolean \;|\; cmykcolor \;|\; color \;|\; numeric \;|\; pair$\\
 $\tt \qquad \;|\; path \;|\; pen \;|\; picture \;|\; string \;|\; transform$\\
 $\tt \descr{primary binop} \rightarrow \hbox{\tt *} \;|\; \hbox{\tt /} \;|\; \hbox{\tt **} \;|\; and$\\
 $\tt \qquad \;|\; dotprod \;|\; div \;|\; infont \;|\; mod$\\
@@ -5520,6 +5761,7 @@ $\tt \descr{on\hbox{\tt /}off clause} \rightarrow on \descr{numeric tertiary} \;
 \begin{figure}[htp]
 \begin{ctabbing}
 $\tt \descr{boolean expression} \rightarrow \descr{expression}$\\
+$\tt \descr{cmykcolor expression} \rightarrow \descr{expression}$\\
 $\tt \descr{color expression} \rightarrow \descr{expression}$\\
 $\tt \descr{numeric atom} \rightarrow \descr{atom}$\\
 $\tt \descr{numeric expression} \rightarrow \descr{expression}$\\
@@ -5533,6 +5775,7 @@ $\tt \descr{path subexpression} \rightarrow \descr{subexpression}$\\
 $\tt \descr{pen expression} \rightarrow \descr{expression}$\\
 $\tt \descr{picture expression} \rightarrow \descr{expression}$\\
 $\tt \descr{picture variable} \rightarrow \descr{variable}$\\
+$\tt \descr{rgbcolor expression} \rightarrow \descr{expression}$\\
 $\tt \descr{string expression} \rightarrow \descr{expression}$\\
 $\tt \descr{suffix parameter} \rightarrow \descr{parameter}$\\
 $\tt \descr{transform primary} \rightarrow \descr{primary}$
@@ -5629,6 +5872,9 @@ $\tt \qquad \;|\; addto \descr{picture variable} contour \descr{path expression}
 $\tt \qquad \;|\; addto \descr{picture variable} doublepath \descr{path expression} \descr{option list}$\\
 $\tt \descr{option list} \rightarrow \descr{empty} \;|\; \descr{drawing option} \descr{option list}$\\
 $\tt \descr{drawing option} \rightarrow withcolor \descr{color expression}$\\
+$\tt \qquad \;|\; withrgcolor \descr{rgbcolor expression} \;|\; withcmykcolor \descr{cmykcolor expression}$\\
+$\tt \qquad \;|\; withgreyscale \descr{numeric expression} \;|\; withoutcolor$\\
+$\tt \qquad \;|\; withprescript \descr{string expression} \;|\; withpostscript \descr{string expression}$\\
 $\tt \qquad \;|\; withpen \descr{pen expression} \;|\; dashed \descr{picture expression}$\\
 $\tt $\\
 $\tt \descr{drawing command} \rightarrow draw \descr{picture expression} \descr{option list}$\\
@@ -5853,14 +6099,21 @@ $$
 \multicolumn 1{|c|}
 {MetaPost primitives not found in \MF}          \\ \hline
 $\begin{verbatim}
-bluepart         infont           redpart
-btex             linecap          setbounds
-clip             linejoin         tracinglostchars
-color            llcorner         truecorners
-dashed           lrcorner         ulcorner
-etex             miterlimit       urcorner
-fontsize         mpxbreak         verbatimtex
-greenpart        prologues        withcolor
+blackpart          greenpart         setbounds            
+bluepart           greypart          tracinglostchars     
+btex               infont            troffmode            
+clip               linecap           truecorners              
+cmykcolor          linejoin          ulcorner             
+color              llcorner          urcorner             
+colormodel         lrcorner          verbatimtex              
+cyanpart           magentapart       withcmykcolor        
+dashed             miterlimit        withcolor                
+defaultcolormodel  mpprocset         withgreyscale
+etex               mpxbreak          withoutcolor         
+filenametemplate   prologues         withpostscript       
+fontmapfile        redpart           withprescript        
+fontmapline        restoreclipcolor  withrgbcolor          
+fontsize           rgbcolor          yellowpart           
 \end{verbatim}
 $                                               \\ \hline
 \multicolumn 1{|c|}
@@ -5901,7 +6154,7 @@ $$
 \end{document}
 
 % Copyright 1990 - 1995 by AT&T Bell Laboratories.
-% Updated 2005 by Taco Hoekwater, Karl Berry, and others.
+% Updated 2006 by Taco Hoekwater, Karl Berry, and others.
 
 % Permission to use, copy, modify, and distribute this software
 % and its documentation for any purpose and without fee is hereby
