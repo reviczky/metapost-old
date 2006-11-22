@@ -280,9 +280,10 @@ main(int argc, char **argv)
         exit (0);
     } else if (argc > 1 && (strcmp (argv[1], "--version") == 0
                             || strcmp (argv[1], "-version") == 0)) {
-        printf ("mpto 0.99\n\
+        printf ("mpto 0.991\n\
 This program is in the public domain.\n\
-Primary author of mpto: John Hobby.\n");
+Primary author of mpto: John Hobby.\n\
+Current maintainer: Taco Hoekwater.\n");
         exit (0);
     } else if (argc == 2) {
         mpname = argv[1];

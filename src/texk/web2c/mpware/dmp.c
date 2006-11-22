@@ -1358,7 +1358,8 @@ int main(int argc, char **argv)
                             || strcmp (argv[1], "-version") == 0)) {
 	  fputs (term_banner,stdout);
 	  fputs ("\nThis program is in the public domain.\n\
-Primary author of dmp: John Hobby.\n", stdout);
+Primary author of dmp: John Hobby.\n\
+Current maintainer: Taco Hoekwater.\n", stdout);
 	  exit (0);
     }
     if (argc>3) usage(argv[0], 1);
