@@ -981,10 +981,11 @@ white}\index{white?\texttt{white}}\label{Dwhite},
 {\tt blue}\index{blue?\texttt{blue}}\label{Dblue}, or the red, green, and
 blue components can be given explicitly.  Black is {\tt (0,0,0)} and
 white is {\tt (1,1,1)}.  A level of gray such as {\tt (.4,.4,.4)} can also be
-specified as {\tt 0.4white}. There is no restriction against colors
-``blacker than black'' or ``whiter than white'' except all components
-are snapped back to the $[0,1]$ range when a color is given in a
-PostScript\index{PostScript} output file. MetaPost solves linear equations involving
+specified as {\tt 0.4white}. Although color typed variables may be
+any ordered triplet, when adding an object to a picture, MetaPost will
+convert its color by clipping each component between 0 and 1.  For
+example, MetaPost will output the color (1,2,3) as (1,1,1).
+MetaPost solves linear equations involving
 colors the same way it does for pairs. The type `rgbcolor' is an alias of
 type `color'. 
 
