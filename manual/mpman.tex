@@ -357,12 +357,12 @@ each figure is written to disk.
 The command to use is \ttt{filenametemplate}, and it accepts a string
 as argument. The syntax is as simple as:
 
-\begin{verbatim}
-filenametemplate "%j-%3c.mps";
-beginfig(1);
-  draw p;
-endfig;
-\end{verbatim}
+\begin{center}\begin{tabular}{l}
+\verb|filenametemplate "%j-%3c.mps";|\\
+\verb|beginfig(1);|\\
+\verb|   draw p;|\\
+\verb|endfig;|
+\end{tabular}\end{center}
 
 If the file is saved as \ttt{fig.mp}, then this will create the output
 file \ttt{fig-001.mps} instead of \ttt{fig.1}.  A small set of escape
@@ -371,16 +371,16 @@ sequences are possible, see table~\ref{tab:fntmpl} for details.
 \def\d{$\langle$0-9$\rangle$}
 
 \begin{table}
-\begin{tabular}{ll}
+\begin{center}\begin{tabular}{ll}
 \%\%    & A percent sign \\
-\%j     & The current jobname\\
+\%\,j     & The current jobname\\
 \%\d  c & The charcode value\\
 \%\d  y & The current year\\
 \%\d  m & The numeric month\\
 \%\d  d & The day of the month\\
 \%\d  H & The hour\\
 \%\d  M &  The minute\\
-\end{tabular}
+\end{tabular}\end{center}
 \caption{Allowed escape sequences for \ttt{filenametemplate}}
 \label{tab:fntmpl}
 \end{table}
@@ -973,36 +973,24 @@ where the six numeric quantities $(t_x,t_y,t_{xx},t_{xy},t_{yx},t_{yy})$
 determine {\tt T}.  Transforms can also be applied to paths, pictures, pens,
 and transforms.
 
-The color\index{color type} type is a lot like the pair type, except
-that it has three components instead of two.  Like pairs, colors can be
-added, subtracted, used in mediation expressions, or multiplied or
-divided by numerics.  Colors can be specified in terms of the predefined
-constants {\tt black}\index{black?\texttt{black}}\label{Dblack}, {\tt
-white}\index{white?\texttt{white}}\label{Dwhite}, {\tt
-red}\index{red?\texttt{red}}\label{Dred}, {\tt
-green}\index{green?\texttt{green}}\label{Dgreen}, {\tt
-blue}\index{blue?\texttt{blue}}\label{Dblue}, or the red, green, and
+The color\index{color type} type is like the pair type, except
+that it has three components instead of two and each component is normally between 0 and 1.  Like pairs, colors can be added, subtracted, used in mediation expressions, or multiplied or divided by numerics.  Colors can be specified in terms of the predefined constants {\tt black}\index{black?\texttt{black}}\label{Dblack}, {\tt
+white}\index{white?\texttt{white}}\label{Dwhite},
+{\tt red}\index{red?\texttt{red}}\label{Dred},
+{\tt green}\index{green?\texttt{green}}\label{Dgreen},
+{\tt blue}\index{blue?\texttt{blue}}\label{Dblue}, or the red, green, and
 blue components can be given explicitly.  Black is {\tt (0,0,0)} and
-white is {\tt (1,1,1)}.  A level of gray such as {\tt (.4,.4,.4)} can be
-specified as {\tt 0.4white}.  There is no restriction against colors
+white is {\tt (1,1,1)}.  A level of gray such as {\tt (.4,.4,.4)} can also be
+specified as {\tt 0.4white}. There is no restriction against colors
 ``blacker than black'' or ``whiter than white'' except all components
 are snapped back to the $[0,1]$ range when a color is given in a
-PostScript\index{PostScript} output file.  MetaPost solves linear
-equations involving colors the same way it does for pairs.
+PostScript\index{PostScript} output file. MetaPost solves linear equations involving
+colors the same way it does for pairs. The type `rgbcolor' is an alias of
+type `color'. 
 
-The type `rgbcolor' is an alias of type `color'.
-
-The cmykcolor\index{cmykcolor type} type is a lot like the color type,
-except that it has four components instead of three.  Like colors,
-cmykcolors can be added, subtracted, used in mediation expressions, or
-multiplied or divided by numerics.  Colors can be specified by giving
-the cyan, magenta, yellow, and black components explicitly.  There is
-no restriction against cmykcolors ``blacker than black'' or ``whiter than
-white'' except all components are snapped back to the $[0,1]$ range
-when a cmykcolor is given in a PostScript\index{PostScript} output file.
-MetaPost solves linear equations involving cmykcolors the same way it does
-for colors. 
-
+The cmykcolor\index{cmykcolor type} type is similar to the color
+type except that it has four components instead of three.  This type is used to
+specify colors by their cyan, magenta, yellow, and black components explicitly.
 Because cmykcolors deal with pigments instead of light rays, the color
 black would be expressed as {\tt (1,1,1,1)} and white as {\tt (0,0,0,0)}.
 
@@ -1014,9 +1002,9 @@ double quotes or newlines, but there is a way to construct a string containing
 any sequence of eight-bit characters.
 
 \label{Dscantokens}
-You can convert from strings to other types, notably numeric, by using
+Conversion from strings to other types, notably numeric, can be accomplished by
 the \ttindex{scantokens} primitive:
-$$ n := scantokens (str); $$
+\begin{center}\texttt{n := scantokens(}\textit{str}\texttt{);}\end{center}
 More generally, \texttt{scantokens} parses a string into a token
 sequence, as if MetaPost had read it as input.
 
@@ -1732,42 +1720,37 @@ Setting \ttt{prologues} can be useful with \TeX, too, not just troff.
 Here is some explanation:
 
 \begin{itemize}
-\item When \ttt{prologues} is zero, which is the default, the MetaPost
-output files do not embed the fonts used at all.  The result is that if
-you view such a \ttt{.ps} file by itself, not in the context of a
-surrounding document, the text will probably appear in
-Courier\index{Courier} or Times-Roman\index{Times-Roman}.
+\item When \ttt{prologues} is 0, which is the default, the MetaPost
+output files do not have embedded fonts.  Fonts in the resulting
+output will probably render as Courier\index{Courier} or Times-Roman\index{Times-Roman}.
 
-\item If you set \ttt{prologues} to~2, the MetaPost
-output files will be so-called ``structured
-PostScript''\index{PostScript!structured} (EPSF\index{EPSF}),
-generated on the assumption that text comes from PostScript fonts
-provided by the ``environment'', that is, the document viewer or
-embedded application using the output. The output file will attempt to
-reencode the font correctly, based on \ttt{fontmapfile} and
+\item When \ttt{prologues} is 1, the MetaPost output claims to be
+``structured PostScript''\index{PostScript!structured} (EPSF\index{EPSF}),
+but it is not completely conformant. This variant is kept for backward
+compatibility with old (troff) documents, but its use is deprecated.
+For historical reasons, MetaPost sets \ttt{prologues} to~1 when the {\tt
+-troff} option is given on the command line.
+
+\item When \ttt{prologues} is 2, the MetaPost output is EPSF and assumes
+that the text comes from PostScript fonts
+provided by the ``environment'', such as the document viewer or
+embedded application using the output. MetaPost will attempt to
+set up the font encodings correctly, based on \ttt{fontmapfile} and
 \ttt{fontmapline} commands.
 
-\item If you set \ttt{prologues} to~3, the MetaPost
-output files will be so-called ``structured
-PostScript''\index{PostScript!structured} (EPSF\index{EPSF}) also, but
-the output will also contain the actual PostScript font(s) used or a
-subset of it,, based on \ttt{fontmapfile} and
-\ttt{fontmapline} commands.
-
-\item If you set \ttt{prologues} to~1, the MetaPost output claims to be
-EPSF, but it is not really conformant. This variant is kept for backward
-compatibility mode with old (troff) documents, but use is deprecated: 
-For historical reasons, MetaPost sets  {\tt prologues:=1} when the {\tt
--troff} option is given on the commandline.
-
-\item The \ttt{prologues} variable is irrelevant when processing MetaPost
-files through the \ttindex{mptopdf} utility (part of the \ConTeXt\
-distribution), because PDF files are by nature stand-alone.
+\item When \ttt{prologues} is 3, the MetaPost output will be EPSF but
+will contain the PostScript font(s) (or a subset) used based on the
+\ttt{fontmapfile} and \ttt{fontmapline} commands.  This value is useful
+for generating stand-alone PostScript graphics.
 \end{itemize}
 
-The details on how to include PostScript figures in a paper done in
-\TeX\ or troff are system-dependent.  They can generally be found in
-manual pages and other on-line documentation.  The manual for the
+It is worth noting that the default value \ttt{prologues:=0} is sufficient
+for graphics included in \TeX-based documents.  Also, the \ttt{prologues} variable is irrelevant
+when processing MetaPost files through the \ttindex{mptopdf} utility
+(part of the \ConTeXt\ distribution), because PDF files are, by nature,
+stand-alone.  The details on how to include PostScript figures in a paper
+done in \TeX\ or troff are system-dependent.  They can generally be found
+in manual pages and other on-line documentation.  The manual for the
 widely-used Dvips processor is in a file \ttt{dvips.texi}, included in
 most distributions, and is available online at
 \url{http://tug.org/texinfohtml/dvips.html}, among many other places and
@@ -1797,31 +1780,30 @@ The code is based on the font library used by pdf\TeX. Following in
 the footsteps of pdf\TeX, there are two new associated primitives:
 \ttindex{fontmapfile} and \ttindex{fontmapline}. Here is a simple
 example, specifying the map file for Latin Modern fonts in \LaTeX\
-(T1) encoding:\\
-\begin{verbatim}
-prologues := 2;
-fontmapfile "ec-public-lm.map";
-beginfig(1);
-  draw "Helló, világ" infont "ec-lmr10";
-endfig;
-\end{verbatim}
-
+(T1) encoding:
+\begin{center}\begin{tabular}{l}
+\verb|prologues:=2;|\\
+\verb|fontmapfile "ec-public-lm.map";|\\
+\verb|beginfig(1);|\\
+\verb|   draw "Helló, világ" infont "ec-lmr10";|\\
+\verb|endfig;|
+\end{tabular}\end{center}
 
 Using \ttt{fontmapline}, you can specify font mapping information
-inside the figure:\\
-\begin{verbatim}
-prologues := 2;
-fontmapline "pplbo8r URWPalladioL-Bold  "&ditto&
-                ".167 SlantFont"&ditto&" <8r.enc <uplb8a.pfb";
-beginfig(1);
-  draw "Hello, world" infont "pplbo8r";
-endfig;
-\end{verbatim}
-this will attempt to reencode the PostScript font URWPalladioL-Bold
+inside the figure:
+\begin{center}\begin{tabular}{l}
+\verb|prologues:=2;|\\
+\verb|fontmapline "pplbo8r URWPalladioL-Bold  "&ditto&|\\
+\verb|            ".167 SlantFont"&ditto&" <8r.enc <uplb8a.pfb";|\\
+\verb|beginfig(1);|\\
+\verb|   draw "Hello, world" infont "pplbo8r";|\\
+\verb|endfig;|
+\end{tabular}\end{center}
+This will attempt to reencode the PostScript font URWPalladioL-Bold
 whose tfm file is pplbo8r.tfm. The encoding is found in the file
 8r.enc, and will be included into the output file.
 
-If the same example was run with \ttt{prologues := 3}, MetaPost would
+If the same example was run with \ttt{prologues:=3}, MetaPost would
 include a subset of the font that resides in uplb8a.pfb into the
 output. In this case, the subset of the font is reorganized so that it
 has the correct encoding internally, 8r.enc will not be embedded also.
@@ -1836,15 +1818,11 @@ $$\begin{tabular}{|c|l|} \hline
 \hline
 \end{tabular}
 $$
-without any option, the current list will be completely replaced.
-
-If there are no \ttt{fontmapfile} statements at all, MetaPost will try
-to find a default map file. In order, it will attempt to read {\tt
-mpost.map} and {\tt pdftex.map}.
-
-Note: if \ttt{prologues} is set to~1, MetaPost attempts to read a file
-called {\tt psfonts.map}, regardless of any {\tt fontmapfile}
-statement. Again, this is for backward compatibility only.
+Without any option, the current list will be completely replaced.  If there are no \ttt{fontmapfile} statements, MetaPost will attempt
+to locate a default map file with a preference to read {\tt
+mpost.map} and then {\tt pdftex.map}.  If \ttt{prologues} is set to~1,
+MetaPost attempts to read a file called {\tt psfonts.map}, regardless of any
+{\tt fontmapfile} statement. Again, this is for backward compatibility only.
 
 
 \subsection{The {\tt infont} operator}
