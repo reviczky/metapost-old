@@ -173,7 +173,7 @@ $$ \includegraphics{mpgraph-2.mps} $$
 \end{figure}
 
 Watch out for the following: the \tdescr{picture expression} is placed
-with the lower-left corner at the path knot, not it's center. If you
+with the lower-left corner at the path knot, not its center. If you
 want it to be dead-center, you have to correct the placement
 yourself. For the example above, you need something like this instead:
 
@@ -325,8 +325,8 @@ Figure~\ref{fig5} graphs execution times for two matrix multiplication algorithm
 using
 $$ \hbox{\tt setcoords(log,log)} $$
 to specify logarithmic spacing on both axes.  The data file {\tt matmul.d} gives
-timings for both algorithms:\\
-\hbox to\hsize{\footnotesize\hfil$
+timings for both algorithms:
+$$ \hbox to\hsize{\footnotesize\hfil$
 \begin{verbatim}
 20      .007861  standard MM: size, seconds
 30      .022051
@@ -351,6 +351,7 @@ timings for both algorithms:\\
 480     72.60
 \end{verbatim}
 \hfil$}
+$$
 A blank line in a data file ends a data set.  Subsequent {\tt gdraw} commands
 access additional data sets by just naming the same data file again.
 Since each line gives one $x$~coordinate and one $y$~coordinate, commentary
@@ -484,11 +485,14 @@ $$ \begin{verbatim}
 vardef newy(expr y) = (256/75)*y + mlog y enddef;
 draw begingraph(3in,2in);
  glabel.lft(btex \vbox{\hbox{Population} \hbox{in millions}} etex, OUT);
- gdraw "ttimepop.d";
+ path p;
+ gdata("timepop.d", $, augment.p($1, newy(Scvnum $2)); );
+ gdraw p withpen nullpen;
  for y=5,10,20,50,100,150,200,250:
    grid.lft(format("%g",y), newy(y)) withcolor .85white;
  endfor
  autogrid(grid.bot,) withcolor .85white;
+ gdraw p;
  frame.llft;
  endgraph;
 \end{verbatim}
