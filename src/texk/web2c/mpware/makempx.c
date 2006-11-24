@@ -1,7 +1,13 @@
 /* $Id$
-makempx.c
-Translated from sh script to C by A. K. ( Aug. 1997 )
-Changed : 2001/08 --ak
+
+ Make an MPX file from the labels in a MetaPost source file,
+ using mpto and either dvitomp (TeX) or dmp (troff).
+
+ Started from a shell script initially based on John Hobby's original
+ version, thatr was then translated to C by Akira Kakuto (Aug 1997, 
+ Aug 2001), and updated and largely rewritten by Taco Hoekwarer (Nov 2006).
+
+ Public Domain.
 */
 
 #include <stdio.h>
@@ -14,57 +20,68 @@ Changed : 2001/08 --ak
  #include <sys/types.h>
  #include <sys/wait.h>
  #include <unistd.h>
- #define _dup dup
- #define _dup2 dup2
 #endif
 #include <string.h>
 #include <ctype.h>
 
 #include <kpathsea/kpathsea.h>
 
-#define DMP "dmp"
-#define DVITOMP "dvitomp"
-#define DEFMPTEXPRE "mptexpre.tex"
-#define NEWER "newer"
-#define TEX "tex"
+#define version "0.991"
+
 #define ERRLOG "mpxerr.log"
 #define TEXERR "mpxerr.tex"
 #define DVIERR "mpxerr.dvi"
 #define TROFF_INERR "mpxerr"
 #define TROFF_OUTERR "mpxerr.t"
-#define MPTO "mpto"
 
+#define DMP "dmp"
+#define DVITOMP "dvitomp"
+#define NEWER "newer"
+#define MPTO "mpto" 
+#define MPTOTEXOPT "-tex"
+#define MPTOTROPT  "-troff"
+#define TROFF   "soelim -k | eqn -Tps -d\\$\\$ | troff -Tps"
+#define TEX     "tex"
+
+#ifdef WIN32
+#define nuldev "nul"
+#define ACCESS_MODE 4
+#define DUP _dup
+#define DUPP _dup2
+#define uexit exit
+#else
+#define nuldev "/dev/null"
+#define ACCESS_MODE R_OK
+#define DUP dup
+#define DUPP dup2
+#define uexit _exit
+#endif
+
+#define ARGUMENT_IS(a) (!strncmp(av[curarg],(a),strlen((a))))
+  
 /* TeX command name */
-char texcmd[32];
+char maincmd[256];
 
-char *progname;
-
-void usage(void)
+void usage(char *name)
 {
-  fprintf(stderr, "Usage: %s [-tex[=TEXCOMMAND]|-troff] MPFILE MPXFILE.\n",
-          progname);
-  fprintf(stderr, "If MPXFILE is older than MPFILE, translate ");
-  fprintf(stderr, "the labels from the MetaPost\n");
-  fprintf(stderr, "input file MPFILE to low-level commands ");
-  fprintf(stderr, "in MPXFILE, by running\n");
-  fprintf(stderr, "mpto -tex, tex, and dvitomp\n");
-  fprintf(stderr, "by default; if -troff is specified,\n");
-  fprintf(stderr, "mpto -troff, geqn -d$$ | gtroff -Tps, ");
-  fprintf(stderr, "and dmp.\n");
-  fprintf(stderr, "\nThe current directory is used for writing ");
-  fprintf(stderr, "temporary files. Errors are\n");
-  fprintf(stderr, "left in mpxerr.{tex, log, dvi}.\n");
-  fprintf(stderr, "\nIf the file named in $MPTEXPRE ");
-  fprintf(stderr, "(mptexpre.tex by default) exists, ");
-  fprintf(stderr, "it is\nprepended to the output in tex mode.\n");
-  fprintf(stderr, "\nEmail bug reports to tex-k@mail.tug.org.\n");
-  exit (0);
+  fprintf(stderr,"Usage: %s [-tex|-tex=<program>|-troff] MPFILE MPXFILE.\n", name);
+  fputs("  If MPXFILE is older than MPFILE, translate the labels from the MetaPost\n"
+  "  input file MPFILE to low-level commands in MPXFILE, by running\n"
+  "    "  MPTO " " MPTOTEXOPT ", " TEX ", and " DVITOMP "\n"
+  "  by default; or, if -troff is specified,\n"
+  "    "  MPTO " " MPTOTROPT ", " TROFF ", and " DMP ".\n\n"
+  "  The current directory is used for writing temporary files.  Errors are\n"
+  "  left in mpxerr.{tex,log,dvi}.\n\n"
+  "  If the file named in $MPTEXPRE (mptexpre.tex by default) exists, it is\n"
+  "  prepended to the output in tex mode.\n\n"
+  "Email bug reports to metapost@tug.org.\n",stderr);
+  uexit (0);
 }
 
-void mess(void)
+void mess(char *progname)
 {
-  fprintf(stderr, "Try %s --help for more information.\n", progname);
-  exit (1);
+  fprintf(stderr, "Try `%s --help' for more information.\n", progname);
+  uexit (1);
 }
 
 
@@ -105,53 +122,133 @@ void erasetmp(void)
   }
 }
 
+FILE * 
+makempx_xfopen(char *name, char *mode) {
+  FILE * ret;
+  if(!(ret = fopen(name,mode))) {
+	if (*mode == 'r') {
+	  fprintf(stderr, "Cannot open %s for reading.\n", name);
+	} else {
+	  fprintf(stderr, "Cannot open %s for writing.\n", name);
+	}
+	erasetmp();
+	uexit (1);
+  }
+  return ret;
+}
+
+
+int run_command (int count, char **cmdl) {
+  int retcode = 0;
+  char *cmd = NULL;
+  char **options = NULL;
+  int i = 0; /* for loops */
 #ifndef WIN32
-int do_spawn (const char *a,const char *b,const char *c,const char *d,const char *e,const char *f,const char *g) {
   pid_t child;
-  int retcode;
-  
+#endif
+  options = xmalloc(sizeof(char *)*(count+1));
+  cmd = strdup(cmdl[0]);
+  while (i<count) { options[i] = cmdl[i]; i++;  }
+  options[count] = NULL;
+#ifndef WIN32
   child = fork();
   if (child>=0) {
 	if (child==0) {
-	  execlp(a,b,c,d,e,f,g, NULL);
+	  execvp(cmd,options);
 	} else
 	  wait(&retcode);
   }
+  free(cmd);
+  free(options);
+  return WEXITSTATUS(retcode);
+#else
+  retcode = spawnvp(P_WAIT, cmd, options);
+  free(cmd);
+  free(options);
   return retcode;
-}
 #endif
+}
+
+int do_split_command (char *maincmd, char **cmdline, char target) {
+  char *piece;
+  char cmd[SNAM];
+  int ret = 0;
+  int i;
+  int in_string = 0;
+  if (strlen(maincmd)==0)
+	return 0 ;
+  strcpy(cmd, maincmd);
+  i=0;
+  while (cmd[i] == ' ') i++;
+  piece = cmd;
+  for (;i<strlen(maincmd);i++) {
+	if (in_string==1) {
+	  if (cmd[i]== '"') {
+		in_string = 0;
+	  }
+	} else if (in_string==2) {
+	  if (cmd[i]== '\'') {
+		in_string = 0;
+	  }
+	} else {
+	  if (cmd[i]== '"') {
+		in_string = 1;
+	  } else if (cmd[i]== '\'') {
+		in_string = 2;
+	  } else if (cmd[i] == target) {
+		cmd[i] = 0;;
+		cmdline[ret++] = strdup(piece);
+		while (cmd[(i+1)] == ' ') i++;
+		piece = cmd+(i+1);
+	  }
+	}
+  }
+  if (*piece) {
+	cmdline[ret++] = piece;
+  }
+  return ret;
+}
+
+int split_command (char *maincmd, char **cmdline) {
+  return do_split_command(maincmd,cmdline,' ');
+}
+
+int split_pipes (char *maincmd, char **cmdline) {
+  return do_split_command(maincmd,cmdline,'|');
+}
 
 int main(int ac, char **av)
 {
-  int mpmode = 0;
-  /*
-      mpmode = 0 for tex
-      mpmode = 1 for troff
-  */
-  char tmptemplate[] = "mpXXXXXX";
-#ifdef WIN32
-    char nuldev[] = "nul";
-#else
-    char nuldev[] = "/dev/null";
-#endif
-  
+  int  mpmode = 0;
+  char tmpname[] = "mpxXXXXXX";
+  char *progname;
+
   char buffer[MBUF];
   char mpfile[LNAM], mpxfile[LNAM], mptexpre[LNAM];
-  char mpto_opt[SNAM], cmd[SNAM], whatever_to_mpx[SNAM];
+  char whatever_to_mpx[SNAM];
   char infile[SNAM], inerror[SNAM];
 
-  char *tmpname = NULL, *env = NULL;
+  char *env = NULL;
+  /* max 10! */
+  char *cmdline[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+  char *cmdbits[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+  int cmdlength = 1;
+  int cmdbitlength = 1;
 
   int retcode, i, sav_o, sav_e, sav_i;
 
   FILE *fr, *fw, *few, *fnulr, *fnulw;
 
+  int curarg = 0;
+  mpfile[0] = 0;
+  mpxfile[0] = 0;
+
 #ifdef WIN32
   getlongname(av[0]);
 #endif
   progname = av[0];
-
-/* Initialize buffer for temparary file names */
+  
+  /* Initialize buffer for temporary file names */
   for(i = 0; i < SNAM; i++) {
     mp_tex[i] = '\0';
     mp_i[i] = '\0';
@@ -162,211 +259,182 @@ int main(int ac, char **av)
 
   kpse_set_progname(progname);
 
-  if((ac != 2) && (ac != 3) && (ac != 4)) {
-    fprintf(stderr, "%s: Invalid command line.\n", progname);
-    mess();
-  }
-
-/* Set TeX command */
-  if((env = kpse_var_value("TEX")))
-    strcpy(texcmd, env);
-  else if((env = kpse_var_value("MPXTEXCMD")))
-    strcpy(texcmd, env);
-  else
-    strcpy(texcmd, TEX);
-
-  if(env) free(env);
-
-  if(ac == 3) {
-    if(strchr(av[1], ' ') && (av[1][0] != '\"')) {
-      strcpy(mpfile, "\"");
-      strcat(mpfile, av[1]);
-      strcat(mpfile, "\"");
-    } else strcpy(mpfile, av[1]);
-    if(strchr(av[2], ' ') && (av[2][0] != '\"')) {
-      strcpy(mpxfile, "\"");
-      strcat(mpxfile, av[2]);
-      strcat(mpxfile, "\"");
-    } else strcpy(mpxfile, av[2]);
-  }
-
-  if(ac == 4 || ac == 2) {
-    if(av[1][0] != '-') {
-      fprintf(stderr, "%s: Invalid command line.\n", progname);
-      mess();
-    }
-    if((ac ==2) && (!strncmp(av[1], "-help", 5) ||
-       !strncmp(av[1], "--help", 6))) {
-      usage();
-    }
-    else if((ac == 2) && (!strncmp(av[1], "-version", 8) ||
-            !strncmp(av[1], "--version", 9))) {
-      fprintf(stderr, "%s: (Web2c 7.3.8) 1.8\n", progname);
-      fprintf(stderr, "There is NO warranty.\n");
-      fprintf(stderr, "Primary author: John Hobby; ");
-      fprintf(stderr, "Web2c maintainer: O. Weber.\n");
-      fprintf(stderr, "Win32 C version 1.1: A. K.\n");
-      exit (0);
-    }
-    else if((ac == 4) && (!strncmp(av[1], "-troff", 6) ||
-            !strncmp(av[1], "--troff", 7))) {
+  while (curarg < (ac-1)) {
+	curarg++;
+	/* Set TeX command */
+	if((env = kpse_var_value("TEX")))
+	  strcpy(maincmd, env);
+	else if((env = kpse_var_value("MPXMAINCMD")))
+	  strcpy(maincmd, env);
+	else
+	  strcpy(maincmd, TEX);
+	if(env) free(env);
+	strcat(maincmd," --parse-first-line --interaction=nonstopmode ");
+	if (ARGUMENT_IS("-help") || ARGUMENT_IS("--help")) {
+	  usage(av[0]);
+	} else if (ARGUMENT_IS("-version") || ARGUMENT_IS("--version")) {
+	  fprintf (stdout,"%s %s\n", progname, version);
+	  fputs ("There is NO warranty. This program is in the public domain.\n"
+             "Original author: John Hobby.\n"
+             "Current maintainer: Taco Hoekwater.\n", stdout);
+	  uexit (0);
+    } else if(ARGUMENT_IS("-troff") || ARGUMENT_IS("--troff")) {
       mpmode = 1;
-    }
-    else if((ac == 4) && (!strncmp(av[1], "-tex", 4) ||
-            !strncmp(av[1], "--tex", 5))) {
+	  
+      if (ARGUMENT_IS("-troff=")  || ARGUMENT_IS("--troff=")) {
+		i = 7; 
+		if (*(av[curarg] + i) == '=') 
+		  i++;
+		if (*(av[curarg] + i) == '\'' || *(av[curarg] + i) == '\"') {
+		  strcpy(maincmd, av[curarg] + i + 1);
+		  *(maincmd+strlen(maincmd)) = 0;
+		} else {
+		  strcpy(maincmd, av[curarg] + i);
+		}
+	  } else { 
+		strcpy(maincmd,TROFF);
+	  }
+	  
+    } else if(ARGUMENT_IS("-tex") || ARGUMENT_IS("--tex")) {
       mpmode = 0;
-      if(!strncmp(av[1], "-tex=", 5)) strcpy(texcmd, av[1] + 5);
-      else if(!strncmp(av[1], "--tex=", 6)) strcpy(texcmd, av[1] + 6);
-    }
-    else {
-      fprintf(stderr, "%s: Invalid option: %s.\n", progname, av[1]);
-      mess();
-    }
-    if(ac == 4) {
-      if(strchr(av[2], ' ') && (av[2][0] != '\"')) {
-        strcpy(mpfile, "\"");
-        strcat(mpfile, av[2]);
-        strcat(mpfile, "\"");
-      } else strcpy(mpfile, av[2]);
-      if(strchr(av[3], ' ') && (av[3][0] != '\"')) {
-        strcpy(mpxfile, "\"");
-        strcat(mpxfile, av[3]);
-        strcat(mpxfile, "\"");
-      } else strcpy(mpxfile, av[3]);
-    }
-    else {
-      mess();
-    }
+
+      if (ARGUMENT_IS("-tex=")  || ARGUMENT_IS("--tex=")) {
+		i = 5; 
+		if (*(av[curarg] + i) == '=') 
+		  i++;
+		if (*(av[curarg] + i) == '\'' || *(av[curarg] + i) == '\"') {
+		  strcpy(maincmd, av[curarg] + i + 1);
+		  *(maincmd+strlen(maincmd)) = 0;
+		} else {
+		  strcpy(maincmd, av[curarg] + i);
+		}
+	  }
+
+    } else if(ARGUMENT_IS("-")) {
+	  fprintf(stderr, "%s: Invalid option: %s.\n", progname, av[curarg]);
+	  mess(progname);
+	} else {
+	  if (mpfile[0] == 0) {
+		if(strchr(av[curarg], ' ') && (av[curarg][0] != '\"')) {
+		  strcpy(mpfile, "\"");
+		  strcat(mpfile, av[curarg]);
+		  strcat(mpfile, "\"");
+		} else strcpy(mpfile, av[curarg]);
+	  } else if (mpxfile[0] == 0) {
+		if(strchr(av[curarg], ' ') && (av[curarg][0] != '\"')) {
+		  strcpy(mpxfile, "\"");
+		  strcat(mpxfile, av[curarg]);
+		  strcat(mpxfile, "\"");
+		} else strcpy(mpxfile, av[curarg]);
+	  } else {
+		fprintf(stderr, "%s: Extra argument %s.\n", progname, av[curarg]);
+		mess(progname);
+	  }
+	}
   }
 
-/* Check if mpfile is newer than mpxfile */
-#ifdef WIN32
-  retcode = spawnlp(P_WAIT, NEWER, NEWER, mpfile, mpxfile, NULL);
-#else
-  retcode = do_spawn(NEWER, NEWER, mpfile, mpxfile, NULL, NULL, NULL);
-#endif
+  if (mpfile[0] == 0 || mpxfile[0] == 0) {
+	fprintf(stderr, "%s: Need exactly two file arguments.\n", progname);
+	mess(progname);
+  }
 
-/* If MPX file is up-to-date or if MP file does not exist, do nothing. */
-  if(retcode) exit (0);
+  /* 
+     The shell script trapped HUP, INT, QUIT and TERM for cleaning up 
+     temporary files.
+     That is not portable, so the C version does not attempt to do so.
+   */
 
-  if(mpmode == 0) strcpy(mpto_opt, "-tex");
-  else if(mpmode == 1) strcpy(mpto_opt, "-troff");
+  /* Check if mpfile is newer than mpxfile */
 
-  tmpname = (char *)mktemp(tmptemplate);
+  cmdline[0] = NEWER;
+  cmdline[1] = mpfile;
+  cmdline[2] = mpxfile;
+  retcode = run_command(3,cmdline);
+
+  /* If MPX file is up-to-date or if MP file does not exist, do nothing. */
+  if(retcode) uexit (0);
+  
+  i = mkstemp(tmpname);
+  if(i==-1)
+	uexit(1);
+
+  close(i);
+  remove(tmpname);
 
   strcpy(mp_tex, tmpname);
   strcat(mp_tex, ".tex");
 
-/* step 1: */
+  /* step 1: */
 
-  if(!(fw = fopen(mp_tex, "wb"))) {
-    fprintf(stderr, "Unable to open %s\n", mp_tex);
-    erasetmp();
-    exit(1);
-  }
-  if(!(few = fopen(ERRLOG, "wb"))) {
-    fprintf(stderr, "Unable to open ERRLOG\n");
-    erasetmp();
-    exit(1);
-  }
+  fw = makempx_xfopen(mp_tex,"wb");
+  few = makempx_xfopen(ERRLOG,"wb");
 
-  sav_o = _dup(fileno(stdout));
-  sav_e = _dup(fileno(stderr));
+  cmdline[0] = MPTO;
+  cmdline[1] = (mpmode == 0 ? MPTOTEXOPT : MPTOTROPT);
+  cmdline[2] = mpfile;
 
-  _dup2(fileno(fw), fileno(stdout));
-  _dup2(fileno(few), fileno(stderr));
+  sav_o = DUP(fileno(stdout));
+  DUPP(fileno(fw), fileno(stdout));
+  sav_e = DUP(fileno(stderr));
+  DUPP(fileno(few), fileno(stderr));
 
-#ifdef WIN32
-  retcode = spawnlp(P_WAIT, MPTO, MPTO, mpto_opt, mpfile, NULL);
-#else
-  retcode = do_spawn(MPTO, MPTO, mpto_opt, mpfile, NULL, NULL, NULL);
-#endif
-  
-  _dup2(sav_o, fileno(stdout));
+  retcode = run_command(3,cmdline);
+
+  DUPP(sav_o, fileno(stdout));
   close(sav_o);
-  _dup2(sav_e, fileno(stderr));
+  fclose(fw); 
+
+  DUPP(sav_e, fileno(stderr));
   close(sav_e);
-  fclose(fw); fclose(few);
+  fclose(few);
 
   if(retcode) {
-    fprintf(stderr, "%s: Command failed: mpto %s %s\n",
-            progname, mpto_opt, mpfile);
+    fprintf(stderr, "%s: Command failed: %s %s %s\n",
+			 progname, cmdline[0], cmdline[1], cmdline[2]);
     erasetmp();
-    exit (1);
+    uexit (1);
   }
 
-  if(mpmode == 1) {
-    strcpy(mp_i, tmpname);
-    strcat(mp_i, ".i");
-    rename(mp_tex, mp_i);
-  }
-
-/* step 2: */
+  /* step 2: */
 
   if(mpmode == 0) {   /* TeX mode */
     if((env = getenv("MPTEXPRE"))) strcpy(mptexpre, env);
     else if((env = kpse_var_value("MPTEXPRE"))) strcpy(mptexpre, env);
     else strcpy(mptexpre, "mptexpre.tex");
 
-    if(!access(mptexpre, 4)) {
+    if(!access(mptexpre, ACCESS_MODE)) {
       strcpy(mp_tmp, tmpname);
       strcat(mp_tmp, ".tmp");
-      if(!(fr = fopen(mptexpre, "r"))) {
-        fprintf(stderr, "Cannot open %s.\n", mptexpre);
-        erasetmp();
-        exit (1);
-      }
-      if(!(fw = fopen(mp_tmp, "wb"))) {
-        fprintf(stderr, "Cannot open %s.\n", mp_tmp);
-        erasetmp();
-        exit (1);
-      }
-      
+	  fr = makempx_xfopen(mptexpre, "r");
+      fw = makempx_xfopen(mp_tmp,"wb");
+
       while((i = fread(buffer, 1, MBUF, fr)))
         fwrite(buffer, 1, i, fw);
       fclose(fr);
-      if(!(fr = fopen(mp_tex, "r"))) {
-        fprintf(stderr, "Cannot open %s.\n", mp_tex);
-        erasetmp();
-        exit (1);
-      }
+	  fr = makempx_xfopen(mp_tex,"r");
       while((i = fread(buffer, 1, MBUF, fr)))
         fwrite(buffer, 1, i, fw);
-
-      fclose(fr); fclose(fw);
+      fclose(fr); 
+	  fclose(fw);
 
       remove(mp_tex); rename(mp_tmp, mp_tex);
     }
+	strcat(maincmd, mp_tex);
+	cmdlength = split_command(maincmd, cmdline);
     
-#ifdef WIN32
-    strcpy(cmd, "--parse-first-line --interaction=nonstopmode ");
-#endif
-    strcat(cmd, mp_tex);
+	fnulr = makempx_xfopen(nuldev, "r");
+	fnulw = makempx_xfopen(nuldev, "w");
 
-    if(!(fnulr = fopen(nuldev, "r"))) {
-      fprintf(stderr, "Cannot open nul device to read.\n");
-      erasetmp();
-      exit (1);
-    }
-    if(!(fnulw = fopen(nuldev, "w"))) {
-      fprintf(stderr, "Cannot open nul device to write.\n");
-      erasetmp();
-      exit (1);
-    }
-    sav_i = _dup(fileno(stdin));
-    sav_o = _dup(fileno(stdout));
-    _dup2(fileno(fnulr), fileno(stdin));
-    _dup2(fileno(fnulw), fileno(stdout));
+    sav_i = DUP(fileno(stdin));
+    sav_o = DUP(fileno(stdout));
+    DUPP(fileno(fnulr), fileno(stdin));
+    DUPP(fileno(fnulw), fileno(stdout));
 
-#ifdef WIN32
-    retcode = spawnlp(P_WAIT, texcmd, texcmd, cmd, NULL);
-#else
-	retcode = do_spawn(texcmd, texcmd, "--parse-first-line", "--interaction=nonstopmode", cmd, NULL, NULL);
-#endif
+	retcode = run_command(cmdlength,cmdline);
 
-    _dup2(sav_i, fileno(stdin));
+    DUPP(sav_i, fileno(stdin));
     close(sav_i);
-    _dup2(sav_o, fileno(stdout));
+    DUPP(sav_o, fileno(stdout));
     close(sav_o);
     fclose(fnulr); fclose(fnulw);
 
@@ -377,8 +445,7 @@ int main(int ac, char **av)
       strcpy(inerror, DVIERR);
       strcpy(mp_log, tmpname);
       strcat(mp_log, ".log");
-    }
-    else {
+    } else {
       strcpy(mp_log, tmpname);
       strcat(mp_log, ".log");
       rename(mp_tex, TEXERR);
@@ -386,118 +453,88 @@ int main(int ac, char **av)
       fprintf(stderr, "%s: Command failed: tex mpxerr.tex; see mpxerr.log\n",
               progname);
       erasetmp();
-      exit (2);
+      uexit (2);
     }
   }
   else if(mpmode == 1) { /* troff mode */
+
+    strcpy(mp_i, tmpname);
+    strcat(mp_i, ".i");
+    rename(mp_tex, mp_i);
+
     strcpy(mp_t, tmpname);
     strcat(mp_t, ".t");
-    if(!(fr = fopen(mp_i, "r"))) {
-      fprintf(stderr, "Cannot open %s to read.\n", mp_i);
-      erasetmp();
-      exit (1);
-    }
-    strcpy(mp_tmp, tmpname); strcat(mp_tmp, ".tmp");
-    if(!(fw = fopen(mp_tmp, "wb"))) {
-      fprintf(stderr, "Cannot open %s to write.\n", mp_tmp);
-      erasetmp();
-      exit (1);
-    }
+	fr = makempx_xfopen(mp_i,"r");
 
-    sav_i = _dup(fileno(stdin));
-    sav_o = _dup(fileno(stdout));
-    _dup2(fileno(fr), fileno(stdin));
-    _dup2(fileno(fw), fileno(stdout));
+    strcpy(mp_tmp, tmpname);
+	strcat(mp_tmp, ".tmp");
+	fw = makempx_xfopen(mp_tmp,"wb");
 
-#ifdef WIN32
-    retcode = spawnlp(P_WAIT, "geqn", "geqn", "-d$$", NULL);
-#else
-	retcode = do_spawn("geqn", "geqn", "-d$$", NULL, NULL, NULL, NULL);
-#endif
+	/* split the command in bits */
+	cmdbitlength = split_pipes(maincmd,cmdbits);
+	
+	for (i=0;i<cmdbitlength;i++) {
+	  cmdlength = split_command(cmdbits[i],cmdline);
 
-    _dup2(sav_i, fileno(stdin));
-    close(sav_i);
-    _dup2(sav_o, fileno(stdout));
-    close(sav_o);
-    fclose(fr); fclose(fw);
+	  sav_i = DUP(fileno(stdin));
+	  sav_o = DUP(fileno(stdout));
+	  DUPP(fileno(fr), fileno(stdin));
+	  DUPP(fileno(fw), fileno(stdout));
+	  
+	  retcode = run_command(cmdlength, cmdline);
 
-    if(retcode) {
-      rename(mp_i, TROFF_INERR);
-      fprintf(stderr, "%s: Command failed: geqn -d$$\n", progname);
-      erasetmp();
-      exit (2);
-    }
-
-    if(!(fr = fopen(mp_tmp, "r"))) {
-      fprintf(stderr, "Cannot open %s to read.\n", mp_tmp);
-      erasetmp();
-      exit (1);
-    }
-    if(!(fw = fopen(mp_t, "wb"))) {
-      fprintf(stderr, "Cannot open %s to write.\n", mp_t);
-      erasetmp();
-      exit (1);
-    }
-    sav_i = _dup(fileno(stdin));
-    sav_o = _dup(fileno(stdout));
-    _dup2(fileno(fr), fileno(stdin));
-    _dup2(fileno(fw), fileno(stdout));
-
-#ifdef WIN32
-    retcode = spawnlp(P_WAIT, "gtroff", "gtroff", "-Tps", NULL);
-#else
-	retcode = do_spawn("gtroff", "gtroff", "-Tps", NULL, NULL, NULL, NULL);
-#endif
-
-    _dup2(sav_i, fileno(stdin));
-    close(sav_i);
-    _dup2(sav_o, fileno(stdout));
-    close(sav_o);
-    fclose(fr); fclose(fw);
-
-    if(retcode) {
-      rename(mp_i, TROFF_INERR);
-      fprintf(stderr, "%s: Command failed: gtroff -Tps\n", progname);
-      erasetmp();
-      exit (2);
-    }
-    else {
-      strcpy(whatever_to_mpx, DMP);
-      strcpy(infile, mp_t);
-      strcpy(inerror, TROFF_OUTERR);
-    }
+	  DUPP(sav_i, fileno(stdin));
+	  close(sav_i);
+	  DUPP(sav_o, fileno(stdout));
+	  close(sav_o);
+	  fclose(fr); 
+	  fclose(fw);
+	  if(retcode) {
+		rename(mp_i, TROFF_INERR);
+		fprintf(stderr, "%s: Command failed: %s\n", progname, (char *)cmdline[0]);
+		erasetmp();
+		uexit (2);
+	  }	
+	  if (i % 2) {
+		fr = makempx_xfopen(mp_tmp, "r");
+		fw = makempx_xfopen(mp_t, "wb");
+		strcpy(infile, mp_t);
+	  } else {
+		fr = makempx_xfopen(mp_t, "r");
+		fw = makempx_xfopen(mp_tmp, "wb");
+		strcpy(infile, mp_tmp);
+	  }
+	}
+	strcpy(whatever_to_mpx, DMP);
+	strcpy(inerror, TROFF_OUTERR);
   }
 
-/* Step 3: */
+  /* Step 3: */
 
-  if(!(fw = fopen(ERRLOG, "wb"))) {
-    fprintf(stderr, "Cannot open mpxerr.log to write.\n");
-    erasetmp();
-    exit (1);
-  }
-  sav_o = _dup(fileno(stdout));
-  _dup2(fileno(fw), fileno(stdout));
-#ifdef WIN32
-  retcode = spawnlp(P_WAIT, whatever_to_mpx, whatever_to_mpx,
-                    infile, mpxfile, NULL);
-#else
-  retcode = do_spawn(whatever_to_mpx, whatever_to_mpx,
-					 infile, mpxfile, NULL, NULL, NULL);
-#endif
-  _dup2(sav_o, fileno(stdout));
+  fw = makempx_xfopen(ERRLOG, "wb");
+
+  sav_o = DUP(fileno(stdout));
+  DUPP(fileno(fw), fileno(stdout));
+
+  cmdline[0] = whatever_to_mpx;
+  cmdline[1] = infile;
+  cmdline[2] = mpxfile;
+  retcode = run_command(3, cmdline);
+
+  DUPP(sav_o, fileno(stdout));
   close(sav_o); fclose(fw);
   
   if(retcode) {
     rename(infile, inerror);
-    if(mpmode == 1) rename(mp_i, TROFF_INERR);
+    if (mpmode == 1) rename(mp_i, TROFF_INERR);
     remove(mpxfile);
     fprintf(stderr, "%s: Command failed: %s %s %s\n",
             progname, whatever_to_mpx, inerror, mpxfile);
     erasetmp();
-    exit(3);
+    uexit(3);
   }
   remove(ERRLOG);
   remove(infile);
   erasetmp();
-  exit (0);
+  uexit (0);
 }
