@@ -95,7 +95,7 @@
 #define MPTO "mpto" 
 #define MPTOTEXOPT "-tex"
 #define MPTOTROPT  "-troff"
-#define TROFF   "soelim | geqn -Tps -d$$ | gtroff -Tps"
+#define TROFF   "soelim | eqn -Tps -d$$ | groff -Tps"
 #define TEX     "tex"
 
 #define LNAM 255
