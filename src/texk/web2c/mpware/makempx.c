@@ -505,7 +505,7 @@ int main(int ac, char **av)
   if((tmpstring == NULL) || strlen(tmpname)==0)
     uexit(1);
 #else
-  sprintf(tmpname,"mpx%6d", (time(NULL) % 1000000));
+  sprintf(tmpname,"mp%06d", (time(NULL) % 1000000));
 #endif
 #endif
 
