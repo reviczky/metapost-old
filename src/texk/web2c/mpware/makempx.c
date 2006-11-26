@@ -15,7 +15,7 @@
  * The script trapped HUP, INT, QUIT and TERM for cleaning up 
    temporary files. This is a refinement, and not portable.
 
- * The command 'newer' became a function. (at least on Unix)
+ * The command 'newer' became a function.
 
  * The script put its own directory in front of the
    executable search PATH. This is not portable either, and
