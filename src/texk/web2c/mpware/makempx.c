@@ -95,7 +95,7 @@
 #define MPTO "mpto" 
 #define MPTOTEXOPT "-tex"
 #define MPTOTROPT  "-troff"
-#define TROFF   "soelim | eqn -Tps -d$$ | gtroff -Tps"
+#define TROFF   "soelim | geqn -Tps -d$$ | gtroff -Tps"
 #define TEX     "tex"
 
 #define LNAM 255
@@ -364,9 +364,6 @@ int main(int ac, char **av)
     cmdbits[i] = NULL;
   }
   
-#ifdef WIN32
-  getlongname(av[0]); /* TH: what does this do? */
-#endif
   progname = av[0];
   
   /* Initialize buffer for temporary file names */
