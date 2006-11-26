@@ -43,10 +43,10 @@
  #include <process.h>
 #else
  #include <sys/types.h>
- #include <sys/stat.h>
  #include <sys/wait.h>
  #include <unistd.h>
 #endif
+#include <sys/stat.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -57,9 +57,7 @@
 #include <kpathsea/kpathsea.h>
 #include "c-auto.h"
 
-#ifndef WIN32
 #define INLINE_NEWER 1
-#endif
 
 /* We may have high-res timers in struct stat.  If we do, use them.  */
 #if HAVE_ST_MTIM
