@@ -42,7 +42,6 @@ char *term_banner="This is DMP, Version 0.991";
 #define PI  3.14159265358979323846
 #endif
 
-#define POOLMAX	65000	/* total characters in all font and char names */
 #define FCOUNT	100	/* maximum number of fonts */
 #define SHIFTS	100	/* maximum number of characters with special shifts */
 #define line_length 79	/* maximum output line length (must be at least 60) */
@@ -100,8 +99,11 @@ void warn(char *msg1, char *msg2, char *msg3)
 
 void add_to_pool(char c)
 {
-    if (poolsize==POOLMAX) quit("Need to increase POOLMAX","","");
-    else strpool[poolsize++] = c;
+  if (poolsize==POOLMAX) {
+    fprintf(stderr, "%s", strpool);
+    quit("Need to increase POOLMAX","","");
+  }
+  else strpool[poolsize++] = c;
 }
 
 
@@ -297,15 +299,20 @@ void read_fmap( char *dbase)
     while ((c=getc(fin))!=EOF) {
 	if (nfonts==FCOUNT) quit("Need to increase FCOUNT","","");
 	nam = &strpool[poolsize];
-	for (;c!='\t'; c=getc(fin)) add_to_pool(c);
+	for (;c!='\t' ; c=getc(fin)) {
+	  if (c==EOF) break;
+	  add_to_pool(c);
+	}
 	add_to_pool(0);
 	*hfind(nam, trfonts) = nfonts;
 	texname[nfonts] = &strpool[poolsize];
 	do {
 	    poolsize = texname[nfonts] - strpool;
 	    do c=getc(fin); while (c=='\t');
-	    for (;c!='\t' && c!='\n'; c=getc(fin))
-		add_to_pool(c);
+	    for (;c!='\t' && c!='\n'; c=getc(fin)) {
+	      if (c==EOF) break;
+	      add_to_pool(c);
+	    }
 	    add_to_pool(0);
 	} while (c=='\t');
 	font_num[nfonts] = -1;		/* indicate font is not mounted */
@@ -1344,7 +1351,7 @@ int main(int argc, char **argv)
 {
     int more;
 
-    fsearch_init();
+    fsearch_init(argc, argv);
     trf = stdin;
     mpxf = stdout;
     if (argc == 1) {

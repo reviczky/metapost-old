@@ -1,10 +1,59 @@
 /* $Id: dmp_ffile.c,v 1.4 2005/08/24 10:54:02 taco Exp $
-   Public domain.  */
+ *
+ * File searching for dmp. This is a unified source file implementing two
+ * different strategies: kpathsea lookups vs. recursive searching.
+ *
+ * There is a #define to switch between the two personalities, with
+ * kpathsea the default option
+ *
+ *  Public domain.  
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "dmp.h"
+
+#ifndef FFSEARCH
+
+#include "config.h"
+#include <kpathsea/tex-file.h> 	 
+#include <kpathsea/c-ctype.h> 	 
+#include <kpathsea/c-pathch.h>
+
+static int 
+kpse_types[5] = { 0,
+		  kpse_tfm_format,          /* tex fonts */
+		  kpse_mpsupport_format,    /* mapfile */
+		  kpse_mpsupport_format,    /* charlib */
+		  kpse_troff_font_format }; 
+
+
+void fsearch_init(int argc, char **argv) {
+  kpse_set_progname(argv[0]);
+}
+
+FILE *fsearch(char *nam, char *ext, int path_type) {
+	 { 	 
+	     FILE *f = NULL; 	 
+	     int format;
+	     format = kpse_types[path_type];
+	     string fname = kpse_find_file (nam, format, true); 	 
+	     const_string mode = kpse_format_info[format].binmode 	 
+	                         ? FOPEN_RBIN_MODE 	 
+	                         : FOPEN_R_MODE; 	 
+	     if (fname) { 	 
+	       f = xfopen (fname, mode); 	 
+	     } 	 
+	     if (f==NULL) quit("Cannot find ",nam,ext); 	 
+	     return f; 	 
+	 } 	 
+	
+}
+
+#else
+
+void pathexpand(char *buf, int dirlen, int bufsize);
 
 /* Where dmp looks for tex font metric files */
 #define TEXFONTS ".:/usr/lib/tex/fonts/tfm"
@@ -284,3 +333,6 @@ void pathexpand(buf, dirlen, bufsize)
 		expand_dblslash(buf, p, tail, buf+bufsize-tail-1, &junk);
 	}
 }
+
+#endif /* FFSEARCH */
+
