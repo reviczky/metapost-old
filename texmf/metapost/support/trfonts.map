@@ -35,4 +35,4 @@ TI	Times-Italic			ptmri8g
 TR	Times-Roman			ptmr8g
 ZCMI	ZapfChancery-MediumItalic	pzcmi8g
 ZD	ZapfDingbats			pzdr
-ZDR	ZapfDingbats-Reverse		zfzdr-reversed
+ZDR	ZapfDingbats-Reverse		zpzdr-reversed
