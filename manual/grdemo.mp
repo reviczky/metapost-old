@@ -4,6 +4,8 @@ delim $$
 .EN
 \# etex
 
+prologues := 2;
+
 input boxes
 
 beginfig(1);
