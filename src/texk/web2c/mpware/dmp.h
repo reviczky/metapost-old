@@ -12,7 +12,7 @@
 extern FILE *fsearch(char *nam, char *ext, int path_type);
 extern void fsearch_init(int argc, char **argv);
 
-#define POOLMAX	65000	/* total characters in all font and char names */
+#define POOLMAX	65000		/* total characters in all font and char names */
 
 extern int poolsize;		/* chars used so far in strpool */
 extern char strpool[];		/* chars used so far in strpool */
