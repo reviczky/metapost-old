@@ -28,11 +28,11 @@ PBI	Palatino-BoldItalic		pplbi8g
 PI	Palatino-Italic			pplri8g
 PR	Palatino-Roman			pplr8g
 S	Symbol				psyr
-SS	Symbol-Slanted			fsyro
+SS	Symbol-Slanted			psyrgo
 TB	Times-Bold			ptmb8g
 TBI	Times-BoldItalic		ptmbi8g
 TI	Times-Italic			ptmri8g
 TR	Times-Roman			ptmr8g
 ZCMI	ZapfChancery-MediumItalic	pzcmi8g
 ZD	ZapfDingbats			pzdr
-ZDR	ZapfDingbats-Reverse		zfzdrr
+ZDR	ZapfDingbats-Reverse		zfzdr-reversed
