@@ -659,9 +659,9 @@ end;
       if (font_is_subsetted(#))and(font_is_included(#))and(internal[prologues]=three)
       then print(fm_font_subset_name(#))
       else print(font_ps_name[#]); 
-      if str_vs_str(font_name[#],"fsyro")=0 then begin
+      if str_vs_str(font_name[#],"psyrgo")=0 then begin
         ps_print("-Slanted"); end;
-      if str_vs_str(font_name[#],"zpzdrr")=0 then begin
+      if str_vs_str(font_name[#],"zpzdr-reversed")=0 then begin
         ps_print("-Reverse"); end;
       if applied_reencoding(#) then begin ps_print("-");
         ps_print(font_enc_name[#]); end;
@@ -724,7 +724,7 @@ end
 
 @ @<Write font definition@>=
 if (applied_reencoding(f))or(fm_font_slant(f)<>0)or(fm_font_extend(f)<>0)or@|
-    (str_vs_str(font_name[f],"fsyro")=0)or(str_vs_str(font_name[f],"zpzdrr")=0) then begin
+    (str_vs_str(font_name[f],"psyrgo")=0)or(str_vs_str(font_name[f],"zpzdr-reversed")=0) then begin
   if (font_is_subsetted(f))and(font_is_included(f))and(internal[prologues]=three)
   then ps_name_out(fm_font_subset_name(f),true)
   else ps_name_out(font_ps_name[f],true);
@@ -743,11 +743,11 @@ if (applied_reencoding(f))or(fm_font_slant(f)<>0)or(fm_font_extend(f)<>0)or@|
     print_int(fm_font_extend(f));
     ps_print(" ExtendFont ");
     end;
-  if str_vs_str(font_name[f],"fsyro")=0 then begin
+  if str_vs_str(font_name[f],"psyrgo")=0 then begin
     ps_print(" 890 ScaleFont ");
     ps_print(" 277 SlantFont ");
     end;
-  if str_vs_str(font_name[f],"zpzdrr")=0 then begin
+  if str_vs_str(font_name[f],"zpzdr-reversed")=0 then begin
     ps_print(" FontMatrix [-1 0 0 1 0 0] matrix concatmatrix /FontMatrix exch def ");
     ps_print("/Metrics 2 dict dup begin ");
     ps_print("/space[0 -278]def ");
