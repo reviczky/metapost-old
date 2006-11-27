@@ -84,7 +84,7 @@ char *trpath = TRFONTS;		/* search path for troff font data */
 #endif
 #endif
 
-void fsearch_init(void)
+void fsearch_init(int argc, char **argv)
 {
 	char *envpath;
 
