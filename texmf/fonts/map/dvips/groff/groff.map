@@ -31,6 +31,6 @@ ptmbi8g Times-BoldItalic " groffEncoding ReEncodeFont " <groff.enc
 ptmr8g Times-Roman " groffEncoding ReEncodeFont " <groff.enc
 ptmri8g Times-Italic " groffEncoding ReEncodeFont " <groff.enc
 pzcmi8g ZapfChancery-MediumItalic " groffEncoding ReEncodeFont " <groff.enc
-zfeu FreeEuro < freeeuro.pfa
+freeeuro FreeEuro < freeeuro.pfa
 psyrgo Symbol
 zpzdr-reversed ZapfDingbats
