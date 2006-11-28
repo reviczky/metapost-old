@@ -97,8 +97,8 @@ undergoes any modifications, so that it will be clear which version of
 @^extensions to \MP@>
 @^system dependencies@>
 
-@d banner=='This is MetaPost, Version 0.991' {printed when \MP\ starts}
-@d metapost_version=="0.991"
+@d banner=='This is MetaPost, Version 0.992' {printed when \MP\ starts}
+@d metapost_version=="0.992"
 
 @ Different \PASCAL s have slightly different conventions, and the present
 @!@:PASCAL H}{\ph@>

@@ -6,7 +6,7 @@
 # Public domain.
 #
 # 
-version=0.991
+version=0.992
 
 : ${DMP=dmp}
 : ${DVITOMP=dvitomp}

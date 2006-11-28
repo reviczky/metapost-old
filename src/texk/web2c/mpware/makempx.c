@@ -84,7 +84,7 @@
 #define uexit _exit
 #endif
 
-#define version "0.991"
+#define version "0.992"
 
 #define ERRLOG "mpxerr.log"
 #define TEXERR "mpxerr.tex"
