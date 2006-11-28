@@ -402,6 +402,8 @@ main(int ac, char **av)
 	strncpy(maincmd, tmpstring, LNAM);
     else
 	strncpy(maincmd, TEX, LNAM);
+    if (tmpstring)
+	free(tmpstring);
 
     strncat(maincmd, " --parse-first-line --interaction=nonstopmode",
 	    (LNAM - strlen(maincmd)));
@@ -527,6 +529,13 @@ main(int ac, char **av)
     tmpstring = mktemp(tmpname);
     if ((tmpstring == NULL) || strlen(tmpname) == 0)
 	uexit(1);
+    /* this should not really be needed, but better
+       safe than sorry. */
+    if (tmpstring != tmpname) {
+	i = strlen(tmpstring);
+	if (i > 8) i = 8;
+	strncpy(tmpname, tmpstring, i);
+    }
 #else
     sprintf(tmpname, "mp%06d", (time(NULL) % 1000000));
 #endif
