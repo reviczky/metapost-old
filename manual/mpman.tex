@@ -185,7 +185,7 @@ the current version from within a MetaPost program via the
 version 0.9).  For instance:
 $$\begin{verbatim}
 if known mpversion:
-  message "mp = " \& mpversion;
+  message "mp = " & mpversion;
   if mpversion > "1.0": message "time has flown by"  fi
 fi;
 \end{verbatim}
@@ -2426,7 +2426,7 @@ paraphrasing the above equation for {\tt T} into English: ``{\tt T}
 should be the transform obtained by doing whatever {\tt identity}
 does. Then scaling $x$~coordinates by $-1$, rotating $45^\circ$, and
 shifting by $(1,1)$.''  This works because {\tt identity} is the
-identity transformaion which does nothing; i.e., {\tt transformed
+identity transformation which does nothing; i.e., {\tt transformed
 identity} is a no-op.
 
 The syntax for transform expressions and transformation operators is given in
