@@ -1134,6 +1134,6 @@ print_ln
 @<Get the first line of input and prepare to start@>;
 @y
 @<Get the first line of input and prepare to start@>;
-mp_init_map_file;
+mp_init_map_file(troff_mode);
 setjobid(internal[year],internal[month],internal[day],internal[time]);
 @z
