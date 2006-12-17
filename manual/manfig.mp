@@ -14,7 +14,7 @@ draw (2u,2u)--(0,0)--(0,3u)--(3u,0)--(0,0);
 pickup pencircle scaled 4pt;
 for i=0 upto 2:
   for j=0 upto 2:
-    draw (i*u,j*u);
+    drawdot (i*u,j*u);
   endfor
 endfor
 endfig;

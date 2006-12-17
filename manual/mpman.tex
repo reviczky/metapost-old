@@ -236,7 +236,7 @@ draws a polygonal line like this:
 $$ \includegraphics{manfig-0} $$
 
 \label{Ddrawdot}MetaPost also has a \ttt{drawdot} command to print a
-single point, as in \ttt{drawdot(30,0)}.
+single point, as in \ttt{drawdot(30,0)}. 
 
 What is meant by coordinates like \verb|(30,0)|?  MetaPost uses the same
 default coordinate system that PostScript\index{PostScript!coordinate
@@ -280,13 +280,13 @@ for setting the line width for subsequent \verb|draw| statements to 4 points.
 
 With such a wide line width, even a line of zero length comes out as a big bold
 dot\index{dots}.  We can use this to make a grid of bold dots by having one
-\verb|draw| statement
+\verb|drawdot| statement
 for each grid point.  Such a repetitive sequence of \verb|draw| statements is
 best written as a pair of nested loops:\index{loops}%
 \index{for?\texttt{for}}\index{endfor?\texttt{endfor}}
 $$\begin{verbatim}
 for i=0 upto 2:
-  for j=0 upto 2:  draw (i*u,j*u);  endfor
+  for j=0 upto 2:  drawdot (i*u,j*u);  endfor
 endfor
 \end{verbatim}
 $$
@@ -302,7 +302,7 @@ u=1cm;
 draw (2u,2u)--(0,0)--(0,3u)--(3u,0)--(0,0);
 pickup pencircle scaled 4pt;
 for i=0 upto 2:
-  for j=0 upto 2:  draw (i*u,j*u);  endfor
+  for j=0 upto 2:  drawdot (i*u,j*u);  endfor
 endfor
 endfig;
 \end{verbatim}
@@ -1584,8 +1584,8 @@ as {\tt cmr10} is a little dangerous because it does not have a space
 character or certain ASCII symbols.
 
 MetaPost does not use the ligatures\index{ligatures} and
-kerning\index{kerning} information that comes with a \TeX\ font. 
-Further, MetaPost does not interpret virtual fonts.
+kerning\index{kerning} information that comes with a \TeX\ font.
+Further, MetaPost itself does not interpret virtual fonts.
 
 
 \subsection{Typesetting Your Labels}
@@ -1818,12 +1818,17 @@ $$\begin{tabular}{|c|l|} \hline
     $-$  & remove all matching fonts from the font list \\
 \hline
 \end{tabular}
-$$
-Without any option, the current list will be completely replaced.  If there are no \ttt{fontmapfile} statements, MetaPost will attempt
-to locate a default map file with a preference to read {\tt
-mpost.map} and then {\tt pdftex.map}.  If \ttt{prologues} is set to~1,
-MetaPost attempts to read a file called {\tt psfonts.map}, regardless of any
-{\tt fontmapfile} statement. Again, this is for backward compatibility only.
+$$ 
+Without any option, the current list will be completely replaced.  
+
+If \ttt{prologues} is set to two or three, yet there are no
+\ttt{fontmapfile} statements, MetaPost will attempt to locate a
+default map file, with a preference to read {\tt mpost.map}.  If that
+fails, it will also attempt either {\tt troff.map} or {\tt
+pdftex.map}, depending on whether or not troff mode is enabled.  If
+\ttt{prologues} is set to~1, MetaPost attempts to read a file called
+{\tt psfonts.map}, regardless of any {\tt fontmapfile}
+statement. Again, this is for backward compatibility only.
 
 
 \subsection{The {\tt infont} operator}
@@ -1852,6 +1857,11 @@ $$ \hbox{\tt char(n+64) infont "ptmr8r"} $$
 is a picture containing character {\tt n+64} of the font \ttt{ptmr8r},
 which is a typical \TeX\ way to refer to Times-Roman.  See p.\
 \pageref{fontname} for further discussion.
+
+Bare MetaPost does not do any kind of input reencoding, so when
+you use {\tt infont} string for labels (instead of {\tt btex} \ldots\
+{\tt etex}), the string has to be specified in the font encoding.
+
 
 \subsection{Measuring Text}
 \label{meas}
