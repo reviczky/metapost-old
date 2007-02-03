@@ -494,7 +494,7 @@ end;
 @x
   begin print_nl("gsave ");
 @y
-  begin print_ln; print_cmd("gsave ","q ");
+  begin print_nl(""); print_cmd("gsave ","q ");
 @z
 
 @x
