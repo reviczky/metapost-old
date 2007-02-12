@@ -1,6 +1,7 @@
 /* config.h: master configuration file, included first by all compilable
    source files (not headers).
 
+
    Copyright 2000, 2003, 2004, 2005 Olaf Weber.
    Copyright 1993, 95, 96, 97 Karl Berry.
 
@@ -58,10 +59,10 @@
 #define DEV_NULL "/dev/null"
 #endif
 
-#if defined (WIN32)
+#ifdef WIN32
 # ifndef __STDC__
 #  define __STDC__ 1
-#endif
+# endif
 #endif /* not WIN32 */
 
 /* System dependencies that are figured out by `configure'.  */
@@ -87,11 +88,11 @@
   but before "lib.h". FP.
 */
 #ifdef WIN32
-#ifndef __MINGW32__
-#include <win32lib.h>
-#else
-#include <kpathsea/win32lib.h>
-#endif
+# ifndef __MINGW32__
+#   include <win32lib.h>
+# else
+#   include "win32lib.h"
+# endif
 #endif
 
 #include <kpathsea/debug.h>    /* Runtime tracing.  */

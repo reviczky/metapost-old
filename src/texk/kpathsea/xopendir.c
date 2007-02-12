@@ -1,5 +1,6 @@
 /* xopendir.c: opendir and closedir with error checking.
 
+
     Copyright 2005 Olaf Weber.
     Copyright 1992, 93, 94, 95, 96 Karl Berry.
 

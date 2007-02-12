@@ -1,5 +1,6 @@
 /* progname.c: the executable name we were invoked as; general initialization.
 
+
    Copyright 1998-2005 Olaf Weber.
    Copyright 1994, 96, 97 Karl Berry.
 
