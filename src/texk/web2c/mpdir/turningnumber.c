@@ -6,15 +6,31 @@
 
 #define sign(v) ((v)>0 ? 1 : ((v)<0 ? -1 : 0 ))
 
-#define print_roots(a) fprintf(stdout,"\n%s, i=%d,o=%d",(a),(xi)>>20,(xo)>>20)
+#define print_roots(a) { if (debuglevel>65536)			\
+      fprintf(stdout,"bezierslope(): %s, i=%f, o=%f\nbezierslope(): bezier angle=%f\n",	\
+	      (a),in,out,res); }
+
+#define out ((double)(xo>>20))
+#define in ((double)(xi>>20))
+
+#define divisor (256*256)
+
+#define double2angle(a) floor(a*(2^20))
 
 angle 
 bezierslope(integer AX,integer AY,integer BX,integer BY,
-            integer CX,integer CY,integer DX,integer DY) {
-  long long a,b,c;
-  long long ax=AX,ay=AY,bx=BX,by=BY,cx=CX,cy=CY,dx=DX,dy=DY;
-  angle xi = 0, xo = 0, res = 0;
+            integer CX,integer CY,integer DX,integer DY, int debuglevel) {
+  double a, b, c;
   integer deltax,deltay;
+  double ax,ay,bx,by,cx,cy,dx,dy;
+
+  angle xi = 0, xo = 0;
+  double res = 0;
+
+  ax=AX/divisor;  ay=AY/divisor;
+  bx=BX/divisor;  by=BY/divisor;
+  cx=CX/divisor;  cy=CY/divisor;
+  dx=DX/divisor;  dy=DY/divisor;
 
   deltax = (BX-AX); deltay = (BY-AY);
   if (deltax==0 && deltay == 0) { deltax=(CX-AX); deltay=(CY-AY); }
@@ -26,42 +42,47 @@ bezierslope(integer AX,integer AY,integer BX,integer BY,
   if (deltax==0 && deltay == 0) { deltax=(DX-AX); deltay=(DY-AY); }
   xo = anangle(deltax,deltay);
 
-  assert(sizeof(long long)>=8);
+  a = (bx-ax)*(cy-by) - (cx-bx)*(by-ay); /* a = (bp-ap)x(cp-bp); */
+  b = (bx-ax)*(dy-cy) - (by-ay)*(dx-cx);; /* b = (bp-ap)x(dp-cp);*/
+  c = (cx-bx)*(dy-cy) - (dx-cx)*(cy-by); /* c = (cp-bp)x(dp-cp);*/
 
-  fprintf(stdout,
-    "\nargs: (%lld,%lld),(%lld,%lld),(%lld,%lld),(%lld,%lld)",
+  if (debuglevel>(65536*2)) {
+    fprintf(stdout,
+    "bezierslope(): (%.2f,%.2f),(%.2f,%.2f),(%.2f,%.2f),(%.2f,%.2f)\n",
              ax,ay,bx,by,cx,cy,dx,dy);
-  
-  a = ((bx-ax)*(cy-by)) - ((cx-bx)*(by-ay)); /* a = (bp-ap)x(cp-bp); */
-  c = ((cx-bx)*(dy-cy)) - ((dx-cx)*(cy-by)); /* c = (cp-bp)x(dp-cp);*/
-  b = ((bx-ax)*(dy-cy)) - ((by-ay)*(dx-cx)); /* b = (bp-ap)x(dp-cp);*/
-  
-  fprintf(stdout,"\nprod: a,b,c: (%lld,%lld,%lld)",a,b,c);
-  fprintf(stdout,"\nsign: (%i,%i,%i)", sign(a),sign(b),sign(c));
+    fprintf(stdout,"bezierslope(): a,b,c,b^2,4ac: (%.2f,%.2f,%.2f,%.2f,%.2f)\n",a,b,c,b*b,4*a*c);
+  }
 
-  res = (xo-xi); /* ? */
   if ((a==0)&&(c==0)) {
+    res = out-in; /* ? */
     print_roots("no roots (a)");
   } else if ((a==0)||(c==0)) {
     if ((sign(b) == sign(a)) || (sign(b) == sign(c))) {
+      res = out-in; /* ? */
       print_roots("no roots (b)");
     } else {
+      res = out-in; /* ? */
       print_roots("one root (a)");
     }
   } else if ((sign(a)*sign(c))<0) {
+    res = out-in; /* ? */
     print_roots("one root (b)");
   } else {
     if (sign(a) == sign(b)) {
+      res = out-in; /* ? */
       print_roots("no roots (d)");
     } else {
-      if ((b*b) < (4*a*c)) {
-	print_roots("no roots (e)");
-      } else if (b*b == 4*a*c) {
+      if ((b*b) == (4*a*c)) {
+	res = out-in; /* ? */
 	print_roots("double root");
+      } else if ((b*b) < (4*a*c)) {
+	res = out-in; /* ? */
+	print_roots("no roots (e)");
       } else {
+	res = out-in; /* ? */
 	print_roots("two roots");
       }
     }
   }
-  return res;
+  return double2angle(res);
 }

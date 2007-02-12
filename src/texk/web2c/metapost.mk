@@ -30,9 +30,7 @@ $(mp_c) mpcoerce.h mpd.h: mp.p $(web2c_texmf) $(srcdir)/$(mpostdir)/mp.defines  
 mpextra.c: lib/texmfmp.c
 	sed s/TEX-OR-MF-OR-MP/mp/ $(srcdir)/lib/texmfmp.c >$@
 mp.p mp.pool: tie tangle mp.web mp.ch fntemplate.ch color.ch gstate.ch antepost.ch psout.ch loadpool.ch mpbugs.ch
-	$(TIE) -m mp-tied.web $(srcdir)/mp.web $(srcdir)/fntemplate.ch $(srcdir)/color.ch $(srcdir)/gstate.ch $(srcdir)/antepost.ch $(srcdir)/psout.ch $(srcdir)/loadpool.ch
-# no changed turningnumbers for now, broken code
-# $(srcdir)/mpbugs.ch
+	$(TIE) -m mp-tied.web $(srcdir)/mp.web $(srcdir)/fntemplate.ch $(srcdir)/color.ch $(srcdir)/gstate.ch $(srcdir)/antepost.ch $(srcdir)/psout.ch $(srcdir)/loadpool.ch  $(srcdir)/mpbugs.ch
 	$(tangle) ./mp-tied.web $(srcdir)/mp.ch
 	mv -f mp-tied.p mp.p
 	mv -f mp-tied.pool mp.pool

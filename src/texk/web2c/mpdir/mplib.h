@@ -299,6 +299,6 @@ extern integer avlfindobj (integer, integer, integer);
 
 /* turningnumber.c */
 
-extern angle bezierslope(integer,integer,integer,integer,integer,integer,integer,integer);
+extern angle bezierslope(integer,integer,integer,integer,integer,integer,integer,integer,int);
 
 #endif                          /* MPOSTLIB */
