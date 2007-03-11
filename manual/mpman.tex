@@ -8,6 +8,8 @@
 \RecustomVerbatimEnvironment
   {verbatim}{BVerbatim}{baseline=c}
 \usepackage{graphicx}
+\usepackage[latin1]{inputenc}
+\pdfmapfile{+lm-math.map}
 \usepackage[textwidth=6in,textheight=8.65in]{geometry}
 \usepackage{tocloft}
   \setlength\cftbeforesecskip{1.3ex plus 0.3ex minus 0.3ex}
@@ -1780,13 +1782,13 @@ acquire font map information.
 The code is based on the font library used by pdf\TeX. Following in
 the footsteps of pdf\TeX, there are two new associated primitives:
 \ttindex{fontmapfile} and \ttindex{fontmapline}. Here is a simple
-example, specifying the map file for Latin Modern fonts in \LaTeX\
-(T1) encoding:
+example, specifying the map file for Latin Modern fonts in YandY
+(\LaTeX\ LY1) encoding:
 \begin{center}\begin{tabular}{l}
 \verb|prologues:=2;|\\
-\verb|fontmapfile "ec-public-lm.map";|\\
+\verb|fontmapfile "texnansi-lm.map";|\\
 \verb|beginfig(1);|\\
-\verb|   draw "Helló, világ" infont "ec-lmr10";|\\
+\verb|   draw "Helló, világ" infont "texnansi-lmr10";|\\
 \verb|endfig;|
 \end{tabular}\end{center}
 
