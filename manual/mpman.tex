@@ -356,8 +356,9 @@ Metapost has support for output file-name templates. These templates
 use \ttt{printf}-style escape sequences and are re-evaluated before
 each figure is written to disk. 
 
-The command to use is \ttt{filenametemplate}, and it accepts a string
-as argument. The syntax is as simple as:
+The command to use is \ttt{filenametemplate}%
+\index{filenametemplate?\texttt{filenametemplate}}\label{Dfilenametemplate},
+and it accepts a string as argument. The syntax is as simple as:
 
 \begin{center}\begin{tabular}{l}
 \verb|filenametemplate "%j-%3c.mps";|\\
@@ -1121,12 +1122,18 @@ and}\index{and?\texttt{and}} and {\tt or}\index{or?\texttt{or}}.  The
 {\tt and} operator is a \tdescr{primary binop} and the {\tt or} operator
 is a \tdescr{secondary binop}.
 
-The basic operations on strings are concatenation\index{concatenation} and
-substring construction.
+The basic operations on strings are concatenation\index{concatenation},
+substring construction and calculating the length of a string.
 The \tdescr{tertiary binop} \verb|&|\index{&?\texttt{\&}}\label{Damp}
 implements concatenation; e.g.,
 $$ \hbox{\verb|"abc" & "de"|} $$
-produces the string \verb|"abcde"|.  For substring construction, the
+produces the string \verb|"abcde"|.  The {\tt
+length}\index{length?\texttt{length}}\label{DlengthString} operator
+returns the number of characters in a string if the argument is a
+\tdescr{string primary}; e.g.,
+$$ \hbox{\verb|length "abcde"|} $$
+returns \verb|5|.  Another application of the {\tt length} operator is
+discussed on p.\ \pageref{Dlength}.  For substring construction, the
 \tdescr{of operator} {\tt substring}\index{substring
 of?\texttt{substring of}}\label{Dsubstr} is used like this:
 $$ {\tt substring}\, \descr{pair expression} \,{\tt of}\, \descr{string primary} $$
@@ -1710,6 +1717,7 @@ something like this:
 && \qquad \dots
 \end{eqnarray*}
 
+\label{Dtroffmode}
 On Unix\footnote{Unix is a registered trademark of Unix Systems
 Laboratories.}\index{Unix\reg} and other Web2C-based systems, the
 option {\tt -troff} to MetaPost tells the preprocessor that {\tt btex}
@@ -5189,7 +5197,9 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
 \tt \verb|known|&       --&     any&    boolean&        \pageref{Dknown}&
         Does argument have a known value?\\\hline
 \tt \verb|length|&      --&     path&   numeric&        \pageref{Dlength}&
-        Number of arcs in a path\\\hline
+        Number of components (arcs, characters)\\
+&       &     string&   &        \pageref{DlengthString}&
+        in the argument\\\hline
 \pl\tt \verb|lft|&      --&     numeric&        numeric&        \pageref{Dlft}&
         Left side of current pen when its\\
 &       &       pair&   pair&   &
