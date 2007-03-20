@@ -853,4 +853,40 @@ label.urt(btex$b$etex, cuta(ee,cc) ee.c{(cc.c-ee.c)rotated-15}..cc.c);
 endfig;
 
 
+beginfig(55)
+picture wheel, car;
+path body;
+  u := 5bp;
+  % Use a calligraphic pen.
+  pickup pencircle scaled .1u yscaled .6 rotated 30;
+  % Define a wheel object.
+  wheel := image(
+    draw fullcircle scaled 2u xscaled .8 rotated 30;
+    draw fullcircle scaled .1u xscaled .8 rotated 30
+      withpen currentpen scaled .5;
+  );
+  % Construct path for car body.
+  body := (3.2u,0){right}..(4.5u,1.5u){up}..(1.5u,2.5u){dir(-170)}
+    ..(1.5u,4.25u){up}...(0,5u){left};
+  body := body .. reverse body reflectedabout (origin, (0,u));
+  % Define a car object.
+  car := image(
+    draw wheel shifted (2u, 0);% Draw two wheels.
+    draw wheel shifted (-2u, 0);
+    draw (-.8u,0){dir(5)}..(.8u,0);% Draw connection betweeen wheels.
+    draw body;% Draw body.
+    % Draw speed indicators.
+    for i=1.5, 2, 2.5:
+      draw (5u, u*i){right}..{dir(-10)}(6.5u,u*i*.95);
+    endfor
+  ) shifted (0, u) slanted -.2 rotated 1;% Introduce asymmetries.
+  % Draw two cars and a faster one.
+  draw car shifted (5u,0);
+  draw car shifted (20u,0);
+  draw car slanted -.25 shifted (45u,0);
+  % Draw motorway.
+  draw (-5u,-u)...(25u,-.5u)...(60u,-u)
+    withpen currentpen scaled 4 withcolor .7white;
+endfig;
+
 end

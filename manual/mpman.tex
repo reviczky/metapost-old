@@ -13,6 +13,7 @@
 \usepackage[textwidth=6in,textheight=8.65in]{geometry}
 \usepackage{tocloft}
   \setlength\cftbeforesecskip{1.3ex plus 0.3ex minus 0.3ex}
+\usepackage{longtable}
 \usepackage{url}
 
   \makeatletter
@@ -55,6 +56,7 @@
 
 \makeindex
 
+\usepackage{multicol}
 \begin{document}
 \VerbatimFootnotes
 \author{John D. Hobby}
@@ -77,14 +79,10 @@ An appendix explains the differences between MetaPost and \MF.
 \end{abstract}
 \thispagestyle{empty}
 \newpage
-\setcounter{page}{1}
-\pagestyle{plain}
-\pagenumbering{roman}
+\setlength{\columnsep}{2.5em}
+\begin{multicols}{2}
 \tableofcontents
-\newpage
-\setcounter{page}{1}
-\pagestyle{headings}
-\pagenumbering{arabic}
+\end{multicols}
 \setlength{\parskip}{.75ex plus 0.5ex minus 0.2ex}
 
 \section{Introduction}
@@ -1277,7 +1275,7 @@ binop}.  Thus {\tt 2/3x}\index{parsing irregularities} is two thirds of
 There are also operators for extracting numeric subfields from pairs,
 colors, cmykcolors, and even transforms.  If {\tt p} is a \tdescr{pair
 primary}, {\tt xpart p}\index{xpart?\texttt{xpart}}\label{Dxprt} and
-{\tt ypart p}\index{ypart}\label{Dyprt} extract its components so that
+{\tt ypart p}\index{ypart?\texttt{ypart}}\label{Dyprt} extract its components so that
 $$ \hbox{\tt (xpart p, ypart p)} $$ is equivalent to~{\tt p} even if
 {\tt p} is an unknown pair that is being used in a linear equation.
 Similarly, a color {\tt c} is equivalent
@@ -2714,12 +2712,12 @@ paths created by polygonal pens.  See Section~\ref{sec.pens}, p.\
 If you want to attach a special bit of PostScript code, you can use 
 $$
 {\tt withprescript} \descr{string expression}
-$$
+$$\index{withprescript?\texttt{withprescript}}\label{Dwithpre}%
 and 
 $$ 
 {\tt withpostcript} \descr{string expression}
-$$ 
-the strings will be written to the output file before and after the
+$$\index{withpostscript?\texttt{withpostscript}}\label{Dwithpost}%
+The strings will be written to the output file before and after the
 current object, each beginning on their own line. You can specify
 multiple {\tt withprescript} or {\tt withpostscript} options if you
 like.
@@ -3128,11 +3126,6 @@ $$
 \end{table}
 
 
-The {\tt image}\index{image?\texttt{image}}\label{Dimage} macro from
-Plain MetaPost takes any text as its argument, executes it, and returns
-the resulting picture.  The value of {\tt currentpicture} is not
-affected.
-
 There are two more primitive drawing commands that do not accept any
 drawing options.  One is the {\tt setbounds} command that was discussed
 in Section~\ref{meas}; the other is the {\tt clip}
@@ -3173,8 +3166,11 @@ All the primitive drawing operations would be useless without one last
 operation called {\tt shipout}.  The
 statement\index{shipout?\texttt{shipout}}\label{Dship}
 $$ {\tt shipout}\, \descr{picture expression} $$
-This writes out a picture as a PostScript\index{PostScript} file whose
-name ends {\tt.}{\it nnn}, where {\tt nnn} is the decimal representation
+writes out a picture as a PostScript\index{PostScript} file whose
+file name is determined by
+{\tt filenametemplate}\index{filenametemplate?\texttt{filenametemplate}}
+(see section~\ref{Dfilenametemplate}).  By default, the file name ends
+{\tt.}{\it nnn}, where {\tt nnn} is the decimal representation
 of the value of the internal variable\index{internal
 variables}\index{variables!internal} {\tt
 charcode}\index{charcode?\texttt{charcode}}\label{Dcharcode}.  (The name
@@ -3182,6 +3178,117 @@ charcode}\index{charcode?\texttt{charcode}}\label{Dcharcode}.  (The name
 Normally, {\tt beginfig}\index{beginfig?\texttt{beginfig}} sets {\tt
 charcode}, and {\tt endfig}\index{endfig?\texttt{endfig}} invokes {\tt
 shipout}.
+
+\subsection{Directing Output to a Picture Variable}
+Sometimes, it might be desirable to save the output of a drawing
+operation and re-use them later.  This can easily be done with
+MetaPost primitives like \ttt{addto}.  On the other hand, since the
+higher-level drawing commands defined in the Plain macro package
+always write to the
+\ttt{currentpicture}\index{currentpicture?\texttt{currentpicture}},
+saving their output required to temporarily save \ttt{currentpicture},
+reset it to \ttt{nullpicture}\index{nullpicture?\texttt{nullpicture}},
+execute the drawing operations, save the \ttt{currentpicture} to a
+\ttt{picture} variable and finally restore \ttt{currentpicture} to
+the saved state.  MetaPost version~0.60 introduced a new macro
+$$ \hbox{\tt image($\descr{drawing commands}$)} $$%
+\index{image?\texttt{image}}\label{Dimage}%
+that eases this task.  It takes as input a sequence of arbitrary
+drawing operations and returns a picture variable containing the
+corresponding output, without affecting {\tt currentpicture}.
+
+As an example, in the code of figure~\ref{fig55} an object \ttt{wheel} has
+been defined to save the output of two \ttt{draw} operations as follows:
+\begin{figure}[b]
+$$ \includegraphics{manfig-55} $$
+\caption{Using the \ttt{image} operator to copy objects.}
+\label{fig55}
+\end{figure}
+$$\begin{verbatim}
+picture wheel;
+wheel := image(
+  draw fullcircle scaled 2u xscaled .8 rotated 30;
+  draw fullcircle scaled .15u xscaled .8 rotated 30;
+);
+\end{verbatim}
+$$
+Another object \ttt{car} re-uses \ttt{wheel} to construct a car.  The
+three cars are drawn with two different slantings, finally.
+
+
+\subsection{Extracting Information from Pictures}
+MetaPost pictures are composed of stroked lines, filled outlines, pieces
+of typeset text, clipping paths\index{clip?\texttt{clip}}, and
+{\tt setbounds}\index{setbounds?\texttt{setbounds}} paths.  (A {\tt setbounds}
+path gives an artificial bounding box as is needed for \TeX\ output.)
+A picture can have many components of each type.  They can be accessed via
+an iteration of the form
+$$ {\tt for}\ \descr{symbolic token}\ {\tt within}\
+     \descr{picture expression}\hbox{\tt:}\ \descr{loop text}\ {\tt endfor}
+$$\index{for within?\texttt{for within}}\label{Dforwithin}%
+The \tdescr{loop text} can be anything that is balanced with respect to
+{\tt for} and {\tt endfor}.  The \tdescr{symbolic token} is a loop variable that
+scans the components of the picture in the order in which they were drawn.  The
+component for a clipping or {\tt setbounds} path includes everything the path
+applies to.  Thus if a single clipping or {\tt setbounds} path applies to
+everything in the \tdescr{picture expression}, the whole picture could be
+thought of as one big component.  In order to make the contents of such a picture
+accessible, the {\tt for}\ldots{\tt within} iteration ignores the enclosing
+clipping or {\tt setbounds} path in this case.
+
+Once the {\tt for}\ldots{\tt within} iteration has found a picture component,
+there are numerous operators for identifying it and extracting relevant
+information.  The operator
+$$ {\tt stroked}\ \descr{primary expression} $$\index{stroked?\texttt{stroked}}\label{Dstroked}%
+tests whether the expression is a known picture whose first component is a
+stroked line.  Similarly, the {\tt filled}\index{filled?\texttt{filled}}\label{Dfilled}
+and {\tt textual}\index{textual?\texttt{textual}}\label{Dtextual} operators
+return {\tt true} if the first component is a filled outline or a piece of
+typeset text.  The {\tt clipped}\index{clipped?\texttt{clipped}}\label{Dclipped}
+and {\tt bounded}\index{bounded?\texttt{bounded}}\label{Dbounded} operators
+test whether the argument is a known picture that starts with a clipping
+path or a {\tt setbounds} path.  This is true if the first component is
+clipped or bounded or if the entire picture is enclosed in a clipping or
+{\tt setbounds} path.
+
+There are also numerous part extraction operators that test the first component
+of a picture.  If {\tt p} is a picture and {\tt stroked p} is true,
+{\tt pathpart p}\index{pathpart?\texttt{pathpart}}\label{Dpathpart} is the
+path describing the line that got stroked,
+{\tt penpart p}\index{penpart?\texttt{penpart}}\label{Dpenpart} is the pen
+that was used, {\tt dashpart p}\index{dashpart?\texttt{dashpart}}\label{Ddashpart}
+is the dash pattern, and the color is
+$$ \hbox{\tt (redpart p, greenpart p, bluepart p)} $$%
+\index{redpart?\texttt{redpart}}\index{greenpart?\texttt{greenpart}}\index{bluepart?\texttt{bluepart}}
+If the line is not dashed, {\tt dashpart p} returns an empty picture.
+
+The same part extraction operators work when {\tt filled p} is true, except
+that {\tt dashpart p} is not meaningful in that case.  For text components,
+{\tt textual p} is true,
+{\tt textpart p}\index{textpart?\texttt{textpart}}\label{Dtextpart}
+gives the text that got typeset,
+{\tt fontpart p}\index{fontpart?\texttt{fontpart}}\label{Dfontpart}
+gives the font that was used, and {\tt xpart~p}\index{xpart?\texttt{xpart}}\index{ypart?\texttt{ypart}}\index{xxpart?\texttt{xxpart}}%
+\index{xypart?\texttt{xypart}}\index{yxpart?\texttt{yxpart}}\index{yypart?\texttt{yypart}},
+{\tt ypart~p}, {\tt xxpart~p}, {\tt xypart~p}, {\tt yxpart~p}, {\tt yypart~p}
+tell how the text has been shifted, rotated, and scaled.  The {\tt redpart},
+{\tt greenpart}, and {\tt bluepart} operators also work for text components.
+
+When {\tt clipped p} or {\tt bounded p} is true, {\tt pathpart p} gives the
+clipping or {\tt setbounds} path and the other part extraction operators are
+not meaningful.  Such non-meaningful part extractions do not generate
+errors---they return null values instead:
+the trivial path {\tt (0,0)} for {\tt pathpart},
+{\tt nullpen}\index{nullpen?\texttt{nullpen}}\label{Dnlpen} for {\tt penpart},
+an empty picture for {\tt dashpart},
+zero for {\tt redpart}, {\tt greenpart}, {\tt bluepart},
+and the null string for {\tt textpart} or {\tt fontpart}.
+
+One final operator for extracting information from a picture is
+$$ {\tt length}\ \descr{picture primary} $$\index{length?\texttt{length}}\label{DlengthPicture}%
+This returns the number of components that a {\tt for}\ldots {\tt within}
+iteration would find.
+
 
 \section{Macros}
 \label{macros}
@@ -4405,6 +4512,29 @@ $$
 \end{figure}
 
 
+\section{Reading and Writing Files}
+File access was one of the new language features introduced in version~0.60
+of the MetaPost language.  A new operator
+$$ {\tt readfrom}\ \descr{file name} $$\index{readfrom?\texttt{readfrom}}\label{Dreadfrom}%
+returns a string giving the next line of input from the named file.  The
+\tdescr{file name} can be any primary expression of type string.  If the file
+has ended or cannot be read, the result is a string consisting of a single
+null character.  The preloaded {\tt plain} macro package introduces the name
+{\tt EOF}\index{EOF?\texttt{EOF}}\label{Deof} for this string.  After
+{\tt readfrom} has returned {\tt EOF}, additional reads from the same file
+cause the file to be reread from the start.
+
+The opposite of {\tt readfrom} is the command
+$$ {\tt write}\ \descr{string expression}\ {\tt to} \descr{file name} $$%
+\index{write to?\texttt{write to}}\label{Dwrite}%
+This writes a line of text to the specified output file, opening the file
+first if necessary.  All such files are closed automatically when the
+program terminates.  They can also be closed explicitly by using {\tt EOF}
+as the \tdescr{string expression}.  The only way to tell if a {\tt write}
+command has succeeded is to close the file and use {\tt readfrom} to look
+at it.
+
+
 \section{Utility Routines}
 
 \index{utility routines}
@@ -4711,7 +4841,6 @@ treatment of included \TeX\ material.
 
 
 \appendix
-
 \section{Reference Manual}
 
 \let\svtopfrac=\topfraction     % prepare to restore values at end of this appendix
@@ -4757,11 +4886,11 @@ Table~\ref{pvartab} lists predefined variables of other types.
 Table~\ref{consttab} lists predefined constants.  Some of these are implemented
 as variables whose values are intended to be left unchanged.
 
-Tables \ref{optabA}--\ref{optabD} summarize MetaPost operators and list
+Table~\ref{optab} summarizes MetaPost operators and lists
 the possible argument and result types for each one.  A ``--'' entry for
 the left argument indicates a unary operator; ``--'' entries for both
 arguments indicate a nullary operator.  Operators that take suffix
-parameters are not listed in these tables because they are treated as
+parameters are not listed in this table because they are treated as
 ``function-like macros''.
 
 The last two tables are Table~\ref{cmdtab} for commands and
@@ -4808,7 +4937,7 @@ $$\begin{tabular}{|l|r|l|}
 \pl\tt  bboxmargin&     \pageref{Dbbmargin}&
         extra space allowed by {\tt bbox} (default 2{\tt bp})\\\hline
 \tt     charcode&       \pageref{Dcharcode}&
-        the number of the next character to be output\\\hline
+        the number of the current figure\\\hline
 \bx\tt  circmargin&     \pageref{Dcmargin}&
         clearance around contents of a circular or oval box\\\hline
 \tt     day&    --&
@@ -4885,6 +5014,7 @@ $$
 \index{time?\texttt{time}}\index{tracingtitles?\texttt{tracingtitles}}\index{year?\texttt{year}}
 \end{table}
 
+
 \begin{table}[htp]
 \caption{Other Predefined Variables}
 $$\begin{tabular}{|l|l|r|l|}
@@ -4911,6 +5041,7 @@ $$\begin{tabular}{|l|l|r|l|}
 $$
 \label{pvartab}
 \end{table}
+
 
 \begin{table}[htp]
 \caption{Predefined Constants}
@@ -4944,6 +5075,8 @@ $$\begin{tabular}{|l|l|r|l|}
         Smallest positive MetaPost number [$1\over65536$]\\\hline
 \pl\tt  evenly& picture&        \pageref{Devenly}&
         Dash pattern for equal length dashes\\\hline
+\pl\tt  EOF& string&        \pageref{Deof}&
+        Single null character\\\hline
 \tt     false&  boolean&        \pageref{Dfalse}&
         The boolean value {\it false\/}\\\hline
 \pl\tt  fullcircle&     path&   \pageref{Dfcirc}&
@@ -4966,6 +5099,8 @@ $$\begin{tabular}{|l|l|r|l|}
         One millimeter in {\tt bp} units [2.83464]\\\hline
 \tt     mpversion&  string&   \pageref{Dmpversion}&
         MetaPost version number\\\hline
+\tt     nullpen&    pen&        \pageref{Dnlpen}&
+        Empty pen\\\hline
 \tt     nullpicture&    picture&        \pageref{Dnlpic}&
         Empty picture\\\hline
 \pl\tt  origin& pair&   --&
@@ -5008,9 +5143,10 @@ $$
 \index{unitsquare?\texttt{unitsquare}}
 \end{table}
 
-\begin{table}[htp]
-\caption{Operators (Part 1)}
-$$\begin{tabular}{|l|l|l|l|r|l|}
+
+\clearpage
+\begin{longtable}{|l|l|l|l|r|l|}
+\caption{Operators}\label{optab}\\
 \hline
 \multicolumn1{|c}{Name}&  \multicolumn3{|c}{Argument/result types}&
         \multicolumn1{|c}{Page}& \multicolumn1{|c|}{Explanation}\\
@@ -5018,10 +5154,20 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
 &       Left&   Right&  Result&         & \\
 \hline
 \hline
+\endfirsthead
+\caption[]{Operators \emph{(continued)}}\\
+\hline
+\multicolumn1{|c}{Name}&  \multicolumn3{|c}{Argument/result types}&
+        \multicolumn1{|c}{Page}& \multicolumn1{|c|}{Explanation}\\
+\cline{2-4}
+&       Left&   Right&  Result&         & \\
+\hline
+\hline
+\endhead
 \tt \verb|&|&   string& string& string& \pageref{Damp}&
-        Concatenation---works for paths $l\hbox{\tt\&}r$ if\\
+        Concatenation---works for paths $l\hbox{\tt\&}r$\\
 &       path&   path&   path&   &
-        $r$ starts exactly where the $l$ ends\\\hline
+        if $r$ starts exactly where the $l$ ends\\\hline
 \tt \verb|*|&   numeric&        (cmyk)color&  (cmyk)color&  \pageref{Dmldiv}&
         Multiplication\\
 &       &       numeric&        numeric&        &
@@ -5088,8 +5234,11 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         Time on a path where arclength from\\
 \tt \verb|of|&  &       &       &       &
         the start reaches a given value\\\hline
-\tt \verb|ASCII|&       --&     string& numeric&        --&
-        ASCII value of first character in string\\\hline
+\tt \verb|ASCII|\index{ASCII?\texttt{ASCII}}%
+&       --&     string& numeric&        --&
+        ASCII value of first character\\
+&       &       &       &       &
+        in string\\\hline
 \pl\tt \verb|bbox|&     --&     picture&        path&   \pageref{Dbbox}&
         A rectangular path for the bounding\\
 &       &       path&   &       &
@@ -5106,6 +5255,9 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         Bottom of current pen when centered\\
 &       &       pair&   pair&   &
         at the given coordinate(s)\\\hline
+\pl\tt \verb|bounded|&     --&     any&    boolean&        \pageref{Dbounded}&
+        Is argument a picture with\\
+&       &       &       &       & a bounding box?\\\hline
 \pl\tt \verb|ceiling|&  --&     numeric&        numeric&        \pageref{Dceil}&
         Least integer greater than or equal to\\\hline
 \pl\tt \verb|center|&   --&     picture&        pair&   \pageref{Dcenter}&
@@ -5114,28 +5266,16 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         \\
 &       &       pen&    &       &
         \\\hline
-\end{tabular}
-$$
-\index{ASCII?\texttt{ASCII}}%
-\label{optabA}
-\end{table}
-
-\begin{table}[htp]
-\caption{Operators (Part 2)}
-$$\begin{tabular}{|l|l|l|l|r|l|}
-\hline
-\multicolumn1{|c}{Name}&  \multicolumn3{|c}{Argument/result types}&
-        \multicolumn1{|c}{Page}& \multicolumn1{|c|}{Explanation}\\
-\cline{2-4}
-&       Left&   Right&  Result&         & \\
-\hline
-\hline
 \tt \verb|char|&        --&     numeric&        string& \pageref{Dchar}&
         Character with a given ASCII code\\\hline
+\pl\tt \verb|clipped|&     --&     any&    boolean&        \pageref{Dclipped}&
+        Is argument a clipped picture?\\\hline
 \tt \verb|cmykcolor|&       --&     any&    boolean&        \pageref{Dccolrop}&
         Is the expression of type cmykcolor?\\\hline
 \tt \verb|colormodel|&       --&     image object&    numeric&        --&
-        What is the color model of the image object?\\\hline
+        What is the color model of the\\
+&       &       &       &       &
+        image object?\\\hline
 \tt \verb|color|&       --&     any&    boolean&        \pageref{Dcolrop}&
         Is the expression of type color?\\\hline
 \tt \verb|cosd|&        --&     numeric&        numeric&        \pageref{Dcosd}&
@@ -5152,6 +5292,10 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         Extract the first component\\\hline
 \tt \verb|cycle|&       --&     path&   boolean&        \pageref{Dcycop}&
         Determines whether a path is cyclic\\\hline
+\tt \verb|dashpart|&    --&     picture&    picture&       \pageref{Ddashpart}&
+        Dash pattern of a path in a\\
+&       &       &       &       &
+        stroked picture\\\hline
 \tt \verb|decimal|&     --&     numeric&        string& \pageref{Ddecop}&
         The decimal representation\\\hline
 \pl\tt \verb|dir|&      --&     numeric&        pair&   \pageref{Ddirop}&
@@ -5168,19 +5312,23 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         `Time' when a path has a given\\
 \tt \verb|time of|&     &       &       &       &
         direction\\\hline
-\pl\tt \verb|div|&      numeric&        numeric&        numeric&        --&
+\pl\tt \verb|div|\index{div?\texttt{div}}&      numeric&        numeric&        numeric&        --&
         Integer division $\lfloor l/r\rfloor$\\\hline
 \pl\tt \verb|dotprod|&  pair&   pair&   numeric&        \pageref{Ddprod}&
         vector dot product\\\hline
+\pl\tt \verb|filled|&     --&     any&    boolean&        \pageref{Dfilled}&
+        Is argument a filled outline?\\\hline
 \tt \verb|floor|&       --&     numeric&        numeric&        \pageref{Dfloor}&
         Greatest integer less than or equal to\\\hline
+\tt \verb|fontpart|&    --&     picture&    string&       \pageref{Dfontpart}&
+        Font of a textual picture component\\\hline
 \tt \verb|fontsize|&    --&     string& numeric&        \pageref{Dfntsiz}&
         The point size of a font\\\hline
 \tt \verb|greenpart|&   --&     color&  numeric&        \pageref{Drgbprt}&
         Extract the second component\\\hline
 \tt \verb|greypart|&   --&     numeric&  numeric&       --&
         Extract the first (only) component\\\hline
-\tt \verb|hex|& --&     string& numeric&        --&
+\tt \verb|hex|\index{hex?\texttt{hex}}& --&     string& numeric&        --&
         Interpret as a hexadecimal number\\\hline
 \tt \verb|infont|&      string& string& picture&        \pageref{Sinfont}&
         Typeset string in given font\\\hline
@@ -5197,11 +5345,12 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
 \tt \verb|known|&       --&     any&    boolean&        \pageref{Dknown}&
         Does argument have a known value?\\\hline
 \tt \verb|length|&      --&     path&   numeric&        \pageref{Dlength}&
-        Number of components (arcs, characters)\\
-&       &     string&   &        \pageref{DlengthString}&
-        in the argument\\\hline
+        Number of components (arcs,\\
+&       &     string&    &       \pageref{DlengthString}&
+        characters, \ldots) in the argument\\
+&       &     picture&   &       \pageref{DlengthPicture}&\\\hline
 \pl\tt \verb|lft|&      --&     numeric&        numeric&        \pageref{Dlft}&
-        Left side of current pen when its\\
+        Left side of current pen when its\\\nopagebreak
 &       &       pair&   pair&   &
         center is at the given coordinate(s)\\\hline
 \tt \verb|llcorner|&    --&     picture&        pair&   \pageref{Dcornop}&
@@ -5224,40 +5373,23 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         A polygonal pen made from the\\
 &       &       &       &       &
         convex hull of the path knots\\\hline
-\tt \verb|mexp|&        --&     numeric&        numeric&        --&
+\tt \verb|mexp|\index{mexp?\texttt{mexp}}&        --&     numeric&        numeric&        --&
         The function $\exp(x/256)$\\\hline
-\tt \verb|mlog|&        --&     numeric&        numeric&        --&
+\tt \verb|mlog|\index{mlog?\texttt{mlog}}&        --&     numeric&        numeric&        --&
         The function $256\ln(x)$\\\hline
-\pl\tt \verb|mod|&      --&     numeric&        numeric&        --&
+\pl\tt \verb|mod|\index{mod?\texttt{mod}}&      --&     numeric&        numeric&        --&
         The remainder function $l-r\lfloor l/r\rfloor$\\\hline
-\tt \verb|normal-|&     --&     --&     numeric&        --&
+\tt \verb|normal-|\index{normaldeviate?\texttt{normaldeviate}}&     --&     --&     numeric&        --&
         Choose a random number with\\
 \tt \verb|deviate|&     &       &       &       &
         mean 0 and standard deviation 1\\\hline
-\end{tabular}
-$$
-\index{div?\texttt{div}}\index{hex?\texttt{hex}}\index{mexp?\texttt{mexp}}\index{mlog?\texttt{mlog}}%
-\index{mod?\texttt{mod}}\index{normaldeviate?\texttt{normaldeviate}}%
-\label{optabB}
-\end{table}
-
-\begin{table}[htp]
-\caption{Operators (Part 3)}
-$$\begin{tabular}{|l|l|l|l|r|l|}
-\hline
-\multicolumn1{|c}{Name}&  \multicolumn3{|c}{Argument/result types}&
-        \multicolumn1{|c}{Page}& \multicolumn1{|c|}{Explanation}\\
-\cline{2-4}
-&       Left&   Right&  Result&         & \\
-\hline
-\hline
 \tt \verb|not|& --&     boolean&        boolean&        \pageref{Dnot}&
         Logical negation\\\hline
 \tt \verb|numeric|&     --&     any&    boolean&        \pageref{Dnumop}&
         Is the expression of type numeric?\\\hline
-\tt \verb|oct|& --&     string& numeric&        --&
+\tt \verb|oct|\index{oct?\texttt{oct}}& --&     string& numeric&        --&
         Interpret string as octal number\\\hline
-\tt \verb|odd|& --&     numeric&        boolean&        --&
+\tt \verb|odd|\index{odd?\texttt{odd}}& --&     numeric&        boolean&        --&
         Is the closest integer odd or even?\\\hline
 \tt \verb|or|&  boolean&        boolean&        boolean&        \pageref{Dor}&
         Logical inclusive or\\\hline
@@ -5265,24 +5397,30 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         Is the expression of type pair?\\\hline
 \tt \verb|path|&        --&     any&    boolean&        \pageref{Dpathop}&
         Is the expression of type path?\\\hline
+\tt \verb|pathpart|&    --&     picture&    path&       \pageref{Dpathpart}&
+        Path of a stroked picture component\\\hline
 \tt \verb|pen|& --&     any&    boolean&        \pageref{Dpenop}&
         Is the expression of type pen?\\\hline
-\tt \verb|penoffset|&   pair&   pen&    pair&   --&
+\tt \verb|penoffset|\index{penoffset?\texttt{penoffset}}&   pair&   pen&    pair&   --&
         Point on the pen furthest to the\\
 \tt \verb|of|&  &       &       &       &
         right of the given direction\\\hline
+\tt \verb|penpart|& --&     picture&    pen&        \pageref{Dpenpart}&
+        Pen of a stroked picture component\\\hline
 \tt \verb|picture|&     --&     any&    boolean&        \pageref{Dpictop}&
         Is the expression of type picture?\\\hline
 \tt \verb|point of|&    numeric&        path&   pair&   \pageref{Dpntof}&
         Point on a path given a time value\\\hline
-\tt \verb|postcontrol|& numeric&        path&   pair&   --&
+\tt \verb|postcontrol|\index{postcontrol?\texttt{postcontrol}}& numeric&        path&   pair&   --&
         First B\'ezier control point on path\\
 \tt \verb|of|&  &       &       &       &
         segment starting at the given time\\\hline
-\tt \verb|precontrol|&  numeric&        path&   pair&   --&
+\tt \verb|precontrol|\index{precontrol?\texttt{precontrol}}&  numeric&        path&   pair&   --&
         Last B\'ezier control point on path\\
 \tt \verb|of|&  &       &       &       &
         segment ending at the given time\\\hline
+\pl\tt \verb|readfrom|&    --&    string&  string&        \pageref{Dreadfrom}&
+        Read a line from file\\\hline
 \tt \verb|redpart|&     --&    color&  numeric&        \pageref{Drgbprt}&
         Extract the first component\\\hline
 \tt \verb|reverse|&     --&     path&   path&   \pageref{Drevrse}&
@@ -5302,7 +5440,7 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
 &       transform&      &       transform&      &
         \\\hline
 \pl\tt \verb|round|&    --&     numeric&        numeric&        \pageref{Dround}&
-        round each component to the\\
+        round each component to the\\\nopagebreak
 &       &       pair&   pair&   &
          nearest integer\\\hline
 \pl\tt \verb|rt|&       --&     numeric&        numeric&        \pageref{Drt}&
@@ -5350,25 +5488,10 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         Square root\\\hline
 \tt \verb|str|& --&     suffix& string& \pageref{Dstr}&
         String representation for a suffix\\\hline
-\end{tabular}
-$$
-\index{oct?\texttt{oct}}\index{odd?\texttt{odd}}\index{penoffset?\texttt{penoffset}}\index{postcontrol?\texttt{postcontrol}}%
-\index{precontrol?\texttt{precontrol}}%
-\label{optabC}
-\end{table}
-
-\begin{table}[htp]
-\caption{Operators (Part 4)}
-$$\begin{tabular}{|l|l|l|l|r|l|}
-\hline
-\multicolumn1{|c}{Name}&  \multicolumn3{|c}{Argument/result types}&
-        \multicolumn1{|c}{Page}& \multicolumn1{|c|}{Explanation}\\
-\cline{2-4}
-&       Left&   Right&  Result&         & \\
-\hline
-\hline
 \tt \verb|string|&      --&     any&    boolean&        \pageref{Dstrgop}&
         Is the expression of type string?\\\hline
+\pl\tt \verb|stroked|&     --&     any&    boolean&        \pageref{Dstroked}&
+        Is argument a stroked line?\\\hline
 \tt \verb|subpath|&     pair&   path&   path&   \pageref{Dsubpth}&
         Portion of a path for given range\\
 \tt \verb|of|&  &       &       &       &
@@ -5377,6 +5500,10 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         Substring bounded by given indices\\
 \tt \verb|of|&  &       &       &       &
         \\\hline
+\tt \verb|textpart|&    --&     picture&    string&       \pageref{Dtextpart}&
+        Text of a textual picture component\\\hline
+\pl\tt \verb|textual|&     --&     any&    boolean&        \pageref{Dtextual}&
+        Is argument typeset text?\\\hline
 \pl\tt \verb|top|&      --&     numeric&        numeric&        \pageref{Dtop}&
         Top of current pen when centered\\
 &       &       pair&   pair&   &
@@ -5399,7 +5526,7 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         \\
 &       &       pen&    &       &
         \\\hline
-\tt \verb|uniform-|&    --&     numeric&        numeric&        --&
+\tt \verb|uniform-|\index{uniformdeviate?\texttt{uniformdeviate}}&    --&     numeric&        numeric&        --&
         Random number between zero and\\
 \tt \verb|deviate|&     &       &       &       &
         the value of the argument\\\hline
@@ -5415,6 +5542,12 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         \\\hline
 \pl\tt \verb|whatever|& --&     --&     numeric&        \pageref{Dwhatev}&
         Create a new anonymous unknown\\\hline
+\tt \verb|withpost-|& --&     string&     ---&        \pageref{Dwithpost}&
+        End raw PostScript code\\
+\tt \verb|script|&       &       &    &       &\\\hline
+\tt \verb|withpre-|& --&     string&     ---&        \pageref{Dwithpre}&
+        Begin raw PostScript code\\
+\tt \verb|script|&       &       &    &       &\\\hline
 \tt \verb|xpart|&       --&     pair&   number& \pageref{Dxprt}&
         $x$ or $t_x$ component\\
 &       &       transform&      &       &
@@ -5463,11 +5596,8 @@ $$\begin{tabular}{|l|l|l|l|r|l|}
         multiplication.\\
 &       transform&      &       transform&      &
         \\\hline
-\end{tabular}
-$$
-\index{uniformdeviate?\texttt{uniformdeviate}}%
-\label{optabD}
-\end{table}
+\end{longtable}
+
 
 \begin{table}[htp]
 \caption{Commands}
@@ -5488,6 +5618,8 @@ $$\begin{tabular}{|l|r|l|}
         Draw a line with an arrowhead at the end\\\hline
 \pl\tt \verb|drawdblarrow|&     \pageref{Ddrwdar}&
         Draw a line with arrowheads at both ends\\\hline
+\tt \verb|filenametemplate|&     \pageref{Dfilenametemplate}&
+        Set output file name pattern\\\hline
 \pl\tt \verb|fill|&     \pageref{Dfill}&
         Fill inside a cyclic path\\\hline
 \pl\tt \verb|filldraw|& \pageref{Dfildrw}&
@@ -5528,11 +5660,14 @@ $$\begin{tabular}{|l|r|l|}
         Erase inside a cyclic path\\\hline
 \pl\tt \verb|unfilldraw|&       \pageref{Dunfdrw}&
         Erase a cyclic path and its inside\\\hline
+\pl\tt \verb|write to|&         \pageref{Dwrite}&
+        Write string to file\\\hline
 \end{tabular}
 $$
 \index{let?\texttt{let}}%
 \label{cmdtab}
 \end{table}
+
 
 \begin{table}[htp]
 \caption{Function-Like Macros}
@@ -5906,6 +6041,7 @@ $\tt $\\
 $\tt \descr{loop} \rightarrow \descr{loop header}\hbox{\tt :} \descr{loop text} endfor$\\
 $\tt \descr{loop header} \rightarrow for \descr{symbolic token} \hbox{\tt =} \descr{progression}$\\
 $\tt \qquad \;|\; for \descr{symbolic token} \hbox{\tt =} \descr{for list}$\\
+$\tt \qquad \;|\; for \descr{symbolic token} \hbox{\tt within} \descr{picture expression}$\\
 $\tt \qquad \;|\; forsuffixes \descr{symbolic token} \hbox{\tt =} \descr{suffix list}$\\
 $\tt \qquad \;|\; forever$\\
 $\tt \descr{progression} \rightarrow \descr{numeric expression} upto \descr{numeric expression}$\\
