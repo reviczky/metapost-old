@@ -2450,7 +2450,7 @@ identity} is a no-op.
 The syntax for transform expressions and transformation operators is given in
 Figure~\ref{sytrans}.  It includes two more options for
 \tdescr{transformer}:\index{reflectedabout?\texttt{reflectedabout}}
-$$ \hbox{\tt reflectededabout(}p, q\hbox{\tt )} $$
+$$ \hbox{\tt reflectedabout(}p, q\hbox{\tt )} $$
 reflects about the line defined by points $p$ and $q$;
 and\index{rotatedaround?\texttt{rotatedaround}}
 $$ \hbox{\tt rotatedaround(}p,\theta\hbox{\tt )} $$
@@ -3189,19 +3189,19 @@ always write to the
 saving their output required to temporarily save \ttt{currentpicture},
 reset it to \ttt{nullpicture}\index{nullpicture?\texttt{nullpicture}},
 execute the drawing operations, save the \ttt{currentpicture} to a
-\ttt{picture} variable and finally restore \ttt{currentpicture} to
-the saved state.  MetaPost version~0.60 introduced a new macro
-$$ \hbox{\tt image($\descr{drawing commands}$)} $$%
+new \ttt{picture} variable and finally restore \ttt{currentpicture} to
+the saved state.  In MetaPost version~0.60 a new macro
+$$ \hbox{\tt image( $\descr{drawing commands}$ )} $$%
 \index{image?\texttt{image}}\label{Dimage}%
-that eases this task.  It takes as input a sequence of arbitrary
-drawing operations and returns a picture variable containing the
+was introduced that eases this task.  It takes as input a sequence of arbitrary
+drawing operations and returns a \ttt{picture} variable containing the
 corresponding output, without affecting {\tt currentpicture}.
 
 As an example, in the code of figure~\ref{fig55} an object \ttt{wheel} has
-been defined to save the output of two \ttt{draw} operations as follows:
+been defined that saves the output of two \ttt{draw} operations as follows:
 \begin{figure}[b]
 $$ \includegraphics{manfig-55} $$
-\caption{Using the \ttt{image} operator to copy objects.}
+\caption{Copying objects with the \ttt{image} operator.}
 \label{fig55}
 \end{figure}
 $$\begin{verbatim}
@@ -3213,7 +3213,7 @@ wheel := image(
 \end{verbatim}
 $$
 Another object \ttt{car} re-uses \ttt{wheel} to construct a car.  The
-three cars are drawn with two different slantings, finally.
+three cars have finally been drawn with two different slant values.
 
 
 \subsection{Extracting Information from Pictures}
@@ -4525,7 +4525,7 @@ null character.  The preloaded {\tt plain} macro package introduces the name
 cause the file to be reread from the start.
 
 The opposite of {\tt readfrom} is the command
-$$ {\tt write}\ \descr{string expression}\ {\tt to} \descr{file name} $$%
+$$ {\tt write}\ \descr{string expression}\ {\tt to}\ \descr{file name} $$%
 \index{write to?\texttt{write to}}\label{Dwrite}%
 This writes a line of text to the specified output file, opening the file
 first if necessary.  All such files are closed automatically when the
