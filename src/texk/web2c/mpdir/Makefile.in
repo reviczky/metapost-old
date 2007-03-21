@@ -34,7 +34,7 @@ clean::
 depend:
 	rm -f $(OBJS)
 	XXCFLAGS=-MM XCFLAGS=-MM $(MAKE) -k $(OBJS) | \
-	    grep -v "^$(CC)\|$(CXX)\|$(AR)\|make\|klibtool" | \
+	    grep -v "^$(CC)\|$(CXX)\|$(AR)\|make" | \
 	    sed 's: [^ ]*/\.\./libs/[^ ]*::g' > $(srcdir)/depend.mk
 
 kpse_include mpdir/depend.mk
