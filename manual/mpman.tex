@@ -261,7 +261,7 @@ generates a larger version of the above diagram.  It is OK to say
 \verb|0| instead \verb|0cm| because {\tt cm} is really just a conversion
 factor and {\tt 0cm} just multiplies the conversion factor by zero.
 (MetaPost understands constructions like {\tt
-2cm}\index{multiplication!implicit} as shorthand for \verb|2*cm|).
+2cm}\index{multiplication, implicit} as shorthand for \verb|2*cm|).
 
 It is convenient to introduce your own scale factor, say $u$.  Then you
 can define coordinates in terms of $u$ and decide later whether you want
@@ -3375,7 +3375,7 @@ The following example illustrates how locality works:
 && \hbox{\tt endfig;}\\
 && \hbox{\tt show x23, y3a;}
 \end{eqnarray*}
-The result of the {\tt show}\index{show} command is
+The result of the {\tt show}\index{show?\texttt{show}} command is
 $$\begin{verbatim}
 >> 3.1
 >> y3a
@@ -3407,7 +3407,7 @@ discarded.
 The main purpose of the {\tt save} statement is to allow macros to use
 variables without interfering with existing variables or variables in
 other calls to the same macro.  For example, the predefined macro {\tt
-whatever}\index{whatever} has the \tdescr{replacement text}
+whatever}\index{whatever?\texttt{whatever}} has the \tdescr{replacement text}
 $$ \hbox{\tt begingroup save ?; ? endgroup} $$
 This returns an unknown numeric quantity, but it is no longer called
 question mark since that name was local to the group.  Asking the name
