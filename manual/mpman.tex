@@ -83,7 +83,6 @@ An appendix explains the differences between MetaPost and \MF.
 \begin{multicols}{2}
 \tableofcontents
 \end{multicols}
-\setlength{\parskip}{.75ex plus 0.5ex minus 0.2ex}
 
 \section{Introduction}
 \label{intro}
@@ -5756,6 +5755,13 @@ $$ {\tt special}\, \descr{string expression} \hbox{\tt;} $$
 but \MF\ copies the string into its ``generic font'' output file, while
 MetaPost interprets the string as a sequence of PostScript commands that are
 to be placed at the beginning of the next output file.
+
+In this regard, it is worth mentioning that rules in \TeX\ material
+included via {\tt btex..etex} in MetaPost are rounded to the correct
+number of pixels according to PostScript conversion rules.  In \MF,
+rules are not generated directly, but simply included in specials and
+interpreted later by other programs, such as {\tt gftodvi}, so there is
+no special conversion.
 
 All the other differences between \MF\ and MetaPost are features found
 only in MetaPost.  These are listed in Table~\ref{mponly}.  The only

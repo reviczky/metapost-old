@@ -972,40 +972,8 @@ It is necessary to {\tt input sarith} before using the following macros:
 \end{description}
 
 
-
-\section{New Language Features}
-\label{nfeats}
-
-\subsection{Other New Features}
-
-The {\tt marith.mp} and {\tt sarith.mp} packages use numbers of magnitude
-4096 more.  Since such numbers can cause overflow problems in MetaPost's
-linear equation solving and path fitting algorithms, they are normally
-allowed only as intermediate results.  This limitation is removed when
-the internal variable {\tt warningcheck} is zero.  In earlier versions
-of MetaPost, the limitation could be removed for variables but explicit
-constants were always restricted to be less than 4096.
-
-For completeness, we also mention one other new feature of MetaPost
-Version 0.60.  When \TeX\ material is included in a picture via the
-{\tt btex}\ldots{\tt etex} feature, the thickness of horizontal and
-vertical rules gets rounded to exactly the right number of pixels; i.e.,
-interpreting MetaPost output according to the PostScript scan
-conversion rules~\cite{ad:red} makes the pixel width equal to the ceiling
-of the unrounded width.  In fact, a similar relationship holds for all line
-widths.  The generated PostScript sets line widths by first transforming
-to device coordinates and rounding appropriately.
-
-
-
-
-
-
 \bibliographystyle{plain}
 \bibliography{mpgraph}
-
-
-
 
 \end{document}
 
