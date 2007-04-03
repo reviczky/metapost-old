@@ -349,7 +349,7 @@ centimeters.
 
 \subsection{Filename templates}
 
-Metapost has support for output file-name templates. These templates
+MetaPost has support for output file-name templates. These templates
 use \ttt{printf}-style escape sequences and are re-evaluated before
 each figure is written to disk. 
 
@@ -394,8 +394,9 @@ If you assign an empty string, it will revert to that default.
 \label{curves}
 
 MetaPost is perfectly happy to draw curved lines as well as straight ones.
-A \verb|draw| statement with the points separated by \verb|..| draws
-a smooth curve through the points.  For example consider the result of
+A \verb|draw| statement with the points separated by
+\verb|..|\index{..?\texttt{..}} draws a smooth curve through the points.
+For example consider the result of
 $$ \hbox{\verb|draw z0..z1..z2..z3..z4|} $$
 after defining five points as follows:
 $$\begin{verbatim}
@@ -1581,11 +1582,12 @@ that \TeX\ would understand since MetaPost gets height and width
 information by reading a {\tt tfm}\index{tfm file?{\tt tfm}
 file}\index{files!tfm?{\tt tfm}} file.  (This is explained in {\sl The
 \TeX book\/} \cite{kn:a}.) It should be possible to use built-in
-PostScript fonts, but the names for them are system-dependent.  Some
-typical ones are {\tt ptmr8r} for Times-Roman, \ttt{pplr8r} for
-Palatino, and \ttt{phvr} for Helvetica.  The Fontname document,
+PostScript\index{PostScript!fonts} fonts, but the names for
+them are system-dependent.  Some typical ones are {\tt ptmr8r} for
+Times-Roman\index{Times-Roman}, \ttt{pplr8r} for Palatino\index{Palatino},
+and \ttt{phvr} for Helvetica\index{Helvetica}. The Fontname document,
 available at \url{http://tug.org/fontname}, has much more information
-about font names and TeX.  A \TeX\index{TeX fonts?\TeX\ fonts} font such
+about font names and \TeX.  A \TeX\index{TeX?\TeX!fonts} font such
 as {\tt cmr10} is a little dangerous because it does not have a space
 character or certain ASCII symbols.
 
@@ -1740,7 +1742,7 @@ For historical reasons, MetaPost sets \ttt{prologues} to~1 when the {\tt
 -troff} option is given on the command line.
 
 \item When \ttt{prologues} is 2, the MetaPost output is EPSF and assumes
-that the text comes from PostScript fonts
+that the text comes from PostScript\index{PostScript!fonts} fonts
 provided by the ``environment'', such as the document viewer or
 embedded application using the output. MetaPost will attempt to
 set up the font encodings correctly, based on \ttt{fontmapfile} and
@@ -1781,8 +1783,8 @@ If \ttt{prologues} is set to~2, any used fonts in the output file are
 automatically re-encoded, and the encoding vector file specified in
 the fontmap entry will be embedded in the output file. If
 \ttt{prologues} is set to~3, MetaPost will also attempt to include
-(a subset of) the used PostScript fonts. For this to work, it needs to
-acquire font map information. 
+(a subset of) the used PostScript\index{PostScript!fonts} fonts. For
+this to work, it needs to acquire font map information. 
 
 The code is based on the font library used by pdf\TeX. Following in
 the footsteps of pdf\TeX, there are two new associated primitives:
@@ -1807,7 +1809,8 @@ inside the figure:
 \verb|   draw "Hello, world" infont "pplbo8r";|\\
 \verb|endfig;|
 \end{tabular}\end{center}
-This will attempt to reencode the PostScript font URWPalladioL-Bold
+This will attempt to reencode the PostScript font
+URWPalladioL-Bold\index{URWPalladioL-Bold}\index{Palatino}
 whose tfm file is pplbo8r.tfm. The encoding is found in the file
 8r.enc, and will be included into the output file.
 
@@ -4516,10 +4519,11 @@ $$
 File access was one of the new language features introduced in version~0.60
 of the MetaPost language.  A new operator
 $$ {\tt readfrom}\ \descr{file name} $$\index{readfrom?\texttt{readfrom}}\label{Dreadfrom}%
-returns a string giving the next line of input from the named file.  The
-\tdescr{file name} can be any primary expression of type string.  If the file
-has ended or cannot be read, the result is a string consisting of a single
-null character.  The preloaded {\tt plain} macro package introduces the name
+returns a string giving the next line of input from the named
+file\index{files!reading}.  The \tdescr{file name} can be any primary
+expression of type string.  If the file has ended or cannot be read, the
+result is a string consisting of a single null character.  The preloaded
+{\tt plain} macro package introduces the name
 {\tt EOF}\index{EOF?\texttt{EOF}}\label{Deof} for this string.  After
 {\tt readfrom} has returned {\tt EOF}, additional reads from the same file
 cause the file to be reread from the start.
@@ -4527,9 +4531,10 @@ cause the file to be reread from the start.
 The opposite of {\tt readfrom} is the command
 $$ {\tt write}\ \descr{string expression}\ {\tt to}\ \descr{file name} $$%
 \index{write to?\texttt{write to}}\label{Dwrite}%
-This writes a line of text to the specified output file, opening the file
-first if necessary.  All such files are closed automatically when the
-program terminates.  They can also be closed explicitly by using {\tt EOF}
+This writes\index{files!writing} a line of text to the specified output file,
+opening the file first if necessary.  All such files are
+closed\index{files!closing} automatically when the program terminates.  They
+can also be closed explicitly by using {\tt EOF}\index{EOF?\texttt{EOF}}
 as the \tdescr{string expression}.  The only way to tell if a {\tt write}
 command has succeeded is to close the file and use {\tt readfrom} to look
 at it.
@@ -4942,7 +4947,7 @@ $$\begin{tabular}{|l|r|l|}
         clearance around contents of a circular or oval box\\\hline
 \tt     day&    --&
         the current day of the month\\\hline
-\pl\tt     defaultcolormodel&    --&
+\tt     defaultcolormodel&    --&
         the initial color model  (default: 5, rgb)\\\hline
 \bx\tt  defaultdx&      \pageref{Ddefaultdx}&
         usual horizontal space around box contents (default 3{\tt bp})\\\hline
@@ -5166,7 +5171,7 @@ $$\begin{tabular}{|l|r|l|}
         Draw a line with an arrowhead at the end\\\hline
 \pl\tt \verb|drawdblarrow|&     \pageref{Ddrwdar}&
         Draw a line with arrowheads at both ends\\\hline
-\pl\tt \verb|filenametemplate|&     \pageref{Dfilenametemplate}&
+\tt \verb|filenametemplate|&     \pageref{Dfilenametemplate}&
         Set output file name pattern\\\hline
 \pl\tt \verb|fill|&     \pageref{Dfill}&
         Fill inside a cyclic path\\\hline
@@ -5669,9 +5674,9 @@ The analog of a \MF\ command line like
 $$ \hbox{\verb|mf '\mode=lowres; mag=1.2; input cmr10'|} $$
 is
 $$ \hbox{\verb|mpost '&mfplain \mode=lowres; mag=1.2; input cmr10'|} $$
-The result is a set of PostScript files, one for each character in the
-font.  Some editing would be required in order to merge them into a
-downloadable Type~3 PostScript font \cite{ad:red}.
+The result is a set of PostScript\index{PostScript} files, one for each
+character in the font.  Some editing would be required in order to
+merge them into a downloadable Type~3 PostScript font~\cite{ad:red}.
 
 \begin{table}[htp]
 $$
@@ -5731,7 +5736,7 @@ MetaPost definitions.  These include {\tt displaying}, {\tt
 currentwindow}, \verb|screen_rows|, and \verb|screen_cols| which depend
 on \MF's ability to display images on the computer screen.  In addition,
 \verb|pixels_per_inch| is irrelevant since MetaPost uses fixed units of
-PostScript points.
+PostScript\index{PostScript!point}\index{point!PostScript} points.
 
 The reason why some macros and internal variables\index{internal
 variables}\index{variables!internal} are not meaningful in MetaPost is
@@ -5753,15 +5758,15 @@ MetaPost.  Both languages allow statements of the
 form\index{special?\texttt{special}}\label{Dspecl}
 $$ {\tt special}\, \descr{string expression} \hbox{\tt;} $$
 but \MF\ copies the string into its ``generic font'' output file, while
-MetaPost interprets the string as a sequence of PostScript commands that are
-to be placed at the beginning of the next output file.
+MetaPost interprets the string as a sequence of PostScript\index{PostScript}
+commands that are to be placed at the beginning of the next output file.
 
 In this regard, it is worth mentioning that rules in \TeX\ material
 included via {\tt btex..etex} in MetaPost are rounded to the correct
-number of pixels according to PostScript conversion rules.  In \MF,
-rules are not generated directly, but simply included in specials and
-interpreted later by other programs, such as {\tt gftodvi}, so there is
-no special conversion.
+number of pixels according to PostScript\index{PostScript!conversion rules}
+conversion rules.  In \MF, rules are not generated directly, but simply
+included in specials and interpreted later by other programs, such as
+{\tt gftodvi}\index{gftodvi?\ttt{gftodvi}}, so there is no special conversion.
 
 All the other differences between \MF\ and MetaPost are features found
 only in MetaPost.  These are listed in Table~\ref{mponly}.  The only
@@ -5784,56 +5789,121 @@ troff\index{troff} commands in {\tt mpx}\index{files!mpx?{\tt mpx}}
 files. It should be of no concern to users since {\tt mpx} files are
 generated automatically.
 
-\begin{table}[htp]
-$$
-\renewcommand{\FancyVerbFormatLine}[1]{\hbox{#1}\strut}
-\begin{tabular}{|l|} \hline
-\multicolumn 1{|c|}
-{MetaPost primitives not found in \MF}          \\ \hline
-$\begin{verbatim}
-blackpart          greenpart         setbounds            
-bluepart           greypart          tracinglostchars     
-btex               infont            troffmode            
-clip               linecap           truecorners              
-cmykcolor          linejoin          ulcorner             
-color              llcorner          urcorner             
-colormodel         lrcorner          verbatimtex              
-cyanpart           magentapart       withcmykcolor        
-dashed             miterlimit        withcolor                
-defaultcolormodel  mpprocset         withgreyscale
-etex               mpxbreak          withoutcolor         
-filenametemplate   prologues         withpostscript       
-fontmapfile        redpart           withprescript        
-fontmapline        restoreclipcolor  withrgbcolor          
-fontsize           rgbcolor          yellowpart           
-\end{verbatim}
-$                                               \\ \hline
-\multicolumn 1{|c|}
-{Variables and Macros defined only in Plain MetaPost}\\ \hline
-$\begin{verbatim}
-ahangle          cutbefore        extra_beginfig
-ahlength         cuttings         extra_endfig
-background       dashpattern      green
-bbox             defaultfont      image
-bboxmargin       defaultpen       label       
-beginfig         defaultscale     labeloffset 
-beveled          dotlabel         mitered     
-black            dotlabels        red         
-blue             drawarrow        rounded     
-buildcycle       drawdblarrow     squared     
-butt             drawoptions      thelabel    
-center           endfig           white       
-cutafter         evenly
-\end{verbatim}
-$                                       \\ \hline
+\begin{table}
+\centering
+\begin{tabular}{|c|}\hline
+MetaPost primitives not found in \MF\\\hline
+\begin{minipage}[b]{.7\linewidth}\ttfamily
+\begin{multicols}{3}
+blackpart\\
+bluepart\\
+bounded\\
+btex\\
+clip\\
+clipped\\
+cmykcolor\\
+color\\
+colormodel\\
+cyanpart\\
+dashed\\
+dashpart\\
+defaultcolormodel\\
+etex\\
+filenametemplate\\
+filled\\
+fontmapfile\\
+fontmapline\\
+fontpart\\
+fontsize\\
+for within\\
+greenpart\\
+greypart\\
+infont\\
+linecap\\
+linejoin\\
+llcorner\\
+lrcorner\\
+magentapart\\
+miterlimit\\
+mpprocset\\
+mpxbreak\\
+pathpart\\
+penpart\\
+prologues\\
+readfrom\\
+redpart\\
+restoreclipcolor\\
+rgbcolor\\
+setbounds\\
+stroked\\
+textpart\\
+textual\\
+tracinglostchars\\
+troffmode\\
+truecorners\\
+ulcorner\\
+urcorner\\
+verbatimtex\\
+withcmykcolor\\
+withcolor\\
+withgreyscale\\
+withoutcolor\\
+withpostscript\\
+withprescript\\
+withrgbcolor\\
+write to\\
+yellowpart
+\end{multicols}
+\end{minipage}\\\hline
+
+Variables and Macros defined only in Plain MetaPost\\\hline
+\begin{minipage}[b]{.7\linewidth}\ttfamily
+\begin{multicols}{3}
+ahangle\\
+ahlength\\
+background\\
+bbox\\
+bboxmargin\\
+beginfig\\
+beveled\\
+black\\
+blue\\
+buildcycle\\
+butt\\
+center\\
+cutafter\\
+cutbefore\\
+cuttings\\
+dashpattern\\
+defaultfont\\
+defaultpen\\
+defaultscale\\
+dotlabel\\
+dotlabels\\
+drawarrow\\
+drawdblarrow\\
+drawoptions\\
+endfig\\
+EOF\\
+evenly\\
+extra\_beginfig\\
+extra\_endfig\\
+green\\
+image\\
+label\\
+labeloffset\\
+mitered\\
+red\\
+rounded\\
+squared\\
+thelabel\\
+white
+\end{multicols}
+\end{minipage}\\\hline
 \end{tabular}
-\renewcommand{\FancyVerbFormatLine}[1]{#1}
-$$
 \caption{Macros and internal variables defined in MetaPost but not \MF.}
 \label{mponly}
 \end{table}
-
-
 
 
 \bibliographystyle{plain}

@@ -31,7 +31,7 @@ arclength&  --&  path&  numeric&  \pageref{Darclng}&  Arc length of a path\\\hli
 arctime of&  numeric&  path&  numeric&  \pageref{Darctim}&  Time on a path where arc length from the start reaches a given value\\\hline
 ASCII\index{ASCII?\texttt{ASCII}}&  --&  string&  numeric&  --&  ASCII value of first character in string\\\hline
 \pl bbox&  --&  picture\par path\par pen&  path&  \pageref{Dbbox}&  A rectangular path for the bounding box\\\hline
-\pl blackpart&  --&  cmykcolor&  numeric&  \pageref{Dcmykprt}&  Extract the fourth component\\\hline
+blackpart&  --&  cmykcolor&  numeric&  \pageref{Dcmykprt}&  Extract the fourth component\\\hline
 bluepart&  --&  color&  numeric&  \pageref{Drgbprt}&  Extract the third component\\\hline
 boolean&  --&  any&  boolean&  \pageref{Dboolop}&  Is the expression of type boolean?\\\hline
 \pl bot&  --&  numeric\par pair&  numeric\par pair&  \pageref{Dbot}&  Bottom of current pen when centered at the given coordinate(s)\\\hline
@@ -40,13 +40,13 @@ bounded&  --&  any&  boolean&  \pageref{Dbounded}&  Is argument a picture with a
 \pl center&  --&  picture\par path\par pen&  pair&  \pageref{Dcenter}&  Center of the bounding box\\\hline
 char&  --&  numeric&  string&  \pageref{Dchar}&  Character with a given ASCII code\\\hline
 clipped&  --&  any&  boolean&  \pageref{Dclipped}&  Is argument a clipped picture?\\\hline
-\pl cmykcolor&  --&  any&  boolean&  \pageref{Dccolrop}&  Is the expression of type cmykcolor?\\\hline
-\pl colormodel&  --&  image object&  numeric&  --&  What is the color model of the image object?\\\hline
+cmykcolor&  --&  any&  boolean&  \pageref{Dccolrop}&  Is the expression of type cmykcolor?\\\hline
+colormodel&  --&  image object&  numeric&  --&  What is the color model of the image object?\\\hline
 color&  --&  any&  boolean&  \pageref{Dcolrop}&  Is the expression of type color?\\\hline
 cosd&  --&  numeric&  numeric&  \pageref{Dcosd}&  Cosine of angle in degrees\\\hline
 \pl cutafter&  path&  path&  path&  \pageref{Dcuta}&  Left argument with part after the intersection dropped\\\hline
 \pl cutbefore&  path&  path&  path&  \pageref{Dcutb}&  Left argument with part before the intersection dropped\\\hline
-\pl cyanpart&  --&  cmykcolor&  numeric&  \pageref{Dcmykprt}&  Extract the first component\\\hline
+cyanpart&  --&  cmykcolor&  numeric&  \pageref{Dcmykprt}&  Extract the first component\\\hline
 cycle&  --&  path&  boolean&  \pageref{Dcycop}&  Determines whether a path is cyclic\\\hline
 dashpart&  --&  picture&  picture&  \pageref{Ddashpart}&  Dash pattern of a path in a stroked picture\\\hline
 decimal&  --&  numeric&  string&  \pageref{Ddecop}&  The decimal representation\\\hline
@@ -61,7 +61,7 @@ floor&  --&  numeric&  numeric&  \pageref{Dfloor}&  Greatest integer less than o
 fontpart&  --&  picture&  string&  \pageref{Dfontpart}&  Font of a textual picture component\\\hline
 fontsize&  --&  string&  numeric&  \pageref{Dfntsiz}&  The point size of a font\\\hline
 greenpart&  --&  color&  numeric&  \pageref{Drgbprt}&  Extract the second component\\\hline
-\pl greypart&  --&  numeric&  numeric&  --&  Extract the first (only) component\\\hline
+greypart&  --&  numeric&  numeric&  --&  Extract the first (only) component\\\hline
 hex\index{hex?\texttt{hex}}&  --&  string&  numeric&  --&  Interpret as a hexadecimal number\\\hline
 infont&  string&  string&  picture&  \pageref{Sinfont}&  Typeset string in given font\\\hline
 \pl intersec\-tionpoint&  path&  path&  pair&  \pageref{Disecpt}&  An intersection point\\\hline
@@ -72,7 +72,7 @@ length&  --&  path\par string\par picture&  numeric&  \pageref{Dlength}\par \pag
 \pl lft&  --&  numeric\par pair&  numeric\par pair&  \pageref{Dlft}&  Left side of current pen when its center is at the given coordinate(s)\\\hline
 llcorner&  --&  picture\par path\par pen&  pair&  \pageref{Dcornop}&  Lower-left corner of bounding box\\\hline
 lrcorner&  --&  picture\par path\par pen&  pair&  \pageref{Dcornop}&  Lower-right corner of bounding box\\\hline
-\pl magentapart&  --&  cmykcolor&  numeric&  \pageref{Dcmykprt}&  Extract the second component\\\hline
+magentapart&  --&  cmykcolor&  numeric&  \pageref{Dcmykprt}&  Extract the second component\\\hline
 makepath&  --&  pen&  path&  \pageref{Dmkpath}&  Cyclic path bounding the pen shape\\\hline
 makepen&  --&  path&  pen&  \pageref{Dmkpen}&  A polygonal pen made from the convex hull of the path knots\\\hline
 mexp\index{mexp?\texttt{mexp}}&  --&  numeric&  numeric&  --&  The function $\exp(x/256)$\\\hline
@@ -97,7 +97,7 @@ precontrol of\index{precontrol?\texttt{precontrol}}&  numeric&  path&  pair&  --
 readfrom&  --&  string&  string&  \pageref{Dreadfrom}&  Read a line from file\\\hline
 redpart&  --&  color&  numeric&  \pageref{Drgbprt}&  Extract the first component\\\hline
 reverse&  --&  path&  path&  \pageref{Drevrse}&  `time'-reversed path, beginning swapped with ending\\\hline
-\pl rgbcolor&  --&  any&  boolean&  \pageref{Drcolrop}&  Is the expression of type color?\\\hline
+rgbcolor&  --&  any&  boolean&  \pageref{Drcolrop}&  Is the expression of type color?\\\hline
 rotated&  picture\par path\par pair\par pen\par transform&  numeric&  picture\par path\par pair\par pen\par transform&  \pageref{Dtranop}&  Rotate counterclockwise a given number of degrees\\\hline
 \pl round&  --&  numeric\par pair&  numeric\par pair&  \pageref{Dround}&  round each component to the nearest integer\\\hline
 \pl rt&  --&  numeric\par pair&  numeric\par pair&  \pageref{Drt}&  Right side of current pen when centered at given coordinate(s)\\\hline
@@ -121,15 +121,15 @@ ulcorner&  --&  picture\par path\par pen&  pair&  \pageref{Dcornop}&  Upper-left
 uniform\-deviate\index{uniformdeviate?\texttt{uniformdeviate}}&  --&  numeric&  numeric&  --&  Random number between zero and the value of the argument\\\hline
 \pl unitvector&  --&  pair&  pair&  \pageref{Duvec}&  Rescale a vector so its length is~1\\\hline
 unknown&  --&  any&  boolean&  \pageref{Dunknwn}&  Is the value unknown?\\\hline
-urcorner&  --&  picture\par path\par pen&  pair&  \pageref{Dcornop}&  Upper-left corner of bounding box\\\hline
+urcorner&  --&  picture\par path\par pen&  pair&  \pageref{Dcornop}&  Upper-right corner of bounding box\\\hline
 \pl whatever&  --&  --&  numeric&  \pageref{Dwhatev}&  Create a new anonymous unknown\\\hline
-\pl withpost\-script&  --&  string&  ---&  \pageref{Dwithpost}&  End raw PostScript code\\\hline
-\pl withpre\-script&  --&  string&  ---&  \pageref{Dwithpre}&  Begin raw PostScript code\\\hline
+withpost\-script&  --&  string&  ---&  \pageref{Dwithpost}&  End raw PostScript code\\\hline
+withpre\-script&  --&  string&  ---&  \pageref{Dwithpre}&  Begin raw PostScript code\\\hline
 xpart&  --&  pair\par transform&  number&  \pageref{Dxprt}&  $x$ or $t_x$ component\\\hline
 xscaled&  picture\par path\par pair\par pen\par transform&  numeric&  picture\par path\par pair\par pen\par transform&  \pageref{Dtranop}&  Scale all $x$ coordinates by the given amount\\\hline
 xxpart&  --&  transform&  number&  \pageref{Dtrprt}&  $t_{xx}$ entry in transformation matrix\\\hline
 xypart&  --&  transform&  number&  \pageref{Dtrprt}&  $t_{xy}$ entry in transformation matrix\\\hline
-\pl yellowpart&  --&  cmykcolor&  numeric&  \pageref{Dcmykprt}&  Extract the third component\\\hline
+yellowpart&  --&  cmykcolor&  numeric&  \pageref{Dcmykprt}&  Extract the third component\\\hline
 ypart&  --&  pair\par transform&  number&  \pageref{Dyprt}&  $y$ or $t_y$ component\\\hline
 yscaled&  picture\par path\par pair\par pen\par transform&  numeric&  picture\par path\par pair\par pen\par transform&  \pageref{Dtranop}&  Scale all $y$ coordinates by the given amount\\\hline
 yxpart&  --&  transform&  number&  \pageref{Dtrprt}&  $t_{yx}$ entry in transformation matrix\\\hline
