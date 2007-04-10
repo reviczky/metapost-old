@@ -795,7 +795,7 @@ of {\tt z1}, {\tt z2}, {\tt z3}, and~{\tt z6}.  The next step in the
 construction of Figure~\ref{fig12} is to define points {\tt z4} and {\tt
 z5} equally spaced along the line from {\tt z3} to {\tt z6}.  Since this
 operation comes up often, MetaPost has a special syntax for it.  This
-mediation construction\index{mediation}
+mediation construction\index{mediation}\index{[]?\texttt{[]}!mediation}
 $$ \hbox{\verb|z4=1/3[z3,z6]|} $$
 means that {\tt z4} is $1\over3$ of the way from $z3$ to $z6$; i.e.,
 $$ {\tt z4}={\tt z3}+{1\over3}({\tt z6}-{\tt z3}). $$
@@ -1431,7 +1431,8 @@ numeric, path, transform, color, string, boolean, picture, and pen.  The
 only restriction is that you cannot give explicit numeric subscripts in
 a variable declaration.  Do not give the illegal declaration
 $$ \hbox{\tt numeric q1, q2, q3;} $$
-use the generic subscript\index{subscript!generic} symbol {\tt []}\index{[]?\texttt{[]}}
+use the generic subscript\index{subscript!generic} symbol
+{\tt []}\index{arrays}\index{[]?\texttt{[]}!array}
 instead, to declare the whole array:
 $$ \hbox{\tt numeric q[];} $$
 You can also declare ``multidimensional'' arrays\index{arrays!multidimensional}.
@@ -1953,7 +1954,7 @@ example, the {\tt fill} statement in Figure~\ref{fig20} builds a closed
 path by extending the roughly semicircular path~{\tt p}.  This path has
 a counter-clockwise orientation, but that does not matter because the
 {\tt fill} statement uses PostScript's\index{PostScript} non-zero
-winding\index{winding number} number rule~\cite{ad:red}.
+winding\index{winding number} number rule~\cite{ad:red2}.
 
 \begin{figure}[htp]
 $$ \begin{verbatim}
@@ -3800,7 +3801,8 @@ $$ {\tt vardef}\, \descr{generic variable} $$
 where a \tdescr{generic variable}\index{generic variable?\tdescr{generic
 variable}} is a variable name with numeric subscripts replaced by the
 generic subscript\index{subscript!generic} symbol {\tt
-[]}\index{[]?\texttt{[]}}.  In other words, the name following {\tt
+[]}\index{[]?\texttt{[]}!vardef macro?\texttt{vardef} macro}.  In other
+words, the name following {\tt
 vardef} obeys exactly the same syntax as the name given in a variable
 declaration.  It is a sequence of tags and generic subscript symbols
 starting with a tag, where a tag\index{tags} is a symbolic token that is
@@ -5676,7 +5678,7 @@ is
 $$ \hbox{\verb|mpost '&mfplain \mode=lowres; mag=1.2; input cmr10'|} $$
 The result is a set of PostScript\index{PostScript} files, one for each
 character in the font.  Some editing would be required in order to
-merge them into a downloadable Type~3 PostScript font~\cite{ad:red}.
+merge them into a downloadable Type~3 PostScript font~\cite{ad:red2}.
 
 \begin{table}[htp]
 $$
