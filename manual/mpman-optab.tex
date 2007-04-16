@@ -1,4 +1,11 @@
-\begin{longtable}{|>{\ttfamily}p{.8in}*{3}{|p{.7in}}|>{\raggedleft}p{.2in}|>{\raggedright\arraybackslash}X|}
+%%% Two notes on column specification:
+%%% (i)  Column widths are manually chosen as small as possible to allow
+%%%      for a wider last X column.
+%%% (ii)  In the first column \linepenalty=100 prefers shorter paragraphs
+%%%       (less lines), where plain \raggedright were indifferent and
+%%%       sometimes caused a dangling line, e.g., for 'directionpoint of'
+%%%       or 'directiontime of'.
+\begin{longtable}{|>{\raggedright\linepenalty=100\ttfamily}p{.793in}*{3}{|>{\raggedright}p{.715in}}|>{\raggedleft}p{1.5em}|>{\raggedright\arraybackslash}X|}
 \caption{Operators}\label{optab}\\
 \hline
 Name&  \multicolumn3{c|}{Argument/result types}&  \makebox[.2in][c]{Page}&  Explanation\\\cline{2-4}
