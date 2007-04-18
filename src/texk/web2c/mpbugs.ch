@@ -78,65 +78,76 @@ if (p_next=p)or(p_nextnext=p) then
      new_turn_cycles := -unity
 else begin
   repeat
-	xp := x_coord(p_next); yp := y_coord(p_next);
+    xp := x_coord(p_next); yp := y_coord(p_next);
     ang  := bezier_slope(x_coord(p), y_coord(p), right_x(p), right_y(p),  
                         left_x(p_next), left_y(p_next), xp, yp, internal[tracing_commands]);
     if ang>seven_twenty_deg then begin
-	    print_err("Strange path");
-        error;
-	    new_turn_cycles := 0;
-	    return;
+      print_err("Strange path");
+      error;
+      new_turn_cycles := 0;
+      return;
       end;
     res  := res + ang;
-	{ incoming angle at next point }
-	x := left_x(p_next);  y := left_y(p_next);
-	if (xp=x)and(yp=y) then begin x := right_x(p);  y := right_y(p);  end;
-	if (xp=x)and(yp=y) then begin x := x_coord(p);  y := y_coord(p);  end;
-    in_angle := new_an_angle(xp - x, yp - y);
-	{ outgoing angle at next point }
-	x := right_x(p_next);  y := right_y(p_next);
-	if (xp=x)and(yp=y) then begin x := left_x(p_nextnext);  y := left_y(p_nextnext);  end;
-	if (xp=x)and(yp=y) then begin x := x_coord(p_nextnext); y := y_coord(p_nextnext); end;
-    out_angle := new_an_angle(x - xp, y- yp);
-    ang  := (out_angle - in_angle);
-    if internal[tracing_commands]>unity then begin
-      begin_diagnostic; 
-      print_nl("turn_cycles(): point angle=");
-      print_scaled((ang / 16));
-      end_diagnostic(false);
-    end;
-    res  := res + ang;
-    while res >= three_sixty_deg do begin
+    if res >= one_eighty_deg then begin
       res := res - three_sixty_deg;
       turns := turns + unity;
     end;
-    while res <= -three_sixty_deg do begin
+    if res <= -one_eighty_deg then begin
       res := res + three_sixty_deg;
       turns := turns - unity;
+    end;
+    { incoming angle at next point }
+    x := left_x(p_next);  y := left_y(p_next);
+    if (xp=x)and(yp=y) then begin x := right_x(p);  y := right_y(p);  end;
+    if (xp=x)and(yp=y) then begin x := x_coord(p);  y := y_coord(p);  end;
+    in_angle := new_an_angle(xp - x, yp - y);
+    { outgoing angle at next point }
+    x := right_x(p_next);  y := right_y(p_next);
+    if (xp=x)and(yp=y) then begin x := left_x(p_nextnext);  y := left_y(p_nextnext);  end;
+    if (xp=x)and(yp=y) then begin x := x_coord(p_nextnext); y := y_coord(p_nextnext); end;
+    out_angle := new_an_angle(x - xp, y- yp);
+    ang  := (out_angle - in_angle);
+    if (ang<>0)and(abs(ang)<=one_eighty_deg) then begin
+      res  := res + ang;	
+      if res >= one_eighty_deg then begin
+        res := res - three_sixty_deg;
+        turns := turns + unity;
+      end;
+      if res <= -one_eighty_deg then begin
+        res := res + three_sixty_deg;
+        turns := turns - unity;
+      end;
     end;
     p := link(p);
   until p=c;
   new_turn_cycles := turns;
 end;
 exit:
-if internal[tracing_commands]>unity then begin
-  begin_diagnostic; print_nl("turn_cycles(): turns=");
-  print_int(turns);
-  end_diagnostic(false);
-end;
 selector:=old_setting;
 end;
 @z
-
 
 @x
 function count_turns(@!c:pointer):scaled;
 @y
 function turn_cycles_wrapper (@!c:pointer):scaled;
-  var nval : scaled;
+  var nval,oval:scaled;
+  saved_t_o:scaled; {tracing_online saved }
 begin 
    nval := new_turn_cycles(c);
-   turn_cycles_wrapper := turn_cycles(c);
+   oval := turn_cycles(c);
+   if nval<>oval then begin
+     saved_t_o:=internal[tracing_online];
+     internal[tracing_online]:=unity;
+     begin_diagnostic;
+     print   ("Warning: The turningnumber algorithms do not agree. The current computed value is ");
+     print_scaled(nval);
+     print(", but the 'connect-the-dots' algorithm returned ");
+     print_scaled(oval);     
+     end_diagnostic(false);
+     internal[tracing_online]:=saved_t_o;
+   end;
+   turn_cycles_wrapper := nval;
 end;
 
 @ @<Declare unary action...@>=
