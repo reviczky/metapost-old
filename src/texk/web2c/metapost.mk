@@ -29,11 +29,8 @@ $(mp_c) mpcoerce.h mpd.h: mp.p $(web2c_texmf) $(srcdir)/$(mpostdir)/mp.defines  
 	$(web2c) mp
 mpextra.c: lib/texmfmp.c
 	sed s/TEX-OR-MF-OR-MP/mp/ $(srcdir)/lib/texmfmp.c >$@
-mp.p mp.pool: tie tangle mp.web mp.ch fntemplate.ch color.ch gstate.ch antepost.ch psout.ch loadpool.ch mpbugs.ch
-	$(TIE) -m mp-tied.web $(srcdir)/mp.web $(srcdir)/fntemplate.ch $(srcdir)/color.ch $(srcdir)/gstate.ch $(srcdir)/antepost.ch $(srcdir)/psout.ch $(srcdir)/loadpool.ch  $(srcdir)/mpbugs.ch
-	$(tangle) ./mp-tied.web $(srcdir)/mp.ch
-	mv -f mp-tied.p mp.p
-	mv -f mp-tied.pool mp.pool
+mp.p mp.pool: tie tangle mp.web mp.ch
+	$(tangle) $(srcdir)/mp.web $(srcdir)/mp.ch
 check: mpost-check
 mpost-check: mptrap mpost.mem $(mpware)
 	./mpost --progname=mpost '&./mpost \tracingstats:=1; end.'
