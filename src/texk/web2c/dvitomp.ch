@@ -26,12 +26,12 @@
 @z
 
 @x [1] Duplicate banner line for use in |print_version_and_exit|.
-@d banner=='% Written by DVItoMP, Version 0.992'
+@d banner=='% Written by DVItoMP, Version 1.000'
   {the first line of the output file}
 @y
-@d banner=='% Written by DVItoMP, Version 0.992/color'
+@d banner=='% Written by DVItoMP, Version 1.000/color'
   {the first line of the output file}
-@d term_banner=='This is DVItoMP, Version 0.992/color'
+@d term_banner=='This is DVItoMP, Version 1.000/color'
   {the same in the usual format, as it would be shown on a terminal}
 @z
 

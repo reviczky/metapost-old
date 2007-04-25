@@ -95,7 +95,7 @@
 #define GETCWD getcwd
 #endif
 
-#define version "0.993"
+#define version "1.000"
 
 #define ERRLOG "mpxerr.log"
 #define TEXERR "mpxerr.tex"
