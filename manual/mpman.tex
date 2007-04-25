@@ -59,9 +59,15 @@
 \usepackage{multicol}
 \begin{document}
 \VerbatimFootnotes
-\author{John D. Hobby}
+\author{John D. Hobby\\
+        \small
+        Karl Berry, 
+        Taco Hoekwater,\\
+        \small Troy Henderson,
+        Stephan Hennig\\
+        }
 \title{A User's Manual for MetaPost}
-\date{documented version: 0.99}
+\date{documented version: 1.000}
 \maketitle
 
 \begin{abstract}
@@ -5384,18 +5390,20 @@ $\tt \qquad \;|\; zscaled \descr{pair primary}$\\
 $\tt \qquad \;|\; reflectedabout\hbox{\tt (}\descr{pair expression}\hbox{\tt ,} \descr{pair expression}\hbox{\tt )}$\\
 $\tt \qquad \;|\; rotatedaround\hbox{\tt (}\descr{pair expression}\hbox{\tt ,} \descr{numeric expression}\hbox{\tt )}$\\
 $\tt $\\
-$\tt \descr{nullary op} \rightarrow false \;|\; normaldeviate \;|\; nullpicture \;|\; pencircle$\\
+$\tt \descr{nullary op} \rightarrow false \;|\; normaldeviate \;|\; nullpen \;|\; nullpicture \;|\; pencircle$\\
 $\tt \qquad \;|\; true \;|\; whatever$\\
 $\tt \descr{unary op} \rightarrow \descr{type}$\\
-$\tt \qquad \;|\; abs \;|\; angle \;|\; arclength \;|\; ASCII \;|\; bbox \;|\; blackpart \;|\; bluepart \;|\; bot \;|\; ceiling$\\
-$\tt \qquad \;|\; center \;|\; char \;|\; cosd \;|\; cyanpart  \;|\; cycle \;|\; decimal \;|\; dir \;|\; floor \;|\; fontsize$\\
+$\tt \qquad \;|\; abs \;|\; angle \;|\; arclength \;|\; ASCII \;|\; bbox \;|\; blackpart \;|\; bluepart \;|\; bot \;|\; bounded$\\
+$\tt \qquad \;|\; ceiling \;|\; center \;|\; char \;|\; clipped \;|\; colormodel \;|\; cosd \;|\; cyanpart  \;|\; cycle$\\
+$\tt \qquad \;|\; dashpart \;|\; decimal \;|\; dir \;|\; floor \;|\; filled \;|\; fontpart \;|\; fontsize$\\
 $\tt \qquad \;|\; greenpart \;|\; greypart \;|\; hex \;|\; inverse \;|\; known \;|\; length \;|\; lft \;|\; llcorner$\\
 $\tt \qquad \;|\; lrcorner\;|\; magentapart \;|\; makepath \;|\; makepen \;|\; mexp \;|\; mlog \;|\; not \;|\; oct \;|\; odd$\\
-$\tt \qquad \;|\; redpart \;|\; reverse \;|\; round \;|\; rt \;|\; sind \;|\; sqrt \;|\; top \;|\; ulcorner$\\
+$\tt \qquad \;|\; pathpart \;|\; penpart \;|\; readfrom \;|\; redpart \;|\; reverse \;|\; round \;|\; rt \;|\; sind \;|\; sqrt$\\
+$\tt \qquad  \;|\; stroked \;|\; textpart \;|\; textual \;|\; top \;|\; ulcorner$\\
 $\tt \qquad \;|\; uniformdeviate \;|\; unitvector \;|\; unknown \;|\; urcorner \;|\; xpart \;|\; xxpart$\\
 $\tt \qquad \;|\; xypart \;|\; yellowpart \;|\; ypart \;|\; yxpart \;|\; yypart$\\
 $\tt \descr{type} \rightarrow boolean \;|\; cmykcolor \;|\; color \;|\; numeric \;|\; pair$\\
-$\tt \qquad \;|\; path \;|\; pen \;|\; picture \;|\; string \;|\; transform$\\
+$\tt \qquad \;|\; path \;|\; pen \;|\; picture \;|\; rgbcolor \;|\; string \;|\; transform$\\
 $\tt \descr{primary binop} \rightarrow \hbox{\tt *} \;|\; \hbox{\tt /} \;|\; \hbox{\tt **} \;|\; and$\\
 $\tt \qquad \;|\; dotprod \;|\; div \;|\; infont \;|\; mod$\\
 $\tt \descr{secondary binop} \rightarrow + \;|\; - \;|\; ++ \;|\; +-+ \;|\; or$\\
@@ -5412,9 +5420,9 @@ $\tt \qquad \;|\; \descr{suffix parameter}$\\
 $\tt \descr{subscript} \rightarrow \descr{number} \;|\; \hbox{\tt [}\descr{numeric expression}\hbox{\tt ]}$\\
 $\tt $\\
 $\tt \descr{internal variable} \rightarrow ahangle \;|\; ahlength \;|\; bboxmargin$\\
-$\tt \qquad \;|\; charcode \;|\; day \;|\; defaultpen \;|\; defaultscale \;|\; labeloffset$\\
-$\tt \qquad \;|\; linecap \;|\; linejoin \;|\; miterlimit \;|\; month \;|\; pausing$\\
-$\tt \qquad \;|\; prologues \;|\; showstopping \;|\; time \;|\; tracingoutput$\\
+$\tt \qquad \;|\; charcode \;|\; day \;|\; defaultcolormodel \;|\; defaultpen \;|\; defaultscale$\\
+$\tt \qquad \;|\; labeloffset \;|\; linecap \;|\; linejoin \;|\; miterlimit \;|\; month$\\
+$\tt \qquad \;|\; pausing \;|\; prologues \;|\; showstopping \;|\; time \;|\; tracingoutput$\\
 $\tt \qquad \;|\; tracingcapsules \;|\; tracingchoices \;|\; tracingcommands$\\
 $\tt \qquad \;|\; tracingequations \;|\; tracinglostchars \;|\; tracingmacros$\\
 $\tt \qquad \;|\; tracingonline \;|\; tracingrestores \;|\; tracingspecs$\\
@@ -5542,9 +5550,11 @@ $\tt \qquad \;|\; save \descr{symbolic token list}$\\
 $\tt \qquad \;|\; setbounds \descr{picture variable} to \descr{path expression}$\\
 $\tt \qquad \;|\; shipout \descr{picture expression}$\\
 $\tt \qquad \;|\; special \descr{string expression}$\\
+$\tt \qquad \;|\; write \descr{string expression} to \descr{string expression}$\\
 $\tt \qquad \;|\; \descr{addto command}$\\
 $\tt \qquad \;|\; \descr{drawing command}$\\
 $\tt \qquad \;|\; \descr{font metric command}$\\
+$\tt \qquad \;|\; \descr{message command}$\\
 $\tt \qquad \;|\; \descr{show command}$\\
 $\tt \qquad \;|\; \descr{tracing command}$\\
 $\tt $\\
@@ -5572,6 +5582,11 @@ $\tt \descr{drawing command} \rightarrow draw \descr{picture expression} \descr{
 $\tt \qquad \;|\; \descr{fill type} \descr{path expression} \descr{option list}$\\
 $\tt \descr{fill type} \rightarrow fill \;|\; draw \;|\; filldraw \;|\; unfill \;|\; undraw \;|\; unfilldraw$\\
 $\tt \qquad \;|\; drawarrow \;|\; drawdblarrow \;|\; cutdraw$\\
+$\tt $\\
+$\tt \descr{message command} \rightarrow errhelp \descr{string expression}$\\
+$\tt \qquad \;|\; errmessage \descr{string expression}$\\
+$\tt \qquad \;|\; filenametemplate \descr{string expression}$\\
+$\tt \qquad \;|\; message \descr{string expression}$\\
 $\tt $\\
 $\tt \descr{tracing command} \rightarrow tracingall \;|\; loggingall \;|\; tracingnone$
 \end{ctabbing}
