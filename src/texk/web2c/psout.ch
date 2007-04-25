@@ -1062,11 +1062,13 @@ if ldf<>null_font then begin
     end;
   end;
 if internal[mpprocset]>0 then begin
+  print_nl("%%BeginResource: procset mpost");
   if (internal[prologues]>0)and(ldf<>null_font) then
     print("/bd{bind def}bind def/fshow {exch findfont exch scalefont setfont show}bd")
   else
     print_nl("/bd{bind def}bind def");
   @<Print the procset@>;
+  print_nl("%%EndResource");
   print_ln;
   end;
 end
