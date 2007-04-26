@@ -3,10 +3,21 @@
 
 filenametemplate "%j-%c.mps";
 
+%%% This redefinition of dotlabel draws dots as a closed path
+%%% which are rendered more smoothly in Adobe Reader.
+vardef dotlabel@#(expr s,z) text t_ =
+  label@#(s,z) t_;
+  addto currentpicture
+    contour (makepath pencircle scaled dotlabeldiam) shifted z t_;
+enddef;
+
+
+%%% TeX macro \place is only used in figure 0.
 verbatimtex
 \def\place#1{\vphantom{FiMP}\smash{#1}}
 etex
 
+%%% The boxes package is only used in figure 0.
 input boxes
 
 beginfig(0);
