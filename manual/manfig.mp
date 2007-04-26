@@ -3,7 +3,42 @@
 
 filenametemplate "%j-%c.mps";
 
+verbatimtex
+\def\place#1{\vphantom{FiMP}\smash{#1}}
+etex
+
+input boxes
+
 beginfig(0);
+ba.dy = bb.dy = d.dy = 12bp;
+d.dx = 80bp;
+boxit.aa(btex \place{Figures in MetaPost} etex);
+boxit.ab(btex \place{\TeX\ Document} etex);
+boxit.ba(btex \hbox to 75bp {\hfil\place{MetaPost}\hfil} etex);
+boxit.bb.(btex \hbox to 75bp {\hfil\place{\TeX}\hfil} etex);
+boxit.ca(btex \place{Figures in PostScript} etex);
+boxit.cb(btex \place{{\tt dvi} file} etex);
+boxit.d(btex \place{\tt dvips} etex);
+boxit.e(btex PostScript etex);
+ba.n - aa.s = ca.n - ba.s
+= bb.n - ab.s = cb.n - bb.s
+= e.n - d.s = down * 25bp;
+ypart cb.s - ypart d.n = 25bp;
+e.s = origin;
+ypart ca.s = ypart cb.s;
+xpart aa.n = xpart 0.1[d.nw,d.ne];
+xpart ab.n = xpart 0.9[d.nw,d.ne];
+drawunboxed(aa,ab,ca,cb,e);
+drawboxed(ba,bb,d);
+drawarrow aa.s -- top ba.n; drawarrow ab.s -- top bb.n;
+drawarrow ba.s -- top ca.n; drawarrow bb.s -- top cb.n;
+drawarrow ca.s -- top 0.1[d.nw,d.ne];
+drawarrow cb.s -- top 0.9[d.nw,d.ne];
+drawarrow d.s -- top e.n;
+endfig;
+
+
+beginfig(1);
 draw (20,20)--(0,0)--(0,30)--(30,0)--(0,0);
 endfig;
 

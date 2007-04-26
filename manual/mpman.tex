@@ -59,13 +59,7 @@
 \usepackage{multicol}
 \begin{document}
 \VerbatimFootnotes
-\author{John D. Hobby\\
-        \small
-        Karl Berry, 
-        Taco Hoekwater,\\
-        \small Troy Henderson,
-        Stephan Hennig\\
-        }
+\author{John Hobby\\\small and the MetaPost development team}
 \title{A User's Manual for MetaPost}
 \date{documented version: 1.000}
 \maketitle
@@ -125,38 +119,7 @@ processor includes PostScript figures when they are requested via
 troff's {\tt \char`\\X} command.
 
 \begin{figure}[htp]
-$$ \def\fbox#1{\hbox{\vrule
-        \vbox{\hrule\kern5pt\hbox{\kern5pt\hbox{#1}\kern5pt}\kern5pt\hrule}%
-        \vrule}}
-   \vbox{
-    \halign{$\hfil#\hfil$&\hskip1in$\hfil#\hfil$\cr
-        \hbox{Figures in MetaPost}&
-        \hbox{\TeX\ Document}
-        \cr
-        \bigg\downarrow&
-        \bigg\downarrow
-        \cr
-        \fbox{\vrule height.2in depth.133in width0pt
-                \kern .1in MetaPost\kern.1in}
-        &
-        \fbox{\vrule height.2in depth.133in width0pt
-                \kern .167in \TeX\kern.167in}
-        \cr
-        \bigg\downarrow&
-        \bigg\downarrow
-        \cr
-        \hbox{Figures in PostScript}&
-        \hbox{{\tt dvi} file}
-        \cr
-        \bigg\downarrow&
-        \bigg\downarrow
-        \cr
-        \fbox{\vrule height.2in depth.133in width0pt
-                \kern 1in {\tt dvips} \kern1in}
-        \span\omit\cr
-        \bigg\downarrow\span\omit\cr
-        \hbox{PostScript}\span\omit\cr}}
-$$
+$$ \includegraphics{manfig-0} $$
 \caption[A diagram of the processing for a document with MetaPost figures]
         {A diagram of the processing for a \TeX\ document with figures
         in MetaPost}
@@ -191,14 +154,18 @@ version 0.9).  For instance:
 $$\begin{verbatim}
 if known mpversion:
   message "mp = " & mpversion;
-  if mpversion > "1.0": message "time has flown by"  fi
-fi;
+  if scantokens(mpversion) < 1: message "CMYK color support not available!" fi
+fi
 \end{verbatim}
 $$
-prints `{\tt mp = 0.9}'.  (Incidentally, \texttt{>} does a simple ASCII
-comparison of strings; that works here, because of our particular
-version numbering---until and unless MetaPost reaches version 10!)
-\index{Creator comment in PostScript output}
+prints
+$$\begin{verbatim}
+mp = 1.000
+\end{verbatim}
+$$
+The {\tt scantokens} command is described on p.~\pageref{Dscantokens}
+and can be utilized to convert strings to numbers.
+\index{Creator comment in PostScript output}%
 The version number is also included in the \texttt{Creator} comment in
 the PostScript output.
 
@@ -238,7 +205,7 @@ $$ \hbox{\verb|draw (20,20)--(0,0)|} $$
 draws\index{draw?\texttt{draw}} a diagonal line and
 $$ \hbox{\verb|draw (20,20)--(0,0)--(0,30)--(30,0)--(0,0)|} $$
 draws a polygonal line like this:
-$$ \includegraphics{manfig-0} $$
+$$ \includegraphics{manfig-1} $$
 
 \label{Ddrawdot}MetaPost also has a \ttt{drawdot} command to print a
 single point, as in \ttt{drawdot(30,0)}. 
