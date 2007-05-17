@@ -1,5 +1,6 @@
 % $Id: mpman.tex,v 1.26 2005/04/13 12:57:28 karl Exp $
 % MetaPost manual, by John Hobby.  License at end.
+\RequirePackage[resetfonts]{cmap}
 \documentclass{article} % article is NOT the original style
 %
 \usepackage{makeidx}
@@ -14,7 +15,7 @@
 \usepackage{tocloft}
   \setlength\cftbeforesecskip{1.3ex plus 0.3ex minus 0.3ex}
 \usepackage{ltxtable}
-\usepackage{url}
+%\usepackage{url}
 
   \makeatletter
   \def\logo{\global\font\logo=logo10 at1\@ptsize\p@ \logo}
@@ -57,6 +58,22 @@
 \makeindex
 
 \usepackage{multicol}
+\usepackage[x11names]{xcolor}
+\usepackage{hyperxmp}
+\usepackage{hyperref}
+\hypersetup{
+  pdftitle={A User's Manual for MetaPost},
+  pdfauthor={John Hobby and the MetaPost development team},
+  pdfkeywords={MetaPost, PostScript, vector graphics language, MetaFont, TeX}
+}
+\hypersetup{
+  pdfstartview={XYZ null null null},% Zoom factor is determined by viewer.
+  colorlinks,
+  linkcolor=RoyalBlue3,
+  urlcolor=Chocolate4,
+  citecolor=SpringGreen3
+}
+\usepackage[all]{hypcap}
 \begin{document}
 \VerbatimFootnotes
 \author{John Hobby\\\small and the MetaPost development team}
