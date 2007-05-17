@@ -948,11 +948,13 @@ determine {\tt T}.  Transforms can also be applied to paths, pictures, pens,
 and transforms.
 
 The color\index{color type} type is like the pair type, except
-that it has three components instead of two and each component is normally between 0 and 1.  Like pairs, colors can be added, subtracted, used in mediation expressions, or multiplied or divided by numerics.  Colors can be specified in terms of the predefined constants {\tt black}\index{black?\texttt{black}}\label{Dblack}, {\tt
-white}\index{white?\texttt{white}}\label{Dwhite},
-{\tt red}\index{red?\texttt{red}}\label{Dred},
-{\tt green}\index{green?\texttt{green}}\label{Dgreen},
-{\tt blue}\index{blue?\texttt{blue}}\label{Dblue}, or the red, green, and
+that it has three components instead of two and each component is
+normally between 0 and 1.  Like pairs, colors can be added,
+subtracted, used in mediation expressions, or multiplied or divided
+by numerics.  Colors can be specified in terms of the predefined
+constants \ttindex{black}\label{Dblack}, \ttindex{white}\label{Dwhite},
+\ttindex{red}\label{Dred}, \ttindex{green}\label{Dgreen},
+\ttindex{blue}\label{Dblue}, or the red, green, and
 blue components can be given explicitly.  Black is {\tt (0,0,0)} and
 white is {\tt (1,1,1)}.  A level of gray such as {\tt (.4,.4,.4)} can also be
 specified as {\tt 0.4white}. Although color typed variables may be
@@ -1019,7 +1021,7 @@ an elliptical pen or a polygonal pen.
 
 \subsection{Operators}
 
-There are many different ways to make expressions of the nine basic
+There are many different ways to make expressions of the ten basic
 types, but most of the operations fit into a fairly simple syntax with
 four levels of precedence as shown in Figure~\ref{syexpr}.  There are
 primaries\index{primary?\tdescr{primary}},
@@ -1815,7 +1817,7 @@ pdftex.map}, depending on whether or not troff mode is enabled.  If
 statement. Again, this is for backward compatibility only.
 
 
-\subsection{The {\tt infont} operator}
+\subsection{The \texttt{infont} operator}
 \label{Sinfont}
 
 Regardless of whether you use \TeX\ or troff, all the real work of
@@ -1955,11 +1957,11 @@ values, mapping to four possible color models:
 $$
 \begin{tabular}{|l|l|}
 Actual input                          & Remapped meaning\\
-{\tt withcolor} $\descr{rgbcolor} c$  & withrgbcolor $c$\\
-{\tt withcolor} $\descr{cmykcolor} c$ & withcmykcolor $c$\\
-{\tt withcolor} $\descr{numeric} c$   & withgreyscale $c$\\
-{\tt withcolor} $\descr{false}$         & withoutcolor \\
-{\tt withcolor} $\descr{true}$          & $\descr{current default color model}$\\
+{\tt withcolor} $\descr{rgbcolor} c$  & withrgbcolor\index{withrgbcolor?\texttt{withrgbcolor}} $c$\\
+{\tt withcolor} $\descr{cmykcolor} c$ & withcmykcolor\index{withrgbcolor?\texttt{withcmykcolor}} $c$\\
+{\tt withcolor} $\descr{numeric} c$   & withgreyscale\index{withrgbcolor?\texttt{withgreyscale}} $c$\\
+{\tt withcolor} $\descr{false}$       & withoutcolor\index{withrgbcolor?\texttt{withoutcolor}} \\
+{\tt withcolor} $\descr{true}$        & $\descr{current default color model}$\\
 \end{tabular}
 $$
 
