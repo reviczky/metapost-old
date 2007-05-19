@@ -13,6 +13,7 @@
 \RecustomVerbatimEnvironment{verbatim}{BVerbatim}{baseline=c}
 \usepackage{graphics}
 \usepackage[textwidth=6in,textheight=8.65in]{geometry}
+\usepackage{multicol}
 
 \newcommand\descr[1]{{\langle\hbox{\rm#1}\rangle}}
 \newcommand\invisgap{\nobreak\hskip0pt\relax}
@@ -72,6 +73,10 @@ in a stand-alone graph package.}
     \begin{keywords} \mykeywords \end{keywords}
   \fi
 
+\setlength{\columnsep}{2.5em}
+\begin{multicols}{2}
+\tableofcontents
+\end{multicols}
 
 \section{Introduction}
 \label{intro}
