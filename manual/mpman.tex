@@ -1,5 +1,10 @@
 % $Id: mpman.tex,v 1.26 2005/04/13 12:57:28 karl Exp $
 % MetaPost manual, by John Hobby.  License at end.
+\ifnum\pdftexversion<140
+\else
+\pdfminorversion=5
+\pdfobjcompresslevel=1% Use compressed object streams.
+\fi
 \RequirePackage[resetfonts]{cmap}
 \documentclass{article} % article is NOT the original style
 %
@@ -15,7 +20,6 @@
 \usepackage{tocloft}
   \setlength\cftbeforesecskip{1.3ex plus 0.3ex minus 0.3ex}
 \usepackage{ltxtable}
-%\usepackage{url}
 
   \makeatletter
   \def\logo{\global\font\logo=logo10 at1\@ptsize\p@ \logo}
@@ -58,7 +62,7 @@
 \makeindex
 
 \usepackage{multicol}
-\usepackage[x11names]{xcolor}
+\usepackage[rgb,x11names]{xcolor}% Optimize for screen reading.
 \usepackage{hyperxmp}
 \usepackage{hyperref}
 \hypersetup{
