@@ -22511,9 +22511,9 @@ begin
       (gs_colormodel<>cmyk_model) then
       begin
       if color_model(p)=uninitialized_model then begin
-        gs_red:=unity;
-        gs_green:=unity;
-        gs_blue:=unity;
+        gs_red:=0;
+        gs_green:=0;
+        gs_blue:=0;
         gs_black:=unity;@/
         end
       else begin
