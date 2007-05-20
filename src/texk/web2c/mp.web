@@ -17286,7 +17286,7 @@ end;
 @ @<Declare unary action...@>=
 function turn_cycles_wrapper (@!c:pointer):scaled;
   var nval,oval:scaled;
-  saved_t_o:scaled; {tracing_online saved }
+  saved_t_o:scaled; {tracing\_online saved }
 begin
    nval := new_turn_cycles(c);
    oval := turn_cycles(c);
@@ -21902,8 +21902,7 @@ function new_dummy_font: font_number;
 begin
     new_dummy_font := read_font_info("dummy");
 end;
-
-@x
+@#
 function round_xn_over_d(@!x:scaled; @!n,@!d:integer):scaled;
 var positive:boolean; {was |x>=0|?}
 @!t,@!u,@!v:nonnegative_integer; {intermediate quantities}
@@ -22765,14 +22764,14 @@ if internal[mpprocset]=0 then begin
 else begin
   if fill_also then print_nl("B") else print_ln;
   if (txy<>0)or(tyx<>0) then
-    begin {print_ln;}
+    begin
     print(" [");
     ps_pair_out(txx,tyx);
     ps_pair_out(txy,tyy);@/
     ps_print("0 0] t");
     end
   else if (txx<>unity)or(tyy<>unity) then
-    begin {print_ln;}
+    begin
     ps_pair_out(txx,tyy);
     print(" s");
     end;
@@ -23316,7 +23315,6 @@ begin
         end
       else begin
 	begin_diagnostic;
-        {selector:=term_and_log;}
 	print_err("Warning: font ");
 	print(font_name[f]);
 	print(" cannot be found in any fontmapfile!");
