@@ -21765,6 +21765,7 @@ This routine issues a warning message if the user has asked for it.
 procedure lost_warning(@!f:font_number;@!k:pool_pointer);
 begin if internal[tracing_lost_chars]>0 then
   begin begin_diagnostic;
+  if selector=log_only then incr(selector);
   print_nl("Missing character: There is no ");
 @.Missing character@>
   print(so(str_pool[k])); print(" in font ");
@@ -23315,6 +23316,7 @@ begin
         end
       else begin
 	begin_diagnostic;
+        if selector=log_only then incr(selector);
 	print_err("Warning: font ");
 	print(font_name[f]);
 	print(" cannot be found in any fontmapfile!");
