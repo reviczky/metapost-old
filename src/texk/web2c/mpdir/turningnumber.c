@@ -58,7 +58,7 @@ bezierslope(integer AX,integer AY,integer BX,integer BY,
   }
 
   if ((a==0)&&(c==0)) {
-    res = out-in; /* ? */
+    res = (b==0 ?  0 :  (out-in)); 
     print_roots("no roots (a)");
   } else if ((a==0)||(c==0)) {
     if ((sign(b) == sign(a)) || (sign(b) == sign(c))) {
