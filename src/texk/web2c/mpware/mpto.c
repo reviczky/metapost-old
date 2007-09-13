@@ -324,7 +324,8 @@ copytex(void)
 	  res = realloc(res,strlen(res)+strlen(bb)+2);
 	  if (res==NULL)
 	    err("memory allocation failure");
-	  res = strncat(res,"\n",1);
+	  if (res[strlen (res) - 1] != '%')
+	    res = strncat(res,"\n",1);
 	  res = strncat(res,bb, strlen(bb));
 	}
 	*s = c;
