@@ -11,10 +11,10 @@ CBI	Courier-BoldOblique		pcrbo8g
 CI	Courier-Oblique			pcrro8g
 CR	Courier				pcrr8g
 EURO	FreeEuro			freeeuro
-HNB	Helvetica-Narrow-Bold		phvb8an
-HNBI	Helvetica-Narrow-BoldOblique	phvbo8an
-HNI	Helvetica-Narrow-Oblique	phvro8an
-HNR	Helvetica-Narrow		phvr8an
+HNB	Helvetica-Narrow-Bold		phvb8gn
+HNBI	Helvetica-Narrow-BoldOblique	phvbo8gn
+HNI	Helvetica-Narrow-Oblique	phvro8gn
+HNR	Helvetica-Narrow		phvr8gn
 HB	Helvetica-Bold			phvb8g
 HBI	Helvetica-BoldOblique		phvbo8g
 HI	Helvetica-Oblique		phvro8g
