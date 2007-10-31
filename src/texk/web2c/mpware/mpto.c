@@ -120,7 +120,7 @@ getline(void)
 
 
 /* Return nonzero if a prefix of string s matches the null-terminated string t
- * and the next character is not a letter of an underscore.
+ * and the next character is not a letter or an underscore.
  */
 int
 match_str(char *s, char *t)
@@ -324,27 +324,20 @@ copytex(void)
 	  res = realloc(res,strlen(res)+strlen(bb)+2);
 	  if (res==NULL)
 	    err("memory allocation failure");
-	  if (res[strlen (res) - 1] != '%')
-	    res = strncat(res,"\n",1);
 	  res = strncat(res,bb, strlen(bb));
 	}
+	if (c == '\0')
+	    res = strncat(res, "\n", 1);
 	*s = c;
     } while (*tt != 'e');
     /* whitespace at the end */
-    s = res+strlen(res)-1;
-    if ((*s == ' ' || *s == '\t' || *s == '\r'|| *s == '\n')) {
-      while (s >= res && (*s == ' ' || *s == '\t' || *s == '\r'|| *s == '\n'))
-	s--;
-      if (s!=(res+strlen(res)-1)) 
-	s++;
-    } else {
-      s++;
-    }
-    *s=0;
+    for (s = res + strlen(res) - 1;
+	 s >= res && (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n'); s--);
+    *(++s) = '\0';
     /* whitespace at the start */
-    s =res;
-    while (s<(res+strlen(res)) && (*s == ' ' || *s == '\t' || *s == '\r'|| *s == '\n'))
-      s++;
+    for (s = res;
+	 s < (res + strlen(res)) && (*s == ' ' || *s == '\t' || *s == '\r'
+				     || *s == '\n'); s++);
     printf("%s%%",s);
     free(res);
 }
