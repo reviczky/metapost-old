@@ -1,6 +1,8 @@
 % $Id: examples.mp,v 1.2 2004/09/19 19:10:08 karl Exp $
 % Examples for MetaPost doc, by John Hobby.  Public domain.
 
+filenametemplate "%j-%c.mps";
+
 beginfig(1);
 a=.7in; b=0.5in;
 z0=(0,0); z1=(a,0); z2=(0,b);

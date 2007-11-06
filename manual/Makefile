@@ -16,8 +16,9 @@ mpgraph.pdf: mpgraph.tex mpgraph.bib mpgraph.mp
 	$(pdflatex) mpgraph
 	$(pdflatex) mpgraph
 
-mpintro.pdf: mpintro.tex mpintro.bib examples.mp
+mpintro.pdf: mpintro.tex mpintro.bib examples.mp manfig.mp
 	$(mpost) examples
+	$(mpost) manfig
 	$(pdflatex) mpintro
 	$(bibtex) mpintro
 	$(pdflatex) mpintro

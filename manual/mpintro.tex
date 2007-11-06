@@ -1,7 +1,7 @@
 % $Id: mpintro.tex,v 1.2 2004/09/19 19:10:08 karl Exp $
 % MetaPost doc, by John Hobby.
-\documentstyle{article}
-\input epsf
+\documentclass{article}
+\usepackage{graphicx}
 
 \author{John D. Hobby}
 \title{The MetaPost System}
@@ -67,41 +67,10 @@ available from other sources.}  A similar procedure works with troff: the
 requested via troff's {\tt \char`\\X} command.
 
 \begin{figure}[htp]
-$$ \def\fbox#1{\hbox{\vrule
-	\vbox{\hrule\kern5pt\hbox{\kern5pt\hbox{#1}\kern5pt}\kern5pt\hrule}%
-	\vrule}}
-   \vbox{
-    \halign{$\hfil#\hfil$&\hskip1in$\hfil#\hfil$\cr
-	\hbox{Figures in MetaPost}&
-	\hbox{\TeX\ Document}
-	\cr
-	\bigg\downarrow&
-	\bigg\downarrow
-	\cr
-	\fbox{\vrule height.2in depth.133in width0pt
-		\kern .1in MetaPost\kern.1in}
-	&
-	\fbox{\vrule height.2in depth.133in width0pt
-		\kern .167in \TeX\kern.167in}
-	\cr
-	\bigg\downarrow&
-	\bigg\downarrow
-	\cr
-	\hbox{Figures in PostScript}&
-	\hbox{{\tt dvi} file}
-	\cr
-	\bigg\downarrow&
-	\bigg\downarrow
-	\cr
-	\fbox{\vrule height.2in depth.133in width0pt
-		\kern 1in {\tt dvips} \kern1in}
-	\span\omit\cr
-	\bigg\downarrow\span\omit\cr
-	\hbox{PostScript}\span\omit\cr}}
-   \atop
-   \vbox{\noindent Fig.~1: A diagram of the processing for a \TeX\ document with figures
-	done in Meta\-Post}
-$$
+\centering
+\includegraphics{manfig-0}
+\caption{A diagram of the processing for a \TeX\ document with figures done in
+Meta\-Post}
 \end{figure}
 
 Other than the new commands for integrating text and accessing features of
@@ -143,9 +112,12 @@ end
 %stopverbatim$$
 Then the command \lit{mp} \lit{fig} produces an output file \lit{fig.1}
 that can be included in a
-\TeX\ document.  After \lit{\string\input} \lit{epsf} the \TeX\ commands
+\TeX\ document.\footnote{For importing MetaPost graphics into \LaTeX\ documents
+please refer to section \emph{Using MetaPost graphics in \TeX\ and \LaTeX} in
+the MetaPost manual.}
+After \lit{\string\input}\lit{epsf} the \TeX\ commands
 \lit{\$\$\string\epsfbox\char`\{fig.1\char`\}\$\$} produce
-$$ \epsfbox{examples.1} $$
+$$ \includegraphics{examples-1.mps} $$
 The \lit{beginfig(1)} line means that everything up to the next
 \lit{endfig} is to be used to create \lit{fig.1}.  If there
 were more than one figure in \lit{fig.mp}, there would be additional
@@ -248,7 +220,7 @@ makelabel.rt(btex $Q$ etex, p2 intersectionpoint q1.5);
 endfig;
 %stopverbatim$$
 produces the following figure:\vadjust{\okbreak}
-$$ \epsfbox{examples.2} $$
+$$ \includegraphics{examples-2} $$
 
 The third line declares arrays of paths \lit{p} and \lit{q} as explained
 in Chapter~7.  Note that \lit{q1.5} is the same as \lit{q[i]} when
@@ -434,7 +406,7 @@ label.bot(btex $x_3$ etex, z3a);
 endfig;
 %stopverbatim$$
 This produces the following figure:\vadjust{\okbreak}
-$$ \epsfbox{examples.3} $$
+$$ \includegraphics{examples-3} $$
 
 The above figure uses some of the more advanced properties of paths discussed
 in Chapter~14 of {\sl The \MF book}.  All of this material applies to
@@ -479,7 +451,7 @@ labels.top(0,1,2,3,4,5);
 endfig; linecap:=rounded;
 %stopverbatim
 \qquad
-\vcenter{\epsfbox{examples.4}}
+\vcenter{\includegraphics{examples-4}}
 $$
 
 There is also a \lit{linejoin} parameter as illustrated below.
@@ -500,7 +472,7 @@ labels.bot(0,1,2,3,4,5,6,7,8);
 endfig; linejoin:=rounded;
 %stopverbatim
 \qquad
-\vcenter{\epsfbox{examples.5}}
+\vcenter{\includegraphics{examples-5}}
 \mskip-54mu % allow it to hang into the margin
 $$
 
@@ -673,7 +645,7 @@ $y$ axes with the picture \lit{pic} centered inside.  The values of \lit{bb.dx},
 \lit{bb.dy}, and \lit{bb.c} are left unspecified so that the user can give
 equations for positioning the boxes.  If no such equations are given, macros
 such as \lit{drawbox} can detect this and give default values.\vadjust{\okbreak}
-$$ \epsfbox{examples.6} $$
+$$ \includegraphics{examples-6} $$
 
 \okbreak
 
@@ -718,7 +690,7 @@ label.rt(btex ndblock etex, z.ptr); endfig;
 $$
 It is instructive to compare the MetaPost output below with the similar figure
 in the {\it pic} manual \cite{ke:pic}.\vadjust{\okbreak}
-$$ \epsfbox{examples.7} $$
+$$ \includegraphics{examples-7} $$
 
 The second line of input for the above figure contains
 $$ \lit{boxjoin(a.se=b.sw; a.ne=b.nw)} $$
@@ -772,7 +744,7 @@ defines points \lit{a.c}, \lit{a.s}, \lit{a.e}, \lit{a.n}, \lit{a.w}
 and distances \lit{a.dx} and \lit{a.dy}.  These variables describe how the
 picture is centered in an oval as can be seen from the following
 diagram:\vadjust{\okbreak}
-$$ \epsfbox{examples.8} $$
+$$ \includegraphics{examples-8} $$
 
 \okbreak
 
@@ -814,7 +786,7 @@ endfig;
 $$
 The ``boxes'' produced when using \lit{circleit} come out circular unless
 something forces a different aspect ratio.\vadjust{\okbreak}
-$$ \epsfbox{examples.9} $$
+$$ \includegraphics{examples-9} $$
 
 In the above figure, the equations \lit{aa.dx=aa.dy} and \lit{ee.dx=ee.dy} after
 $$ \lit{circleit.aa("Start")}
