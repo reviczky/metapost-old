@@ -322,24 +322,147 @@ file.
 What does one do with all the PostScript files?  They can be included as
 figures in a \TeX\index{TeX?\TeX} or troff\index{troff} document if you
 have an output driver that can handle encapsulated PostScript figures.
-If your standard \TeX\ macro directory contains a file {\tt
-epsf.tex}\index{epsf.tex?\texttt{epsf.tex}}, you can probably include
-{\tt fig.1} in a \TeX\ document as follows:
-$$ \begin{array}{c}
-        \hbox{\verb|\input epsf        |}\\
-        \vdots\\
-        \hbox{\verb|$$\epsfbox{fig.1}$$|}
-  \end{array}
-$$
-The \verb|\epsfbox| macro figures out how much room to leave for the figure and
-uses \TeX's \verb|\special| command to insert a request for {\tt fig.1}.
+They can also be previewed before they are included in a thousand pages
+document.  The next sections give some more information.
 
+
+\section{Handling MetaPost output}
+\label{Dmpoutput}
+
+\subsection{Previewing MetaPost graphics}
+\label{Dpreview}
+\index{previewing}
+
+The output of MetaPost is a variant of PostScript, called Encapsulated
+PostScript\index{PostScript!structured} (EPSF\index{EPSF}).  MetaPost
+graphics can therefore be previewed with any decent PostScript viewer,
+e.\,g., GSview\index{GSview}.
+
+The situation becomes only a little bit fussy when MetaPost output
+contains text.  By default, MetaPost doesn't produce self-contained EPS
+files, e.\,g., font resources and encoding vectors are not stored in
+the output.  For that reason MetaPost output containing text may be
+rendered with wrong fonts, wrong glyphs or with no text at all in a
+PostScript viewer.  For a long time, the most reliable way for
+previewing was to prepare a test document that includes all MetaPost
+figures, process that with \TeX\ or \LaTeX\ and \ttindex{dvips} and
+display the resulting \ttt{ps} file in a PostScript
+viewer.\footnote{There are alternatives, though. \ttindex{mpstoeps} is
+a Perl script that automates the process outlined above.
+\ttindex{mptopdf} is another tools that converts MetaPost files to
+PDF.}
+
+However, with MetaPost version~1.000 the situation changed.  Since that
+version MetaPost is able to produce self-contained EPS files, that can
+reliably be previewed, may they contain text\footnote{As long as you're
+not using \MF\index{metafont?\MF} fonts inside MetaPost.} or not.  The
+new behaviour can be triggered by setting MetaPost's internal variable
+\ttt{prologues}\index{prologues?\texttt{prologues}} to~3.  See
+section~\ref{Dprologues} for more information on \ttt{prologues}.
+
+
+\subsection{Using MetaPost graphics in \TeX, \LaTeX,  pdf\LaTeX\ and troff}
+\label{Dteximport}
+\index{TeX?\TeX!importing MetaPost files}
+\index{LaTeX?\LaTeX!importing MetaPost files}
+\index{pdfLaTeX?pdf\LaTeX!importing MetaPost files}
+
+\paragraph{\TeX}
+\TeX\ users can import EPS graphics by first loading package
+\ttt{epsf}\index{epsf.tex?\texttt{epsf.tex}} via \verb+\input epsf+ and
+then issuing the command
+$$ \verb+\epsfbox{+\descr{filename}\verb+}+ $$%
+\index{epsfbox?\texttt{\string\epsfbox}}
+to load an EPS file, e.\,g., \verb+\epsfbox{fig.1}+.
+
+\paragraph{\LaTeX}
+For \LaTeX\ documents the procedure is similar:  first package
+\ttindex{graphicx} has to be loaded by putting
+\verb+\usepackage{graphicx}+ into the document preamble and then EPS
+files can be loaded via
+$$ \verb+\includegraphics{+\descr{filename}\verb+}+ $$%
+\index{includegraphics?\texttt{\string\includegraphics}}
+e.\,g., \verb+\includegraphics{fig.1}+.
+
+Actually, graphic files are never included in a
+\TeX\index{TeX?\TeX!importing MetaPost files} or
+\LaTeX\index{LaTeX?\LaTeX!importing MetaPost files} run.  Instead,
+\TeX\ and \LaTeX\ only reserve as much space on a page as the graphic
+occupies and write a reference to the corresponding file into the
+\ttt{dvi} output.  The graphic file is only included in the subsequent
+run of an output driver, that can handle PostScript files, e.\,g.,
+\ttindex{dvips}.
+
+\paragraph{pdf\LaTeX}
+In contrast to \ttt{dvips}, pdf\LaTeX\ in PDF mode can't process
+general PostScript files, but only so-called purified
+EPS\index{PostScript!purified} files, which may only use a restricted
+set of PostScript language features.  Fortunately, MetaPost output
+\emph{is} purified EPS, so we are in luck.  Since
+\ttt{mps}\index{files!mps?\texttt{mps}} is pdf\LaTeX's default
+extension for purified EPS files, we can
+\begin{itemize}
+\item tell pdf\LaTeX\ to handle MetaPost's numbered files according to
+\ttt{mps} file rules, or
+\item change the file extension of MetaPost output to \ttt{mps}.
+\end{itemize}
+
+For the first and conventional approach we have to add the line
+$$ \verb+\DeclareGraphicsRule{*}{mps}{*}{}+ $$%
+\index{DeclareGraphicsRule?\texttt{\string\DeclareGraphicsRule}}%
+to the document preamble after loading package \ttt{graphicx}.  That
+declaration tells pdf\LaTeX\ to load \emph{all} files with unknown file
+extensions as \ttt{mps} files.  Refer to the documentation of the
+\ttt{graphicx} and \ttt{graphics} packages for more details.
+
+Since MetaPost version~1.000 the second approach is
+recommended.\footnote{For handling MetaPost file extensions in MetaPost
+source files seems to be the more natural place than \LaTeX\ sources.
+Moreover, setting the MetaPost file extension to \ttt{mps} prevents from
+file extension pollution and you only have to register one new extension
+with your PostScript viewer, \ttt{.mps}, instead of \ttt{.0}, \ttt{.1},
+\ttt{.2}, etc.}  The MetaPost primitive \verb+filenametemplate+ can be
+used to set the file extension of MetaPost output to \ttt{mps} (see
+section~\ref{Dfilenametemplate}). Hence, no \verb+\DeclareGraphicsRule+
+declaration is needed.  Moreover, the file extension can then be omitted
+in the \verb+\includegraphics+ command.
+
+\paragraph{\LaTeX\ and pdf\LaTeX}
+If you want to keep flexible and be able to compile your documents with
+both, \LaTeX\ and pdf\LaTeX, there are some things to take care of.  If
+you're using the conventional \verb+\DeclareGraphicsRule+ declaration,
+that may only be activated if pdf\LaTeX\ runs in PDF mode. A
+fully-featured declaration should therefore look like this:
+
+$$
+\begin{verbatim}
+\usepackage{graphicx}
+\usepackage{ifpdf}
+\ifpdf
+  \DeclareGraphicsRule{*}{mps}{*}{}
+\fi
+\end{verbatim}
+$$
+
+If you're using the \ttt{filenametemplate} method the \ttt{mps} file
+extension should not be omitted in \verb+\includegraphics+ commands,
+since \ttt{mps} is not part of \LaTeX's file name completion scheme, by
+default.  If the \ttt{mps} extension is present, \LaTeX\ handles those
+files as \ttt{eps} files, which is obviously correct.
+
+Note, there is an additional difference between \LaTeX\ and pdf\LaTeX.
+The application pdf\LaTeX\ is both, a \LaTeX\ interpreter and an output
+driver for the PDF document format.  For that reason graphic files
+\emph{are} included in a pdf\LaTeX\ run.
+
+\paragraph{troff}
 It is also possible to include MetaPost output in a {\em troff\/} document.
 The {\tt -mpictures\/} macro package defines a command \verb|.BP| that includes
 an encapsulated PostScript file.  For instance, the {\em troff\/} command
 $$ \hbox{\verb|.BP fig.1 3c 3c|} $$
 includes {\tt fig.1} and specifies that its height and width are both three
 centimeters.
+
 
 \subsection{Filename templates}
 
@@ -364,7 +487,7 @@ sequences are possible, see table~\ref{tab:fntmpl} for details.
 
 \def\d{$\langle$0-9$\rangle$}
 
-\begin{table}
+\begin{table}[b]
 \begin{center}\begin{tabular}{ll}
 \%\%    & A percent sign \\
 \%\,j     & The current jobname\\
@@ -1932,101 +2055,6 @@ $$ \hbox{\verb|show urcorner btex $\bullet$\rlap{ A} etex|} $$
 produces ``\verb|>> (4.9813,6.8078)|'' while
 $$ \hbox{\verb|truecorners:=1; show urcorner btex $\bullet$\rlap{ A} etex|} $$
 produces ``\verb|>> (15.7742,6.8078)|.''
-
-
-\subsection{Using MetaPost graphics in \TeX, \LaTeX\ and pdf\LaTeX}
-\label{Dteximport}
-\index{TeX?\TeX!importing MetaPost files}
-\index{LaTeX?\LaTeX!importing MetaPost files}
-\index{pdfLaTeX?pdf\LaTeX!importing MetaPost files}
-
-The output of MetaPost is a variant of PostScript, called Encapsulated
-PostScript\index{PostScript!structured} (EPSF\index{EPSF}).  \TeX\
-users can import EPS graphics by first loading package
-\ttt{epsf}\index{epsf.tex?\texttt{epsf.tex}} via \verb+\input epsf+ and
-then issuing the command
-$$ \verb+\epsfbox{+\descr{filename}\verb+}+ $$%
-\index{epsfbox?\texttt{\textbackslash epsfbox}}
-to load an EPS file, e.\,g., \verb+\epsfbox{fig.1}+.
-
-For \LaTeX\ documents the procedure is similar:  first package
-\ttindex{graphicx} has to be loaded by putting
-\verb+\usepackage{graphicx}+ into the document preamble and then EPS
-files can be loaded via
-$$ \verb+\includegraphics{+\descr{filename}\verb+}+$$
-e.\,g., \verb+\includegraphics{fig.1}+.
-
-Actually, graphic files are never included in a
-\TeX\index{TeX?\TeX!importing MetaPost files} or
-\LaTeX\index{LaTeX?\LaTeX!importing MetaPost files} run.  Instead,
-\TeX\ and \LaTeX\ only reserve as much space on a page as the graphic
-occupies and write a reference to the corresponding file into the
-\ttt{dvi} output.  The graphic file is only included in the subsequent
-run of the output driver, which in most cases should be
-\ttindex{dvips}.
-
-When pdf\LaTeX\index{pdfLaTeX?pdf\LaTeX!importing MetaPost files} is
-used in PDF mode, an additional line
-$$ \verb+\DeclareGraphicsRule{*}{mps}{*}{}+$$%
-\index{DeclareGraphicsRule?\texttt{\textbackslash DeclareGraphicsRule}}%
-has to be added to the document preamble after loading package
-\ttt{graphicx}.  In contrast to \ttt{dvips}, pdf\LaTeX\ can't process
-general PostScript files, but only so-called purified
-EPS\index{PostScript!purified} files, which may only use a restricted
-set of PostScript language features.  Fortunately, MetaPost output
-\emph{is} purified EPS, so we are in luck.  The above mentioned command
-sets up pdf\LaTeX\ so that it assumes all unknown file extensions as
-being purified EPS files.  Refer to the documentation of the
-\ttt{graphicx} package for more details.
-
-Alternatively---and this is the recommended way since MetaPost
-version~1.000---the primitive \verb+filenametemplate+%
-\index{filenametemplate?\texttt{filenametemplate}} can be used to set
-the file extension of MetaPost output to
-\ttt{.mps}\index{mps?\texttt{mps}}.  See section~2.1 for more
-information on \ttt{filenametemplate}.  \ttt{Mps} is pdf\LaTeX's
-default extension for purified EPS\index{PostScript!purified} files.
-If your're only using pdf\LaTeX\ the \ttt{.mps} file extension can as
-well be omitted in the \verb+\includegraphics+ call.  However, if you
-want to keep flexibile and be able to compile your documents with both,
-\LaTeX\ and pdf\LaTeX\, the \ttt{.mps} extension should not be omitted,
-since \LaTeX\ isn't aware of that extension by default.
-
-Note, there is an additional difference between using
-\ttt{tex} or \ttt{latex} and \ttt{pdftex} or \ttt{pdflatex}.
-Pdf(La)\TeX\ is both, a (La)\TeX\ interpreter and an output driver for
-the PDF document format.  For that reason graphic files \emph{are}
-finally included in a pdf(La)\LaTeX\ run.
-
-
-\subsection{Previewing MetaPost graphics}
-\label{Dpreview}
-\index{previewing}
-
-MetaPost files can be previewed with any decent PostScript viewer,
-e.\,g., GSview\index{GSview}.
-
-The situation becomes a little bit fussy when MetaPost output contains
-text.  By default, MetaPost doesn't produce self-contained EPS files,
-e.\,g., font resources and encoding vectors are not stored in the
-output.  For that reason MetaPost output containing text may be
-rendered with wrong fonts, wrong glyphs or with no text at all in a
-PostScript viewer.  For a long time, the most reliable way for
-previewing was to prepare a test document that includes all MetaPost
-figures, process that with \TeX\ or \LaTeX\ and \ttindex{dvips} and
-display the resulting \ttt{ps} file in a PostScript
-viewer.\footnote{There are alternatives, though. \ttindex{mpstoeps} is
-a Perl script that automates the process outlined above.
-\ttindex{mptopdf} is another tools that converts MetaPost files to
-PDF.}
-
-However, with MetaPost version~1.000 the situation changed.  Since that
-version MetaPost is able to produce self-contained EPS files, that can
-reliably be previewed, may they contain text\footnote{As long as you're
-not using \MF\index{metafont?\MF} fonts inside MetaPost.} or not.  The
-new behaviour can be triggered by setting MetaPost's internal variable
-\ttt{prologues}\index{prologues?\texttt{prologues}} to~3.  See
-section~7.1 for more information on \ttt{prologues}.
 
 
 \section{Advanced Graphics}
@@ -4674,7 +4702,7 @@ typesets verbatim text.  That is, \texttt{btex~s~etex} typesets the
 literal character `s'; \texttt{TEX(s)} typesets the value of the
 MetaPost text variable~$s$.
 
-\index{latex?\LaTeX, typesetting labels with} In version 0.9,
+\index{LaTeX?\LaTeX!typesetting labels with} In version 0.9,
 \texttt{TEX.mp} acquired two additional routines to facilitate using
 \LaTeX\ to typeset labels: \texttt{TEXPRE} and \texttt{TEXPOST}.  Their
 values are remembered, and included before and after (respectively) each
