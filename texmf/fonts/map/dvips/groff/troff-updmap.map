@@ -1,5 +1,11 @@
 % groff-updmap.map.  Public domain.
-% MetaPost uses this in troff mode (which these days means groff).
+% 
+% This map file is just the same as troff.map, except that the entries
+% for psyr, psyro, and pzdr are removed.  Why?  Because those tfm names
+% already exist in the standard font support, as downloading the
+% StandardSymL and Dingbats fonts from URW.  Therefore the entries with
+% the Adobe names Symbol and ZapfDingbats causes a conflict.
+% --karl, 5nov07.
 % 
 pagd8g AvantGarde-Demi " groffEncoding ReEncodeFont " <groff.enc
 pagdo8g AvantGarde-DemiOblique " groffEncoding ReEncodeFont " <groff.enc
@@ -37,5 +43,4 @@ pzcmi8g ZapfChancery-MediumItalic " groffEncoding ReEncodeFont " <groff.enc
 freeeuro FreeEuro <freeeuro.pfa
 psyrgo Symbol
 zpzdr-reversed ZapfDingbats
-psyr Symbol
-pzdr ZapfDingbats
+
