@@ -131,21 +131,6 @@ of a freehand drawing tool or even an interactive graphics editor.  It
 is really a programming language for generating graphics, especially
 figures for \TeX\footnote{\TeX\ is a trademark of the American
 Mathematical Society.}\index{TeX?\TeX} and troff\index{troff} documents.
-The figures can be integrated into a \TeX\ document via a freely
-available program called {\tt dvips}\ttindex{dvips} as shown in
-Figure~\ref{fig0}.\footnote{The C source for {\tt dvips} comes with the
-web2c \TeX\ distribution. Similar programs are available from other
-sources.}  A similar procedure works with troff: the {\tt dpost} output
-processor includes PostScript figures when they are requested via
-troff's {\tt \char`\\X} command.
-
-\begin{figure}[htp]
-$$ \includegraphics{manfig-0} $$
-\caption[A diagram of the processing for a document with MetaPost figures]
-        {A diagram of the processing for a \TeX\ document with figures
-        in MetaPost}
-\label{fig0}
-\end{figure}
 
 To use MetaPost, you prepare an input file containing MetaPost code and
 then invoke MetaPost, usually by giving a command of the
@@ -354,18 +339,40 @@ PDF.}
 
 However, with MetaPost version~1.000 the situation changed.  Since that
 version MetaPost is able to produce self-contained EPS files, that can
-reliably be previewed, may they contain text\footnote{As long as you're
-not using \MF\index{metafont?\MF} fonts inside MetaPost.} or not.  The
+reliably be previewed, may they contain text or not.  The
 new behaviour can be triggered by setting MetaPost's internal variable
 \ttt{prologues}\index{prologues?\texttt{prologues}} to~3.  See
 section~\ref{Dprologues} for more information on \ttt{prologues}.
 
 
-\subsection{Using MetaPost graphics in \TeX, \LaTeX,  pdf\LaTeX\ and troff}
+\subsection{Using MetaPost graphics in \TeX, \LaTeX, pdf\LaTeX, pdf\TeX, Con\TeX{}t and troff}
 \label{Dteximport}
 \index{TeX?\TeX!importing MetaPost files}
 \index{LaTeX?\LaTeX!importing MetaPost files}
 \index{pdfLaTeX?pdf\LaTeX!importing MetaPost files}
+\index{pdfTeX?pdf\TeX!importing MetaPost files}
+\index{ConTeXt?Con\TeX t!importing MetaPost files}
+\index{troff!importing MetaPost files}
+
+How MetaPost figures can be integrated into documents prepared with
+\TeX\ and friends depends on the exact format and output driver.
+Figure~\ref{fig0} shows the workflow for plain \TeX, \LaTeX\ and the
+freely available program \ttindex{dvips}.\footnote{The C source for
+\ttt{dvips} comes with the web2c \TeX\ distribution.  Similar programs
+are available from other sources.}  A similar procedure works with
+troff: the \ttt{dpost} output processor includes PostScript figures when
+they are requested via troff's \ttt{\string\X} command.  For the PDF
+flavour of \TeX\ and \LaTeX\ the situation is a little bit different.
+The next paragraphs give brief information on some popular \TeX\ formats
+and output drivers.
+
+\begin{figure}[htp]
+$$ \includegraphics{manfig-0} $$
+\caption[A diagram of the processing for a document with MetaPost figures]
+        {A diagram of the processing for a \TeX\ document with figures
+        in MetaPost}
+\label{fig0}
+\end{figure}
 
 \paragraph{\TeX}
 \TeX\ users can import EPS graphics by first loading package
@@ -384,17 +391,21 @@ $$ \verb+\includegraphics{+\descr{filename}\verb+}+ $$%
 \index{includegraphics?\texttt{\string\includegraphics}}
 e.\,g., \verb+\includegraphics{fig.1}+.
 
-Actually, graphic files are never included in a
+As can be seen in figure~\ref{fig0} graphic files are never included in a
 \TeX\index{TeX?\TeX!importing MetaPost files} or
 \LaTeX\index{LaTeX?\LaTeX!importing MetaPost files} run.  Instead,
-\TeX\ and \LaTeX\ only reserve as much space on a page as the graphic
+\TeX\ and \LaTeX\ only read bounding box information off the PostScript
+file, reserve as much space on a page as the graphic
 occupies and write a reference to the corresponding file into the
 \ttt{dvi} output.  The graphic file is only included in the subsequent
 run of an output driver, that can handle PostScript files, e.\,g.,
 \ttindex{dvips}.
 
 \paragraph{pdf\LaTeX}
-In contrast to \ttt{dvips}, pdf\LaTeX\ in PDF mode can't process
+The application pdf\LaTeX, when run in PDF mode, is both, a
+\LaTeX\ interpreter and an output driver for the PDF document format.
+For that reason graphic files are included in a \emph{single}
+pdf\LaTeX\ run.  In contrast to \ttt{dvips}, pdf\LaTeX\ can't process
 general PostScript files, but only so-called purified
 EPS\index{PostScript!purified} files, which may only use a restricted
 set of PostScript language features.  Fortunately, MetaPost output
@@ -407,7 +418,7 @@ extension for purified EPS files, we can
 \item change the file extension of MetaPost output to \ttt{mps}.
 \end{itemize}
 
-For the first and conventional approach we have to add the line
+For the conventional first approach we have to add the line
 $$ \verb+\DeclareGraphicsRule{*}{mps}{*}{}+ $$%
 \index{DeclareGraphicsRule?\texttt{\string\DeclareGraphicsRule}}%
 to the document preamble after loading package \ttt{graphicx}.  That
@@ -448,12 +459,32 @@ If you're using the \ttt{filenametemplate} method the \ttt{mps} file
 extension should not be omitted in \verb+\includegraphics+ commands,
 since \ttt{mps} is not part of \LaTeX's file name completion scheme, by
 default.  If the \ttt{mps} extension is present, \LaTeX\ handles those
-files as \ttt{eps} files, which is obviously correct.
+files as \ttt{eps} files, which is obviously correct.  For more
+information see the description of \verb+\DeclareGraphicsExtensions+%
+\index{DeclareGraphicsExtensions?\texttt{\string\DeclareGraphicsExtensions}}
+and \verb+\DeclareGraphicsRule+ in the documentaion of packages
+\ttt{graphicx} and \ttt{graphics}.
 
-Note, there is an additional difference between \LaTeX\ and pdf\LaTeX.
-The application pdf\LaTeX\ is both, a \LaTeX\ interpreter and an output
-driver for the PDF document format.  For that reason graphic files
-\emph{are} included in a pdf\LaTeX\ run.
+\paragraph{pdf\TeX}
+Users of plain pdf\TeX\ should refer to the standalone macros of the
+\ttindex{mptopdf} bundle, that can be found at
+\url{http://context.aanhet.net/mptopdf.htm}.
+
+\paragraph{Con\TeX t}
+In Con\TeX t\index{ConTeXt?Con\TeX t} support of MetaPost is integrated
+in the kernel. Apart from inline graphics (see MetaFun\index{MetaFun}
+manual), one can embed graphics explictely with the
+\verb+\externalfigure+%
+\index{externalfigure?\texttt{\string\externalfigure}} command.
+Numbered graphics are recognized automatically, as are graphics with the
+\ttt{mps} suffix.  Special features like shading, transparency, image
+inclusion, color spaces and such are handled automatically.  In practice
+Con\TeX t users will probably define MetaPost graphics in the document
+source which has some advantages, like a more natural interfacing with
+document properties, font support, and automatic processing.  Support
+for MetaPost inclusion is present in the versions MkII as well as MkIV,
+but the used methods are slightly different.  Future versions of MkIV
+will support an even more tight integration.
 
 \paragraph{troff}
 It is also possible to include MetaPost output in a {\em troff\/} document.
@@ -464,9 +495,10 @@ includes {\tt fig.1} and specifies that its height and width are both three
 centimeters.
 
 
-\subsection{Filename templates}
+\subsection{File name templates}
+\suppressfloats[t]
 
-MetaPost has support for output file-name templates. These templates
+MetaPost has support for output file name templates. These templates
 use \ttt{printf}-style escape sequences and are re-evaluated before
 each figure is written to disk. 
 
@@ -487,8 +519,8 @@ sequences are possible, see table~\ref{tab:fntmpl} for details.
 
 \def\d{$\langle$0-9$\rangle$}
 
-\begin{table}[b]
-\begin{center}\begin{tabular}{ll}
+\begin{table}
+\begin{center}\begin{tabular}{>{\ttfamily}ll}
 \%\%    & A percent sign \\
 \%\,j     & The current jobname\\
 \%\d  c & The charcode value\\
@@ -501,6 +533,27 @@ sequences are possible, see table~\ref{tab:fntmpl} for details.
 \caption{Allowed escape sequences for \ttt{filenametemplate}}
 \label{tab:fntmpl}
 \end{table}
+
+The \ttt{filenametemplate} primitive can also be helpful for naming
+graphic files individually, yet keeping all MetaPost sources in one file.
+E.\,g., collecting different diagram sources in a file \ttt{fig.mp}
+$$
+\begin{verbatim}
+filenametemplate "fig-quality.mps";
+beginfig(1);
+  ...
+endfig;
+
+filenametemplate "fig-cost-vs-productivity.mps";
+beginfig(2);
+  ...
+endfig;
+\end{verbatim}
+$$
+it might be easier to recall the correct diagram names in the
+\TeX\ document than with numbered file names.  Note, the argument to
+\ttt{beginfig} is not relevant as long as there's no \ttt{\%c} pattern
+in the file name template string.
 
 To ensure compatibility with older files, the default value of
 \ttt{filenametemplate} is \verb|%j.%c|.
@@ -1878,9 +1931,16 @@ It is worth noting that the default value \ttt{prologues:=0} is sufficient
 for graphics included in \TeX-based documents.  Also, the \ttt{prologues} variable is irrelevant
 when processing MetaPost files through the \ttindex{mptopdf} utility
 (part of the \ConTeXt\ distribution), because PDF files are, by nature,
-stand-alone.  The details on how to include PostScript figures in a paper
+stand-alone.  Moreover, the value of \ttt{prologues} has no effect on
+\MF\ fonts in your MetaPost files, i.\,e., MetaPost never embeds such
+fonts.  Only output drivers, e.\,g., \ttt{dvips} or pdf\LaTeX\ will
+handle those.
+
+The details on how to include PostScript figures in a paper
 done in \TeX\ or troff are system-dependent.  They can generally be found
-in manual pages and other on-line documentation.  The manual for the
+in manual pages and other on-line documentation, but have a look at
+section~\ref{Dteximport} of this manual for some brief instructions that
+in many cases should work.  The manual for the
 widely-used Dvips processor is in a file \ttt{dvips.texi}, included in
 most distributions, and is available online at
 \url{http://tug.org/texinfohtml/dvips.html}, among many other places and
