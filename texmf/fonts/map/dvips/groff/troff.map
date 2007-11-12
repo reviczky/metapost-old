@@ -1,4 +1,4 @@
-% groff-updmap.map.  Public domain.
+% troff.map.  Public domain.
 % MetaPost uses this in troff mode (which these days means groff).
 % 
 pagd8g AvantGarde-Demi " groffEncoding ReEncodeFont " <groff.enc

@@ -1,4 +1,4 @@
-% groff-updmap.map.  Public domain.
+% troff-updmap.map.  Public domain.
 % 
 % This map file is just the same as troff.map, except that the entries
 % for psyr, psyro, and pzdr are removed.  Why?  Because those tfm names
