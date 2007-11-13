@@ -63,7 +63,7 @@ The figures can be integrated into a \TeX\ document via a freely available
 program called {\tt dvips} as shown in Figure~1.\footnote{The C source for
 {\tt dvips} comes with the web2c \TeX\ distribution. Similar programs are
 available from other sources.}  A similar procedure works with troff: the
-{\tt dpost} output processor includes PostScript figures when they are
+{\tt grops} output processor includes PostScript figures when they are
 requested via troff's {\tt \char`\\X} command.
 
 \begin{figure}[htp]
@@ -112,9 +112,10 @@ end
 %stopverbatim$$
 Then the command \lit{mp} \lit{fig} produces an output file \lit{fig.1}
 that can be included in a
-\TeX\ document.\footnote{For importing MetaPost graphics into \LaTeX\ documents
-please refer to section \emph{Using MetaPost graphics in \TeX\ and \LaTeX} in
-the MetaPost manual.}
+\TeX\ document.\footnote{For importing MetaPost graphics into
+\LaTeX\ documents please refer to section \emph{Using MetaPost graphics
+in \TeX, \LaTeX, pdf\LaTeX, pdf\TeX, Con\TeX{}t and troff} in the
+MetaPost manual.}
 After \lit{\string\input} \lit{epsf} the \TeX\ commands
 \lit{\$\$\string\epsfbox\char`\{fig.1\char`\}\$\$} produce
 $$ \includegraphics{examples-1.mps} $$

@@ -360,7 +360,7 @@ Figure~\ref{fig0} shows the workflow for plain \TeX, \LaTeX\ and the
 freely available program \ttindex{dvips}.\footnote{The C source for
 \ttt{dvips} comes with the web2c \TeX\ distribution.  Similar programs
 are available from other sources.}  A similar procedure works with
-troff: the \ttt{dpost} output processor includes PostScript figures when
+troff: the \ttt{grops} output processor includes PostScript figures when
 they are requested via troff's \ttt{\string\X} command.  For the PDF
 flavour of \TeX\ and \LaTeX\ the situation is a little bit different.
 The next paragraphs give brief information on some popular \TeX\ formats
@@ -487,12 +487,14 @@ but the used methods are slightly different.  Future versions of MkIV
 will support an even more tight integration.
 
 \paragraph{troff}
-It is also possible to include MetaPost output in a {\em troff\/} document.
-The {\tt -mpictures\/} macro package defines a command \verb|.BP| that includes
-an encapsulated PostScript file.  For instance, the {\em troff\/} command
-$$ \hbox{\verb|.BP fig.1 3c 3c|} $$
-includes {\tt fig.1} and specifies that its height and width are both three
-centimeters.
+It is also possible to include MetaPost output in a GNU \emph{troff}
+document.  The \ttt{-mpspic}\index{mpspic?\texttt{-mpspic}} macro
+package defines a command \verb|.PSPIC|\index{PSPIC?\texttt{.PSPIC}}
+that includes an encapsulated PostScript file.  For instance, the
+\emph{troff} command
+$$ \hbox{\verb|.PSPIC fig.1|} $$
+includes \ttt{fig.1}, using the natural height and width of the
+image as given in the file's bounding box.
 
 
 \subsection{File name templates}
