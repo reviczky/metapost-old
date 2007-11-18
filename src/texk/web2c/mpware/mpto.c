@@ -316,7 +316,7 @@ copytex(void)
 	c = *s;
 	*s = 0;
 	if (res==NULL) {
-	  res = malloc(strlen(bb)+1);
+	  res = malloc(strlen(bb)+2);
 	  if (res==NULL)
 	    err("memory allocation failure");
 	  res = strncpy(res,bb,(strlen(bb)+1));
@@ -397,7 +397,7 @@ main(int argc, char **argv)
 	exit(0);
     } else if (argc > 1 && (strcmp(argv[1], "--version") == 0
 			    || strcmp(argv[1], "-version") == 0)) {
-	printf("mpto 1.001\n\
+	printf("mpto 1.002\n\
 This program is in the public domain.\n\
 Primary author of mpto: John Hobby.\n\
 Current maintainer: Taco Hoekwater.\n");
