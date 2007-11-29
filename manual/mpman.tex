@@ -394,12 +394,11 @@ e.\,g., \verb+\includegraphics{fig.1}+.
 As can be seen in figure~\ref{fig0} graphic files are never included in a
 \TeX\index{TeX?\TeX!importing MetaPost files} or
 \LaTeX\index{LaTeX?\LaTeX!importing MetaPost files} run.  Instead,
-\TeX\ and \LaTeX\ only read bounding box information off the PostScript
-file, reserve as much space on a page as the graphic
-occupies and write a reference to the corresponding file into the
-\ttt{dvi} output.  The graphic file is only included in the subsequent
-run of an output driver, that can handle PostScript files, e.\,g.,
-\ttindex{dvips}.
+\TeX\ and \LaTeX\ only read bounding box information off PostScript
+files, reserve as much space on a page as a graphic occupies and write
+a reference to the corresponding file into \ttt{dvi} output.  Graphic
+files are only included in the subsequent run of an output driver,
+that can handle PostScript files, e.\,g., \ttindex{dvips}.
 
 \paragraph{pdf\LaTeX}
 The application pdf\LaTeX, when run in PDF mode, is both, a
@@ -410,8 +409,9 @@ general PostScript files, but only so-called purified
 EPS\index{PostScript!purified} files, which may only use a restricted
 set of PostScript language features.  Fortunately, MetaPost output
 \emph{is} purified EPS, so we are in luck.  Since
-\ttt{mps}\index{files!mps?\texttt{mps}} is pdf\LaTeX's default
-extension for purified EPS files, we can
+pdf\LaTeX's default extension for purified EPS files is
+\ttt{mps}\index{files!mps?\texttt{mps}}, but MetaPost output by
+default has a number as extensions, we either have to
 \begin{itemize}
 \item tell pdf\LaTeX\ to handle MetaPost's numbered files according to
 \ttt{mps} file rules, or
@@ -462,7 +462,7 @@ default.  If the \ttt{mps} extension is present, \LaTeX\ handles those
 files as \ttt{eps} files, which is obviously correct.  For more
 information see the description of \verb+\DeclareGraphicsExtensions+%
 \index{DeclareGraphicsExtensions?\texttt{\string\DeclareGraphicsExtensions}}
-and \verb+\DeclareGraphicsRule+ in the documentaion of packages
+and \verb+\DeclareGraphicsRule+ in the documentation of packages
 \ttt{graphicx} and \ttt{graphics}.
 
 \paragraph{pdf\TeX}
@@ -552,7 +552,7 @@ beginfig(2);
 endfig;
 \end{verbatim}
 $$
-it might be easier to recall the correct diagram names in the
+it might be easier to recall the correct diagram names in a
 \TeX\ document than with numbered file names.  Note, the argument to
 \ttt{beginfig} is not relevant as long as there's no \ttt{\%c} pattern
 in the file name template string.
@@ -5748,7 +5748,7 @@ $\tt \qquad \;|\; addto \descr{picture variable} contour \descr{path expression}
 $\tt \qquad \;|\; addto \descr{picture variable} doublepath \descr{path expression} \descr{option list}$\\
 $\tt \descr{option list} \rightarrow \descr{empty} \;|\; \descr{drawing option} \descr{option list}$\\
 $\tt \descr{drawing option} \rightarrow withcolor \descr{color expression}$\\
-$\tt \qquad \;|\; withrgcolor \descr{rgbcolor expression} \;|\; withcmykcolor \descr{cmykcolor expression}$\\
+$\tt \qquad \;|\; withrgbcolor \descr{rgbcolor expression} \;|\; withcmykcolor \descr{cmykcolor expression}$\\
 $\tt \qquad \;|\; withgreyscale \descr{numeric expression} \;|\; withoutcolor$\\
 $\tt \qquad \;|\; withprescript \descr{string expression} \;|\; withpostscript \descr{string expression}$\\
 $\tt \qquad \;|\; withpen \descr{pen expression} \;|\; dashed \descr{picture expression}$\\
