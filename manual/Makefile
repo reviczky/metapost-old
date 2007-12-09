@@ -5,7 +5,7 @@
 
 pdflatex = pdflatex
 bibtex = bibtex
-mpost = TEX=tex mpost
+mpost = mpost -tex=tex
 
 all: mpman.pdf mpintro.pdf mpgraph.pdf grdemo.pdf
 
