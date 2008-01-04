@@ -1,6 +1,14 @@
 #!/usr/bin/env texlua
 
+--[[ This is p2cweb.lua
 
+Copyright (C) Taco Hoekwater 2007, Donated to the Public Domain
+
+This program is not really a proper converter of pascal web to
+C web, but it does help to prevent RSI while doing such a conversion
+manually
+
+--]]
 
 function parse_pascal (code) 
    local tree = code
@@ -9,79 +17,69 @@ function parse_pascal (code)
    local the_tokens = {}
    code = string.gsub (code,"@{","@B")
    code = string.gsub (code,"@}","@E")
-   code = string.gsub (code,"\\\\","@S")
-   code = string.gsub (code,"\\{","@b")
-   code = string.gsub (code,"\\}","@e")
-   code = string.gsub (code,"(@:.-@>)",function (body)
-					comments[#comments+1] = body
-                                        return "@D" .. #comments
-                                  end)
-   code = string.gsub(code,"(%b{})", function (body)
-					body = string.gsub(body,"@S","\\\\")
-					body = string.gsub(body,"@b","\\{")
-					body = string.gsub(body,"@e","\\}")
-					comments[#comments+1] = body
-                                        return "@C" .. #comments
-				     end)
-   
+
+   code = string.gsub (code,"\\\\","@s")
+   code = string.gsub (code,"\\{", "@b")
+   code = string.gsub (code,"\\}", "@e")
+
+   local function save_body (body)
+      body = string.gsub(body,"@s","\\\\")
+      body = string.gsub(body,"@b","\\{")
+      body = string.gsub(body,"@e","\\}")
+      comments[#comments+1] = body
+      return "@C" .. #comments
+   end
+
+   code = string.gsub (code,"\'{\'",save_body)
+   code = string.gsub (code,"\'}\'",save_body)
+   code = string.gsub (code,"\"{\"",save_body)
+   code = string.gsub (code,"\"}\"",save_body)
+   code = string.gsub (code,"(@%^.-@>)",save_body)
+   code = string.gsub (code,"(@%..-@>)",save_body)
+   code = string.gsub (code,"(@t.-@>)",save_body)
+   code = string.gsub (code,"(@=.-@>)",save_body)
+   code = string.gsub (code,"(@:.-@>)",save_body)
+   code = string.gsub (code,"(@<.-@>)",save_body)
+   code = string.gsub (code,"(%b{})", save_body)
    local function do_token (a) the_tokens[#the_tokens+1] = a end
-   local function do_identifier (...) do_token(...) end
-   local function do_space (...) do_token(...)  end
-   local function do_whatever (...)  do_token(...)  end
-   local function do_keyword (...) do_token(...)  end
-   local function do_operator (...) do_token(...)  end
-   local function do_literal (...) do_token(...)  end
-   local function do_macro (...) do_token(...)  end
+   local function do_literal (l) 
+      l = string.gsub(l,"@C([0-9]+)",function(a) return comments[tonumber(a)] end)
+      do_token(l) 
+   end
    local function do_webcommand (a,b) 
-      if a == "@B" then 
+      if a == "@s" then 
+	 do_token("\\\\") 
+      elseif a == "@b" then
+	 do_token("\\{") 
+      elseif a == "@e" then
+	 do_token("\\}") 
+      elseif a == "@B" then 
 	 do_token("@{") 
       elseif a == "@E" then
 	 do_token("@}") 
-      elseif a == "@D" then
-	 do_token(comments[tonumber(b)]) 
       elseif a == "@C" then
-	 do_token(comments[tonumber(b)]) 
+         l = comments[tonumber(b)]
+	 l = string.gsub(l,"@C([0-9]+)",function(a) return comments[tonumber(a)] end)
+	 do_token(l) 
       else
 	 do_token(a)
       end
    end
 
-   local whitespace = C(S' \t\v\n\f' ) / do_space
+   local whitespace = C(S' \t\v\n\f' ) / do_token
    local digit = R'09'
    local letter = R('az', 'AZ') + P'_'
    local letters = letter^1
    local alphanum = letter + digit
    local hex = R('af', 'AF', '09')
    local number = digit^1 +  digit^0 * P'.' * digit^1 +  digit^1 * P'.' * digit^0
-   local charlit =  P"'" * (P'\\' * P(1) + (1 - S"\\'"))^1 * P"'"
-   local stringlit = P'"' * (P'\\' * P(1) + (1 - S'\\"'))^0 * P'"'
+   local charlit =  P"'" * (1 - P"'")^0 * P"'"
+   local stringlit = P'"' * (1 - P'"')^0 * P'"'
    local literal = C(number + charlit + stringlit) / do_literal
-   local keyword = C(
-			P"and" +
-			P"begin" +
-			P"case" +
-			P"const" +
-			P"div" +
-			P"do" +
-			P"else" +
-			P"end" +
-			P"false" +
-			P"function" +
-			P"goto" +
-			P"if" +
-			P"mod" +
-			P"or" +
-			P"procedure" +
-			P"label" +
-			P"then" +
-			P"true" +
-			P"type" +
-			P"var" +
-			P"while"
-		  ) / do_keyword
-   local macro = C(P"\\" * (letters + 1)) / do_macro
-   local identifier = (letter * alphanum^0 - keyword * (-alphanum)) / do_identifier
+   local macro = C(P"\\" * (letters + 1)) / do_token
+   local identifier = (letter * alphanum^0) / do_token
    local op = C(
+		   P".." +
 		   P"==" +
 		   P"<=" +
 		   P">=" +
@@ -89,11 +87,11 @@ function parse_pascal (code)
 		   P"<>" +
 		   P"!=" +
 		   S";{},:=()[].-+*<>"
-	     ) / do_operator
+	     ) / do_token
    local comment = C(P"@C") * C(number) / do_webcommand
    local webcommand = C(P"@" * 1) / do_webcommand
-   local whatever = C(1) / do_whatever
-   local tokens = (macro + identifier + keyword + comment + webcommand +
+   local whatever = C(1) / do_token
+   local tokens = (macro + identifier + comment + webcommand +
 		   literal + op + whitespace + whatever)^0
 
    lpeg.match(tokens, code)
@@ -145,15 +143,6 @@ function disect_module (m)
    return a
 end
 
-function disect_modules (webmodules) 
-  local mods = {}
-  for a,_ in pairs(webmodules) do
-     mods[a] = disect_module(_)
-     mods[a].nr = a-1 
-  end
-  return mods
-end
-
 function parse_module (module) 
   local space  = lpeg.S(" \t\n\r")^0
   local equal  = lpeg.P("=")
@@ -168,10 +157,11 @@ function parse_module (module)
        local equaltype = lpeg.C((equals+equal+param)^1) / stype
        local definame = lpeg.C((1-equaltype)^1) / sname
        local body = lpeg.C(lpeg.P(1)^1) / scode
-       local definition = (lpeg.P("@d")+lpeg.P("@f")) * space * definame * equaltype * space * body
+       local definition = (lpeg.P("@d")+lpeg.P("@f")) * space * definame * equaltype * body
        lpeg.match(definition,def)
        if thedef.code and #(thedef.code)>0 then
-         thedef.code = parse_pascal (thedef.name .. thedef.type ..thedef.code)
+	  thedef.class = string.sub(def,1,2);
+	  thedef.code = parse_pascal (thedef.name .. thedef.type .. thedef.code)
        end
        module.def[a] = thedef
      end
@@ -179,13 +169,15 @@ function parse_module (module)
   if module.cod and #(module.cod)>0 then
       local function scode (v) module.code  = v end
       local function sname (v) module.name  = v end
+      local function sspace (v) module.space  = v end
       local name_end = lpeg.P("@>")
       local name_start = lpeg.P("@<")
       local name_body = lpeg.C((1-name_end)^1) / sname
       local name =  name_start * name_body * name_end
       local unnamed = lpeg.P("@p") 
+      local ispace = lpeg.C(space) / sspace
       local body = lpeg.C(lpeg.P(1)^1) / scode
-      local pascal = lpeg.P(lpeg.P(name * space * equal) + unnamed)^1 * space * body
+      local pascal = lpeg.P(lpeg.P(name * space * equal) + unnamed)^1 * ispace * body
       lpeg.match(pascal,module.cod)
       module.cod = nil
       if module.code and #(module.code)>0 then
@@ -196,6 +188,139 @@ function parse_module (module)
 end
 
 
+function handle_comment (file,str)
+   str = string.gsub(str,"^{","/* ")
+   str = string.gsub(str,"}$"," */")
+   file.write(file, str)
+end
+
+
+function handle_stringlit (file,str)
+   if #str>=3 then
+      if (#str==3) or (#str==4 and string.sub(str,2,2)==string.sub(str,3,3)) then 
+	 str = string.gsub(str,'^"', "'")
+	 str = string.gsub(str,'"$', "'")
+      else
+	 str = string.gsub(str,"^'", '"')
+	 str = string.gsub(str,"'$", '"')
+      end
+      str = string.gsub(str,'\\', '\\\\')
+   end
+   file.write(file, str)
+end
+
+
+function handle_proc (file,start,code)
+  local type = code[start]
+  local s = start
+  local level = 1
+  return s
+end
+
+function handle_varlist (file,start,code)
+  return start
+end
+
+function handle_pcode (file,code)
+   local start = 1
+   local ops = {
+      ["="] = "==",
+      [":="] = "=",
+      ["#"] = "(A)",
+      ["<>"] = "!=",
+      ["begin"] = "{",
+      ["end"] = "}",
+      ["not"] = "!",
+      ["and"] = "&&",
+      ["or"] = "||",
+      ["div"] = "/",
+      ["mod"] = "%",
+      ["if"] = "if (",
+      ["then"] = ")",
+      ["while"] = "while (",
+      ["do"] = ")",
+      ["repeat"] = "do { ",
+      ["until"] = "} while !",
+   }
+   while #code>=start do 
+      local d = code[start]
+      local t = string.sub(d,1,1)
+      if t == "@" then
+	 tt = string.sub(d,2,2)
+	 if tt == "'" then
+	    file.write(file, '0')
+	 elseif tt == "\"" then
+	    file.write(file, '0x')
+	 else
+	    file.write(file, d)
+         end
+      elseif d == "procedure" or d == "function" then
+	 start = handle_proc(file,start,code)
+      elseif t == "var" then
+	 start = handle_varlist(file,start,code)
+      elseif t == "{" then
+	 handle_comment(file,d)
+      elseif t == "\"" or t == "\'" then
+	 handle_stringlit(file,d)
+      else 
+         if ops[d] then
+	    file.write(file, ops[d])
+	 else
+	    file.write(file, d)
+	 end
+      end
+      start = start + 1
+   end
+end
+
+function table.slice(code, start, stop) 
+   local n = {}
+   for a = start,stop do
+      n[#n+1]  = code[a]
+   end
+   return n
+end
+
+function handle_macro (file,code)
+   local start = 1
+   local done = 0
+   while #code>=start do 
+      local d = code[start]
+      if d == "==" or d == "=" then
+	 file.write(file, " ")
+         done = 1
+      elseif d == "#" then
+	 file.write(file, "A")
+      else
+	 file.write(file, d)
+      end
+      start = start + 1
+      if done>0 then
+         local body = table.slice(code,start,#code)
+	 handle_pcode(file,body)
+         return
+      end
+   end
+end
+
+function write_cweb(file,module)
+   file.write(file,module.doc)
+   if module.def then
+      for a,def in pairs(module.def) do
+	 file.write(file, def.class .. " ")
+	 handle_macro(file, def.code)
+      end
+   end
+   if module.code then
+      if module.name then
+	 file.write(file, "@<" .. module.name .. "@>=" .. module.space)
+	 handle_pcode(file,module.code)
+      else
+	 file.write(file,"@c" .. module.space)
+	 handle_pcode(file,module.code)
+      end
+   end
+end
 
 function main () 
   local file = arg[1]
@@ -208,18 +333,41 @@ function main ()
      print ("file loading failed")
      return
   end
-  webmodules = disect_modules (webmodules) 
-  if not webmodules then
-     print ("file disecting failed")
+  io.write('Pweb file '.. file .. '\n');
+  local cfile = string.gsub(file,'.web$','.w')
+  io.write('Cweb file '.. cfile .. '\n');
+  local cweb = io.open(cfile,"w")
+  if not cweb then
+     print ("Cannot open output")
      return
-  end
+   end
+
+  local n = 0
+  io.write('Interpreting ... ')
   for a,_ in pairs(webmodules) do
-     parse_module(_)
+     webmodules[a] = disect_module(_)
+     webmodules[a].nr = a-1 
+     parse_module(webmodules[a])
+     if webmodules[a].doc and #webmodules[a].doc and string.sub(webmodules[a].doc,1,2) == "@*" then
+        io.write("*" .. tonumber(n))
+	io.flush()
+     end
+     n = n + 1;
   end
 
+  io.write('\nWriting the output ... ')
+  
+  n = 0
   for a,_ in pairs(webmodules) do
-     print (_.nr,_.name, table.concat(_.code or {}))
+     write_cweb(cweb,_)
+     if _.doc and #_.doc and string.sub(_.doc,1,2) == "@*" then
+        io.write("*" .. tonumber(n))
+	io.flush()
+     end
+     n = n + 1;
   end
+  io.close(cweb)
+  io.write('\nDone.\n');
 end
 
 
