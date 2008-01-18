@@ -10,6 +10,11 @@ manually
 
 --]]
 
+all_functions = {}
+all_procedures = {}
+all_globals = {}
+is_void  = {}
+
 function parse_pascal (code) 
    local tree = code
    local P, R, S, C =  lpeg.P, lpeg.R, lpeg.S, lpeg.C
@@ -143,6 +148,185 @@ function disect_module (m)
    return a
 end
 
+
+function append_to (old, new ) 
+   local m = old
+   for a,b in ipairs (new)  do
+--	  io.write(b)
+	  m[#m+1] = b
+   end
+--   io.write('\n')
+   return m
+end
+
+function fix_function_declarations(code) 
+   local t, f = {}, {}
+   local infunction = false
+   local instate = ''
+   local name = ''
+   for _,v in ipairs(code) do
+	  if not infunction then
+		 if v == 'procedure' or v == 'function' then
+			infunction = true
+			f[0] = v
+		 else
+			t[#t+1] = v
+		 end
+	  else 
+		 if instate == '' then 
+			if  string.match(v,'%a') then
+			   f[#f+1] = 'mp_' .. v 
+			   name = v 
+			   if f[0] == 'procedure' then
+				  all_procedures[v] = 1
+			   else
+				  all_functions[v] = 1
+			   end
+			   instate = 'startbrace'
+			end
+		 elseif instate == 'startbrace' then
+			if v == '(' then
+			   f[#f+1] = ' '
+			   f[#f+1] = v 
+			   f[#f+1] = 'MP mp' 
+			   f[#f+1] = ',' 
+			   instate = 'startarg'
+			   curarg = ''
+			elseif v == ';' then
+			   f[#f+1] = ' (MP mp)'
+			   is_void[name] = 1
+			   if f[0] == 'procedure'  then
+				  t[#t+1] = 'void'
+				  t[#t+1] = ' '
+			   end
+			   t = append_to(t,f)
+			   f = {}
+			   infunction = false
+			   instate = ''
+			   name = ''
+			elseif v == ':' then
+			   f[#f+1] = ' (MP mp)'
+			   is_void[name] = 1
+			   instate  = 'retval'
+			end
+		 elseif instate == 'startarg' then
+			if  v == ':' then
+			   instate = 'argtype'			   
+			elseif v == '@!' then
+			elseif v == 'var' then
+			else
+			   curarg = curarg .. v
+			end
+		 elseif instate == 'argtype' then
+			if  string.match(v,'%a') then
+			   f[#f+1] = v .. ' ' .. curarg
+			   curarg = ''
+			   instate = 'nextarg'
+			end
+		 elseif instate == 'nextarg' then
+			if  v == ';' then
+			   f[#f+1] = ', '
+			   instate = 'startarg'
+			elseif v == ')' then
+			   f[#f+1] = v
+			   instate = 'retval'
+			end
+		 elseif instate == 'retval' then
+			if  string.match(v,'%a') then
+			   t[#t+1] = v
+			   t[#t+1] = ' '
+			   instate = 'done'
+			elseif v == ';' then
+			   if f[0] == 'procedure'  then
+				  t[#t+1] = 'void'
+				  t[#t+1] = ' '
+			   end
+			   t = append_to(t,f)
+			   f = {}
+			   infunction = false
+			   instate = ''
+			   name = ''
+			end
+		 elseif instate == 'done' then
+			if v == ';' then
+			   if f[0] == 'procedure'  then
+				  t[#t+1] = 'void'
+				  t[#t+1] = ' '
+			   end
+			   t = append_to(t,f)
+			   f = {}
+			   infunction = false
+			   instate = ''
+			   name = ''
+			end
+		 end
+	  end
+   end   
+   return t;
+end
+
+function fix_globals (code)
+   local t, f = {}, {}
+   local instate = 'startarg'
+   local curarg = ''
+   local curtype = ''
+   for a,v in ipairs(code) do
+	  if instate == 'startarg' then
+		 if  v == ':' then
+			f[#f+1] = curarg
+			curarg = ''
+			instate = 'argtype'			   
+		 elseif v == '@!' then
+		 elseif v == 'var' then
+		 elseif string.match(v,'{') then
+			t[#t+1] =  v
+		 elseif string.match(v,'^%s+$') then
+			t[#t+1] =  v
+		 elseif v == ',' then
+			f[#f+1] = curarg
+			curarg = ''
+		 else
+			if string.match(v,"%a") then
+			   all_globals[v] = 1
+			end
+			curarg = curarg .. v
+		 end
+	  elseif instate == 'argtype' then
+		 if  v == ';' then
+			for _,w in ipairs(f) do
+			   t[#t+1] = curtype .. ' ' .. w .. ';'
+			end
+			instate = 'startarg'
+			curtype = ''
+			f = {}
+		 else
+			curtype = curtype .. v
+		 end
+	  end
+   end
+   for _,w in ipairs(f) do
+	  t[#t+1] = curtype .. ' ' .. w .. ';'
+   end
+   return t
+end
+
+function fix_constants (code)
+   local t = {}
+   t[#t+1] = 'static int '
+   for a,v in ipairs(code) do
+	  if string.match(v,"\n$") then
+		 t[#t+1] = v
+		 t[#t+1] = 'static int '
+	  elseif v == '=' then
+		 t[#t+1] = ':='
+	  else
+		 t[#t+1] = v
+	  end
+   end
+   return t
+end
+
+
 function parse_module (module) 
   local space  = lpeg.S(" \t\n\r")^0
   local equal  = lpeg.P("=")
@@ -160,8 +344,8 @@ function parse_module (module)
        local definition = (lpeg.P("@d")+lpeg.P("@f")) * space * definame * equaltype * body
        lpeg.match(definition,def)
        if thedef.code and #(thedef.code)>0 then
-	  thedef.class = string.sub(def,1,2);
-	  thedef.code = parse_pascal (thedef.name .. thedef.type .. thedef.code)
+		  thedef.class = string.sub(def,1,2);
+		  thedef.code = parse_pascal (thedef.name .. thedef.type .. thedef.code)
        end
        module.def[a] = thedef
      end
@@ -182,6 +366,13 @@ function parse_module (module)
       module.cod = nil
       if module.code and #(module.code)>0 then
          module.code = parse_pascal (module.code)
+		 module.code = fix_function_declarations(module.code)
+		 if module.name and string.match(module.name,"^Glob") then
+			module.code = fix_globals(module.code)			
+		 end
+		 if module.name and string.match(module.name,"^Constants") then
+			module.code = fix_constants(module.code)			
+		 end
       end
   end
   return
@@ -198,14 +389,15 @@ end
 function handle_stringlit (file,str)
    if #str>=3 then
       if (#str==3) or (#str==4 and string.sub(str,2,2)==string.sub(str,3,3)) then 
-	 str = string.gsub(str,'^"', "'")
-	 str = string.gsub(str,'"$', "'")
+		 str = string.gsub(str,'^"', "'")
+		 str = string.gsub(str,'"$', "'")
       else
-	 str = string.gsub(str,"^'", '"')
-	 str = string.gsub(str,"'$", '"')
+		 str = string.gsub(str,"^'", '"')
+		 str = string.gsub(str,"'$", '"')
       end
       str = string.gsub(str,'\\', '\\\\')
    end
+   if str == "'''" then str = "''''" end
    file.write(file, str)
 end
 
@@ -224,6 +416,7 @@ end
 function handle_pcode (file,code)
    local start = 1
    local ops = {
+      [";"] = ";",
       ["="] = "==",
       [":="] = "=",
       ["#"] = "(A)",
@@ -246,28 +439,45 @@ function handle_pcode (file,code)
       local d = code[start]
       local t = string.sub(d,1,1)
       if t == "@" then
-	 tt = string.sub(d,2,2)
-	 if tt == "'" then
-	    file.write(file, '0')
-	 elseif tt == "\"" then
-	    file.write(file, '0x')
-	 else
-	    file.write(file, d)
-         end
-      elseif d == "procedure" or d == "function" then
-	 start = handle_proc(file,start,code)
+		 tt = string.sub(d,2,2)
+		 if tt == "'" then
+			file.write(file, '0')
+		 elseif tt == "\"" then
+			file.write(file, '0x')
+		 elseif tt == "!" then
+		 else
+			file.write(file, d)
+		 end
       elseif t == "var" then
-	 start = handle_varlist(file,start,code)
+		 start = handle_varlist(file,start,code)
       elseif t == "{" then
-	 handle_comment(file,d)
+		 handle_comment(file,d)
       elseif t == "\"" or t == "\'" then
-	 handle_stringlit(file,d)
-      else 
-         if ops[d] then
-	    file.write(file, ops[d])
-	 else
-	    file.write(file, d)
-	 end
+		 handle_stringlit(file,d)
+      elseif ops[d] then
+		 file.write(file, ops[d])
+	  elseif all_globals[d] then
+		 file.write(file, 'mp->' .. d)
+	  elseif all_functions[d] then
+		 file.write(file, 'mp_' .. d)
+		 if is_void[d] then
+			file.write(file, '(mp)')
+		 else
+			inproc = true
+		 end
+	  elseif all_procedures[d] then
+		 file.write(file, 'mp_' .. d)
+		 if is_void[d] then
+			file.write(file, '(mp)')
+		 else
+			inproc = true
+		 end
+	  elseif d == '(' and inproc then
+		 file.write(file, d)
+		 file.write(file, 'mp, ')
+		 inproc = false
+	  else
+		 file.write(file, d)
       end
       start = start + 1
    end
@@ -303,8 +513,15 @@ function handle_macro (file,code)
    end
 end
 
+
+function handle_docpart (file,doc) 
+   doc = string.gsub(doc,"@'","0")
+   doc = string.gsub(doc,'@"',"0x")
+   file.write(file,doc)
+end
+
 function write_cweb(file,module)
-   file.write(file,module.doc)
+   handle_docpart(file,module.doc)
    if module.def then
       for a,def in pairs(module.def) do
 	 file.write(file, def.class .. " ")
@@ -350,7 +567,7 @@ function main ()
      parse_module(webmodules[a])
      if webmodules[a].doc and #webmodules[a].doc and string.sub(webmodules[a].doc,1,2) == "@*" then
         io.write("*" .. tonumber(n))
-	io.flush()
+      	io.flush()
      end
      n = n + 1;
   end
@@ -362,7 +579,7 @@ function main ()
      write_cweb(cweb,_)
      if _.doc and #_.doc and string.sub(_.doc,1,2) == "@*" then
         io.write("*" .. tonumber(n))
-	io.flush()
+	    io.flush()
      end
      n = n + 1;
   end
