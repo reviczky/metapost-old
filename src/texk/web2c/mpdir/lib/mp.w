@@ -154,12 +154,14 @@ to specify a file name if |output| were specified here.
 @d true 1
 @d false 0
  
-@c @t\4@>@<Compiler directives@>
+@c 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <stdarg.h>
+#include <assert.h>
+#include <unistd.h> /* for access() */
 #include "avl.h"
 @h
 typedef int boolean;
@@ -169,12 +171,6 @@ typedef struct MP_instance {
 @<Global variables@>
 } MP_instance;
 typedef struct MP_instance * MP;
-/* following are the functions from mplib.h */
-extern boolean hasfmentry (font_number);
-extern void mpmapline (str_number t);
-extern void mpmapfile (str_number t);
-extern void mpinitmapfile (int is_troff);
-extern ff_entry *check_ff_exist (fm_entry *);
 @<Declarations@>
 MP mp_new (void) {
   MP mp;
@@ -213,25 +209,8 @@ version called \.{INIMP}, which does the extra calculations needed to
 @.INIMP@>
 initialize \MP's internal tables; and (2)~there is a shorter and faster
 production version, which cuts the initialization to a bare minimum.
-Parts of the program that are needed in (1) but not in (2) are delimited by
-the codewords `$|init|\ldots|tini|$'.
 
-@d init  /* change this to `$\\{init}\equiv\.{@@\{}$' in the production version */
-@d tini  /* change this to `$\\{tini}\equiv\.{@@\}}$' in the production version */
-@f init {
-@f tini }
-
-@ If the first character of a \PASCAL\ comment is a dollar sign,
-\ph\ treats the comment as a list of ``compiler directives'' that will
-affect the translation of this program into machine language.  The
-directives shown below specify full checking and inclusion of the \PASCAL\
-debugger when \MP\ is being debugged, but they cause range checking and other
-redundant code to be eliminated when the production system is being generated.
-Arithmetic overflow will be detected in all cases.
-@^system dependencies@>
-@^Overflow in arithmetic@>
-
-@<Compiler directives@>=
+Which is which is decided at runtime.
 
 @ This \MP\ implementation conforms to the rules of the {\sl Pascal User
 @:PASCAL}{\PASCAL@>
@@ -6052,7 +6031,7 @@ place in the structure. Node~|p| itself does not move, nor are its
 
 @c 
 pointer mp_new_structure (MP mp,pointer p) {
-  pointer q,r; /* list manipulation registers */
+  pointer q,r=0; /* list manipulation registers */
   switch (name_type(p)) {
   case root: 
     q=link(p); r=mp_get_node(mp, value_node_size); equiv(q)=r;
@@ -7177,7 +7156,7 @@ void mp_solve_choices (MP mp,pointer p, pointer q, halfword n) {
   int k; /* current knot number */
   pointer r,s,t; /* registers for list traversal */
   @<Other local variables for |solve_choices|@>@;
-  k=0; s=p;
+  k=0; s=p; r=0;
   while (1) { 
     t=link(s);
     if ( k==0 ) {
@@ -9442,11 +9421,11 @@ finding the maximum of $\Delta x$ and the absolute value of~$y_0$.
 @c @<Declare a procedure called |x_retrace_error|@>@;
 pointer mp_make_dashes (MP mp,pointer h) { /* returns |h| or |null| */
   pointer p;  /* this scans the stroked nodes in the object list */
-  scaled y0;  /* the initial $y$ coordinate */
   pointer p0;  /* if not |null| this points to the first stroked node */
   pointer pp,qq,rr;  /* pointers into |path_p(p)| */
   pointer d,dd;  /* pointers used to create the dash list */
   @<Other local variables in |make_dashes|@>@;
+  scaled y0=0;  /* the initial $y$ coordinate */
   if ( dash_list(h)!=null_dash ) 
 	return h;
   p0=null;
@@ -9965,6 +9944,7 @@ pointer mp_offset_prep (MP mp,pointer c, pointer h) {
   scaled dxin,dyin; /* the direction into knot |p| */
   integer turn_amt; /* change in pen offsets for the current cubic */
   @<Other local variables for |offset_prep|@>@;
+  dx0=0; dy0=0;
   @<Initialize the pen size~|n|@>;
   @<Initialize the incoming direction and pen offset at |c|@>;
   p=c; k_needed=0;
@@ -10425,7 +10405,7 @@ if ( turn_amt>=0 ) {
 
 @ @<Other local variables for |offset_prep|@>=
 integer u0,u1,v0,v1; /* intermediate values for $d(t)$ calculation */
-integer ss; /* the part of the dot product computed so far */
+integer ss = 0; /* the part of the dot product computed so far */
 int d_sign; /* sign of overall change in direction for this cubic */
 
 @ If the cubic almost has a cusp, it is a numerically ill-conditioned
@@ -10543,11 +10523,12 @@ approach that is achieved by setting |join_type:=2|.
 pointer mp_make_envelope (MP mp,pointer c, pointer h, small_number ljoin,
   small_number lcap, scaled miterlim) {
   pointer p,q,r,q0; /* for manipulating the path */
-  int join_type; /* codes |0..3| for mitered, round, beveled, or square */
+  int join_type=0; /* codes |0..3| for mitered, round, beveled, or square */
   pointer w,w0; /* the pen knot for the current offset */
   scaled qx,qy; /* unshifted coordinates of |q| */
   halfword k,k0; /* controls pen edge insertion */
   @<Other local variables for |make_envelope|@>@;
+  dxin=0; dyin=0; dxout=0; dyout=0;
   mp->spec_p1=null; mp->spec_p2=null;
   @<If endpoint, double the path |c|, and set |spec_p1| and |spec_p2|@>;
   @<Use |offset_prep| to compute the envelope spec then walk |h| around to
@@ -10850,7 +10831,7 @@ scaled mp_find_direction_time (MP mp,scaled x, scaled y, pointer h) {
   @<Other local variables for |find_direction_time|@>@;
   @<Normalize the given direction for better accuracy;
     but |return| with zero result if it's zero@>;
-  n=0; p=h;
+  n=0; p=h; phi=0;
   while (1) { 
     if ( right_type(p)==endpoint ) break;
     q=link(p);
@@ -14324,8 +14305,8 @@ void mp_macro_call (MP mp,pointer def_ref, pointer arg_list,
   pointer r; /* current node in the macro's token list */
   pointer p,q; /* for list manipulation */
   integer n; /* the number of arguments */
-  pointer l_delim,r_delim; /* a delimiter pair */
-  pointer tail; /* tail of the argument list */
+  pointer tail = 0; /* tail of the argument list */
+  pointer l_delim=0,r_delim=0; /* a delimiter pair */
   r=link(def_ref); add_mac_ref(def_ref);
   if ( arg_list==null ) {
     n=0;
@@ -16175,8 +16156,8 @@ in full.
 void mp_print_exp (MP mp,pointer p, small_number verbosity) {
   boolean restore_cur_exp; /* should |cur_exp| be restored? */
   small_number t; /* the type of the expression */
-  integer v; /* the value of the expression */
   pointer q; /* a big node being displayed */
+  integer v=0; /* the value of the expression */
   if ( p!=null ) {
     restore_cur_exp=false;
   } else { 
@@ -16322,9 +16303,9 @@ void mp_recycle_value (MP mp,pointer p) ;
 
 @ @c void mp_recycle_value (MP mp,pointer p) {
   small_number t; /* a type code */
-  integer v; /* a value */
   integer vv; /* another value */
   pointer q,r,s,pp; /* link manipulation registers */
+  integer v=0; /* a value */
   t=type(p);
   if ( t<dependent ) v=value(p);
   switch (t) {
@@ -16978,7 +16959,7 @@ pointer pre_head,post_head,tail;
   /* prefix and suffix list variables */
 small_number tt; /* approximation to the type of the variable-so-far */
 pointer t; /* a token */
-pointer macro_ref; /* reference count for a suffixed macro */
+pointer macro_ref = 0; /* reference count for a suffixed macro */
 
 @ @<Scan a variable primary...@>=
 { 
@@ -17429,7 +17410,8 @@ void mp_scan_expression (MP mp) {
   boolean cycle_hit; /* did a path expression just end with `\&{cycle}'? */
   scaled x,y; /* explicit coordinates or tension at a path join */
   int t; /* knot type following a path join */
-  my_var_flag=mp->var_flag;
+  t=0; y=0; x=0;
+  my_var_flag=mp->var_flag; mac_name=null;
 RESTART:
   if ((mp->cur_cmd<min_primary_command)||
       (mp->cur_cmd>max_primary_command) )
@@ -20869,8 +20851,8 @@ void mp_make_eq (MP mp,pointer lhs) ;
 @ 
 @c void mp_make_eq (MP mp,pointer lhs) {
   small_number t; /* type of the left-hand side */
-  integer v; /* value of the left-hand side */
   pointer p,q; /* pointers inside of big nodes */
+  integer v=0; /* value of the left-hand side */
 RESTART: 
   t=type(lhs);
   if ( t<=pair_type ) v=value(lhs);
@@ -21799,6 +21781,7 @@ void mp_scan_with_list (MP mp,pointer p) ;
   pointer cp,pp,dp,ap,bp;
     /* objects being updated; |void| initially; |null| to suppress update */
   cp=diov; pp=diov; dp=diov; ap=diov; bp=diov;
+  k=0;
   while ( mp->cur_cmd==with_option ){ 
     t=mp->cur_mod;
     mp_get_x_next(mp);
@@ -22129,7 +22112,7 @@ pointer mp_start_draw_cmd (MP mp,quarterword sep) ;
 
 @ @c pointer mp_start_draw_cmd (MP mp,quarterword sep) {
   pointer lhv; /* variable to add to left */
-  quarterword add_type; /* value to be returned in |last_add_type| */
+  quarterword add_type=0; /* value to be returned in |last_add_type| */
   lhv=null;
   mp_get_x_next(mp); mp->var_flag=sep; mp_scan_primary(mp);
   if ( mp->cur_type!=token_list ) {
@@ -23892,7 +23875,7 @@ of |tfget| could be changed to
 @d tf_ignore(A) { for (jj=(A);jj>=1;jj--) tfget; }
 
 @<Read the \.{TFM} size fields@>=
-read_two(lf);
+tfget; read_two(lf);
 tfget; read_two(tfm_lh);
 tfget; read_two(bc);
 tfget; read_two(ec);
@@ -24093,7 +24076,7 @@ void mp_do_mapline (MP mp) ;
   if ( mp->cur_type!=string_type ) {
     @<Complain about improper map operation@>;
   } else {
-    mpmapfile(mp->cur_exp);
+    mp_map_file(mp,mp->cur_exp);
   }
 }
 void mp_do_mapline (MP mp) { 
@@ -24101,7 +24084,7 @@ void mp_do_mapline (MP mp) {
   if ( mp->cur_type!=string_type ) {
      @<Complain about improper map operation@>;
   } else { 
-     mpmapline(mp->cur_exp);
+     mp_map_line(mp,mp->cur_exp);
   }
 }
 
@@ -24265,8 +24248,8 @@ void mp_read_psname_table (MP mp) ;
   font_number k; /* font for possible name match */
   integer lmax; /* upper limit on length of name to match */
   integer j; /* characters left to read before string gets too long */
-  text_char c; /* character being read from |ps_tab_file| */
   str_number s; /* possible font name to match */
+  text_char c=0; /* character being read from |ps_tab_file| */
   mp->name_of_file=ps_tab_name;
   if ( mp_a_open_in(mp, &mp->ps_tab_file) ) {
     @<Set |lmax| to the maximum |font_name| length for fonts
@@ -24365,7 +24348,7 @@ void mp_open_output_file (MP mp) ;
   str_number s, n; /* a file extension derived from |c| */
   pool_pointer i; /*  indexes into |filename_template|  */
   integer cc; /* a temporary integer for template building  */
-  integer f,g; /* field widths */
+  integer f,g=0; /* field widths */
   if ( mp->job_name==0 ) mp_open_log_file(mp);
   c=mp_round_unscaled(mp, mp->internal[char_code]);
   if ( mp->filename_template==0 ) {
@@ -25467,12 +25450,12 @@ void mp_ship_out (MP mp, pointer h) { /* output edge structure |h| */
   integer t; /* a temporary value */
   font_number f; /* fonts used in a text node or as loop counters */
   int ff; /* a loop counter */
-  font_number ldf; /* the last \.{DocumentFont} listed (otherwise |null_font|) */
   boolean done_fonts; /* have we finished listing the fonts in the header? */
   quarterword next_size; /* the size index for fonts being listed */
   pointer cur_fsize[font_max+1]; /* current positions in |font_sizes| */
   scaled ds,scf; /* design size and scale factor for a text node */
   boolean transformed; /* is the coordinate system being transformed? */
+  font_number ldf=0; /* the last \.{DocumentFont} listed (otherwise |null_font|) */
   mp_open_output_file(mp);
   mp->non_ps_setting=mp->selector; mp->selector=ps_file_only;
   if ( (mp->internal[prologues]==two)||(mp->internal[prologues]==three) ) {
@@ -25618,7 +25601,7 @@ void mp_ship_out (MP mp, pointer h) { /* output edge structure |h| */
   mp_print_ln(mp);
   for (f=null_font+1;f<=mp->last_fnum;f++) {
     if ( mp->font_sizes[f]!=null ) {
-      if ( hasfmentry(f) ) {
+      if ( mp_has_fm_entry(mp,f) ) {
         @<Write font definition@>;
         mp_ps_name_out(mp, str(mp->font_name[f]),true);
         ps_print_defined_name(f);
@@ -25927,7 +25910,7 @@ for (f=null_font+1;f<=mp->last_fnum;f++) {
       if ( font_n(p)!=null_font ) {
         mp->font_sizes[font_n(p)] = diov;
         mp_mark_string_chars(mp, font_n(p),text_p(p));
-	    if ( hasfmentry(font_n(p)) )
+	    if ( mp_has_fm_entry(mp,font_n(p)) )
           mp->font_ps_name[font_n(p)] = mp_fm_font_name(mp,font_n(p));
       }
     }
@@ -25941,7 +25924,7 @@ for (f=null_font+1;f<=mp->last_fnum;f++) {
   while ( p!=null ) {
     if ( type(p)==text_code )
       if ( font_n(p)!=null_font )
-	    if ( hasfmentry(font_n(p)) )
+	    if ( mp_has_fm_entry(mp,font_n(p)) )
           if ( mp->font_enc_name[font_n(p)]==0 )
             mp->font_enc_name[font_n(p)] = mp_fm_encoding_name(mp,font_n(p));
     p=link(p);
@@ -25958,7 +25941,7 @@ do {
     if ( cur_fsize[f]!=null ) {
       if ( mp->internal[prologues]==three ) {
         if ( ! mp_do_ps_font(mp,f) ) {
-	      if ( hasfmentry(f) ) {
+	      if ( mp_has_fm_entry(mp,f) ) {
             print_err("Font embedding failed");
             mp_error(mp);
           }
@@ -26507,9 +26490,11 @@ void avl_xfree (struct libavl_allocator *allocator, void *block);
 
 @ @c
 void *avl_xmalloc (struct libavl_allocator *allocator, size_t size) {
+    assert(allocator);
     return malloc (size);
 }
 void avl_xfree (struct libavl_allocator *allocator, void *block) {
+    assert(allocator);
     free (block);
 }
 
@@ -26523,6 +26508,7 @@ mp->enc_tree = NULL;
 
 @ @c
 static int comp_enc_entry (const void *pa, const void *pb, void *p) {
+    assert(p==NULL);
     return strcmp (((const enc_entry *) pa)->file_name,
                    ((const enc_entry *) pb)->file_name);
 }
@@ -26557,6 +26543,7 @@ static void mp_destroy_enc_entry (void *pa, void *pb) {
     int i;
 
     p = (enc_entry *) pa;
+    assert(pb==NULL);
     free (p->file_name);
     if (p->glyph_names != NULL)
         for (i = 0; i < 256; i++)
@@ -26579,7 +26566,7 @@ void mp_font_encodings (MP mp, int lastfnum, int encodings_only) ;
   enc_entry *e;
   fm_entry *fm_cur;
   for (f=null_font+1;f<=lastfnum;f++) {
-    if (mp->font_sizes[f]!=0 && hasfmentry (f)) { 
+    if (mp->font_sizes[f]!=0 && mp_has_fm_entry (mp,f)) { 
       fm_cur = mp->mp_font_map[f];
       if (fm_cur != NULL && 
 	  fm_cur->ps_name != NULL &&
@@ -26595,7 +26582,7 @@ void mp_font_encodings (MP mp, int lastfnum, int encodings_only) {
   enc_entry *e;
   fm_entry *fm;
   for (f=null_font+1;f<=lastfnum;f++) {
-    if (mp->font_sizes[f]!=0 && hasfmentry (f)) { 
+    if (mp->font_sizes[f]!=0 && mp_has_fm_entry (mp,f)) { 
       fm = mp->mp_font_map[f];
       if (fm != NULL && (fm->ps_name != NULL)) {
 	if (is_reencoded (fm)) {
@@ -26611,7 +26598,910 @@ void mp_font_encodings (MP mp, int lastfnum, int encodings_only) {
   }
 }
 
-@* \[44b] Helper functions for Type1 fonts.
+@* \[44b] Parsing font map files.
+
+@d FM_BUF_SIZE     1024
+
+@<Glob...@>=
+FILE *fm_file;
+
+@
+@d fm_open(A)      mp->fm_file = fopen(A,"rb")
+@d fm_close()      fclose(mp->fm_file)
+@d fm_getchar()    fgetc(mp->fm_file)
+@d fm_eof()        feof(mp->fm_file)
+
+@<Types...@>=
+enum _mode { FM_DUPIGNORE, FM_REPLACE, FM_DELETE };
+enum _ltype { MAPFILE, MAPLINE };
+enum _tfmavail { TFM_UNCHECKED, TFM_FOUND, TFM_NOTFOUND };
+typedef struct mitem {
+    int mode;                   /* FM_DUPIGNORE or FM_REPLACE or FM_DELETE */
+    int type;                   /* map file or map line */
+    char *map_line;              /* pointer to map file name or map line */
+    int lineno;                 /* line number in map file */
+} mapitem;
+
+@ @<Glob...@>=
+mapitem *mitem;
+fm_entry *fm_cur;
+fm_entry *loaded_tfm_found;
+fm_entry *avail_tfm_found;
+fm_entry *non_tfm_found;
+fm_entry *not_avail_tfm_found;
+
+@ @<Initialize table ...@>=
+mp->mitem = NULL;
+
+@ @<Declarations@>=
+const char nontfm[] = "<nontfm>";
+
+@
+@d read_field(r, q, buf) do {
+    q = buf;
+    while (*r != ' ' && *r != '\0')
+        *q++ = *r++;
+    *q = '\0';
+    skip (r, ' ');
+} while (0)
+
+@d set_field(F) do {
+    if (q > buf)
+        fm->F = strdup(buf);
+    if (*r == '\0')
+        goto DONE;
+} while (0)
+
+@d cmp_return(a, b)
+    if (a > b)
+        return 1;
+    if (a < b)
+        return -1
+
+@c
+fm_entry *new_fm_entry (void) {
+    fm_entry *fm;
+    fm = malloc (sizeof(fm_entry));
+    fm->tfm_name = NULL;
+    fm->ps_name = NULL;
+    fm->flags = 4;
+    fm->ff_name = NULL;
+    fm->subset_tag = NULL;
+    fm->encoding = NULL;
+    fm->tfm_num = null_font;
+    fm->tfm_avail = TFM_UNCHECKED;
+    fm->type = 0;
+    fm->slant = 0;
+    fm->extend = 0;
+    fm->ff_objnum = 0;
+    fm->fn_objnum = 0;
+    fm->fd_objnum = 0;
+    fm->charset = NULL;
+    fm->all_glyphs = false;
+    fm->links = 0;
+    fm->pid = -1;
+    fm->eid = -1;
+    return fm;
+}
+
+void delete_fm_entry (fm_entry * fm) {
+    free (fm->tfm_name);
+    free (fm->ps_name);
+    free (fm->ff_name);
+    free (fm->subset_tag);
+    free (fm->charset);
+    free (fm);
+}
+
+static ff_entry *new_ff_entry (void) {
+    ff_entry *ff;
+    ff = malloc (sizeof(ff_entry));
+    ff->ff_name = NULL;
+    ff->ff_path = NULL;
+    return ff;
+}
+
+static void delete_ff_entry (ff_entry * ff) {
+    free (ff->ff_name);
+    free (ff->ff_path);
+    free (ff);
+}
+
+static fm_entry *dummy_fm_entry () {
+    static const fm_entry const_fm_entry;
+    return (fm_entry *) & const_fm_entry;
+}
+
+char *mk_base_tfm (MP mp, char *tfmname, int *i) {
+    static char buf[SMALL_BUF_SIZE];
+    char *p = tfmname, *r = strend (p) - 1, *q = r;
+    while (q > p && isdigit (*q))
+        --q;
+    if (!(q > p) || q == r || (*q != '+' && *q != '-'))
+        return NULL;
+    check_buf (q - p + 1, SMALL_BUF_SIZE);
+    strncpy (buf, p, (size_t) (q - p));
+    buf[q - p] = '\0';
+    *i = atoi (q);
+    return buf;
+}
+
+@ @<Declarations@>=
+boolean mp_has_fm_entry (MP mp,font_number f);
+
+@ @c
+boolean mp_has_fm_entry (MP mp,font_number f) {
+    if (mp->mp_font_map[f] == NULL)
+        mp->mp_font_map[f] = mp_fm_lookup (mp, f);
+    return mp->mp_font_map[f] != (fm_entry *) dummy_fm_entry ();
+}
+
+@ @<Glob...@>=
+struct avl_table *tfm_tree;
+struct avl_table *ps_tree;
+struct avl_table *ff_tree;
+
+@ @<Initialize table...@>=
+mp->tfm_tree = NULL;
+mp->ps_tree = NULL;
+mp->ff_tree = NULL;
+
+@ AVL sort fm_entry into tfm_tree by tfm_name 
+
+@c
+int comp_fm_entry_tfm (const void *pa, const void *pb, void *p) {
+    assert(p==NULL);
+    return strcmp (((const fm_entry *) pa)->tfm_name,
+                   ((const fm_entry *) pb)->tfm_name);
+}
+
+@ AVL sort fm_entry into ps_tree by ps_name, slant, and extend 
+
+@c int comp_fm_entry_ps (const void *pa, const void *pb, void *p) {
+    assert(p==NULL);
+    const fm_entry *p1 = (const fm_entry *) pa, *p2 = (const fm_entry *) pb;
+    int i;
+    assert (p1->ps_name != NULL && p2->ps_name != NULL);
+    if ((i = strcmp (p1->ps_name, p2->ps_name)))
+        return i;
+    cmp_return (p1->slant, p2->slant);
+    cmp_return (p1->extend, p2->extend);
+    if (p1->tfm_name != NULL && p2->tfm_name != NULL &&
+        (i = strcmp (p1->tfm_name, p2->tfm_name)))
+        return i;
+    return 0;
+}
+
+@ AVL sort ff_entry into ff_tree by ff_name 
+
+@c int comp_ff_entry (const void *pa, const void *pb, void *p) {
+    assert(p==NULL);
+    return strcmp (((const ff_entry *) pa)->ff_name,
+                   ((const ff_entry *) pb)->ff_name);
+}
+
+@ @c void create_avl_trees (MP mp) {
+    if (mp->tfm_tree == NULL) {
+        mp->tfm_tree = avl_create (comp_fm_entry_tfm, NULL, &mp->avl_xallocator);
+        assert (mp->tfm_tree != NULL);
+    }
+    if (mp->ps_tree == NULL) {
+        mp->ps_tree = avl_create (comp_fm_entry_ps, NULL, &mp->avl_xallocator);
+        assert (mp->ps_tree != NULL);
+    }
+    if (mp->ff_tree == NULL) {
+        mp->ff_tree = avl_create (comp_ff_entry, NULL, &mp->avl_xallocator);
+        assert (mp->ff_tree != NULL);
+    }
+}
+
+@ The function avl_do_entry() is not completely symmetrical with regards
+to tfm_name and ps_name handling, e. g. a duplicate tfm_name gives a
+"goto exit", and no ps_name link is tried. This is to keep it compatible
+with the original version.
+
+@d LINK_TFM            0x01
+@d LINK_PS             0x02
+@d set_tfmlink(fm)     ((fm)->links |= LINK_TFM)
+@d set_pslink(fm)      ((fm)->links |= LINK_PS)
+@d unset_tfmlink(fm)   ((fm)->links &= ~LINK_TFM)
+@d unset_pslink(fm)    ((fm)->links &= ~LINK_PS)
+@d has_tfmlink(fm)     ((fm)->links & LINK_TFM)
+@d has_pslink(fm)      ((fm)->links & LINK_PS)
+
+@c
+int avl_do_entry (MP mp, fm_entry * fp, int mode) {
+    fm_entry *p;
+    void *a;
+    void **aa;
+    char s[128];
+
+    /* handle tfm_name link */
+
+    if (strcmp (fp->tfm_name, nontfm)) {
+        p = (fm_entry *) avl_find (mp->tfm_tree, fp);
+        if (p != NULL) {
+            if (mode == FM_DUPIGNORE) {
+               snprintf(s,127,"fontmap entry for `%s' already exists, duplicates ignored",
+                     fp->tfm_name);
+                wterm(s); wlog(s);
+                goto exit;
+            } else {            /* mode == FM_REPLACE / FM_DELETE */
+                if (mp->font_sizes[p->tfm_num]!=0) {
+                    snprintf(s,127,
+                        "fontmap entry for `%s' has been used, replace/delete not allowed",
+                         fp->tfm_name);
+                    wterm(s); wlog(s);
+                    goto exit;
+                }
+                a = avl_delete (mp->tfm_tree, p);
+                assert (a != NULL);
+                unset_tfmlink (p);
+                if (!has_pslink (p))
+                    delete_fm_entry (p);
+            }
+        }
+        if (mode != FM_DELETE) {
+            aa = avl_probe (mp->tfm_tree, fp);
+            assert (aa != NULL);
+            set_tfmlink (fp);
+        }
+    }
+
+    /* handle ps_name link */
+
+    if (fp->ps_name != NULL) {
+        assert (fp->tfm_name != NULL);
+        p = (fm_entry *) avl_find (mp->ps_tree, fp);
+        if (p != NULL) {
+            if (mode == FM_DUPIGNORE) {
+                snprintf(s,127,
+                    "ps_name entry for `%s' already exists, duplicates ignored",
+                     fp->ps_name);
+                wterm(s); wlog(s);
+                goto exit;
+            } else {            /* mode == FM_REPLACE / FM_DELETE */
+                if (mp->font_sizes[p->tfm_num]!=0) {
+                    /* REPLACE/DELETE not allowed */
+                    snprintf(s,127,
+                        "fontmap entry for `%s' has been used, replace/delete not allowed",
+                         p->tfm_name);
+                    wterm(s); wlog(s);
+                    goto exit;
+                }
+                a = avl_delete (mp->ps_tree, p);
+                assert (a != NULL);
+                unset_pslink (p);
+                if (!has_tfmlink (p))
+                    delete_fm_entry (p);
+            }
+        }
+        if (mode != FM_DELETE) {
+            aa = avl_probe (mp->ps_tree, fp);
+            assert (aa != NULL);
+            set_pslink (fp);
+        }
+    }
+  exit:
+    if (!has_tfmlink (fp) && !has_pslink (fp))  /* e. g. after FM_DELETE */
+        return 1;               /* deallocation of fm_entry structure required */
+    else
+        return 0;
+}
+
+@ consistency check for map entry, with warn flag 
+
+@c
+int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
+    int a = 0;
+    char s[128];
+    assert (fm != NULL);
+    if (fm->ps_name != NULL) {
+        if (is_basefont (fm)) {
+            if (is_fontfile (fm) && !is_included (fm)) {
+                if (warn) {
+                    snprintf(s,127, "invalid entry for `%s': "
+                         "font file must be included or omitted for base fonts",
+                         fm->tfm_name);
+                    wterm(s); wlog(s);
+                }
+                a += 1;
+            }
+        } else {                /* not a base font */
+            /* if no font file given, drop this entry */
+            /* if (!is_fontfile (fm)) {
+	         if (warn) {
+                   snprintf(s,127, 
+                        "invalid entry for `%s': font file missing",
+						fm->tfm_name);
+                    wterm(s); wlog(s);
+                 }
+                a += 2;
+            }
+	    */
+        }
+    }
+    if (is_truetype (fm) && is_reencoded (fm) && !is_subsetted (fm)) {
+        if (warn) {
+            snprintf(s,127, 
+                "invalid entry for `%s': only subsetted TrueType font can be reencoded",
+                 fm->tfm_name);
+                    wterm(s); wlog(s);
+        }
+        a += 4;
+    }
+    if ((fm->slant != 0 || fm->extend != 0) &&
+        (is_truetype (fm))) {
+        if (warn) { 
+           snprintf(s,127, 
+                 "invalid entry for `%s': " 
+                 "SlantFont/ExtendFont can be used only with embedded T1 fonts",
+                 fm->tfm_name);
+                    wterm(s); wlog(s);
+        }
+        a += 8;
+    }
+    if (abs (fm->slant) > 1000) {
+        if (warn) {
+            snprintf(s,127, 
+                "invalid entry for `%s': too big value of SlantFont (%g)",
+                 fm->tfm_name, fm->slant / 1000.0);
+                    wterm(s); wlog(s);
+        }
+        a += 16;
+    }
+    if (abs (fm->extend) > 2000) {
+        if (warn) {
+            snprintf(s,127, 
+                "invalid entry for `%s': too big value of ExtendFont (%g)",
+                 fm->tfm_name, fm->extend / 1000.0);
+                    wterm(s); wlog(s);
+        }
+        a += 32;
+    }
+    if (fm->pid != -1 &&
+        !(is_truetype (fm) && is_included (fm) &&
+          is_subsetted (fm) && !is_reencoded (fm))) {
+        if (warn) {
+            snprintf(s,127, 
+                "invalid entry for `%s': "
+                 "PidEid can be used only with subsetted non-reencoded TrueType fonts",
+                 fm->tfm_name);
+                    wterm(s); wlog(s);
+        }
+        a += 64;
+    }
+    return a;
+}
+
+@ returns true if s is one of the 14 std. font names; speed-trimmed. 
+
+@c boolean check_basefont (char *s) {
+    static const char *basefont_names[] = {
+        "Courier",              /* 0:7 */
+        "Courier-Bold",         /* 1:12 */
+        "Courier-Oblique",      /* 2:15 */
+        "Courier-BoldOblique",  /* 3:19 */
+        "Helvetica",            /* 4:9 */
+        "Helvetica-Bold",       /* 5:14 */
+        "Helvetica-Oblique",    /* 6:17 */
+        "Helvetica-BoldOblique",        /* 7:21 */
+        "Symbol",               /* 8:6 */
+        "Times-Roman",          /* 9:11 */
+        "Times-Bold",           /* 10:10 */
+        "Times-Italic",         /* 11:12 */
+        "Times-BoldItalic",     /* 12:16 */
+        "ZapfDingbats"          /* 13:12 */
+    };
+    static const int Index[] =
+        { -1, -1, -1, -1, -1, -1, 8, 0, -1, 4, 10, 9, -1, -1, 5, 2, 12, 6,
+        -1, 3, -1, 7
+    };
+    const size_t n = strlen (s);
+    int k = -1;
+    if (n > 21)
+        return false;
+    if (n == 12) {              /* three names have length 12 */
+        switch (*s) {
+        case 'C':
+            k = 1;              /* Courier-Bold */
+            break;
+        case 'T':
+            k = 11;             /* Times-Italic */
+            break;
+        case 'Z':
+            k = 13;             /* ZapfDingbats */
+            break;
+        default:
+            return false;
+        }
+    } else
+        k = Index[n];
+    if (k > -1 && !strcmp (basefont_names[k], s))
+        return true;
+    return false;
+};
+
+@ 
+@d is_cfg_comment(c) (c == 10 || c == '*' || c == '#' || c == ';' || c == '%')
+
+@c void fm_scan_line (MP mp) {
+    int a, b, c, j, u = 0, v = 0;
+    float d;
+    fm_entry *fm;
+    char fm_line[FM_BUF_SIZE], buf[FM_BUF_SIZE];
+    char *p, *q, *r, *s;
+    char warn_s[128];
+    switch (mp->mitem->type) {
+    case MAPFILE:
+        p = fm_line;
+        do {
+            c = fm_getchar ();
+            append_char_to_buf (c, p, fm_line, FM_BUF_SIZE);
+        }
+        while (c != 10);
+        *(--p) = '\0';
+        r = fm_line;
+        break;
+    case MAPLINE:
+        r = mp->mitem->map_line; /* work on string from makecstring() */
+        break;
+    default:
+        assert (0);
+    }
+    if (*r == '\0' || is_cfg_comment (*r))
+        return;
+    fm = new_fm_entry ();
+    read_field (r, q, buf);
+    set_field (tfm_name);
+    p = r;
+    read_field (r, q, buf);
+    if (*buf != '<' && *buf != '"')
+        set_field (ps_name);
+    else
+        r = p;                  /* unget the field */
+    if (isdigit (*r)) {         /* font flags given */
+        fm->flags = atoi (r);
+        while (isdigit (*r))
+            r++;
+    }
+    while (1) {                 /* loop through "specials", encoding, font file */
+        skip (r, ' ');
+        switch (*r) {
+        case '\0':
+            goto DONE;
+        case '"':              /* opening quote */
+            r++;
+            u = v = 0;
+            do {
+                skip (r, ' ');
+                if (sscanf (r, "%f %n", &d, &j) > 0) {
+                    s = r + j;  /* jump behind number, eat also blanks, if any */
+                    if (*(s - 1) == 'E' || *(s - 1) == 'e')
+                        s--;    /* e. g. 0.5ExtendFont: %f = 0.5E */
+                    if (str_prefix (s, "SlantFont")) {
+                        d *= 1000.0;    /* correct rounding also for neg. numbers */
+                        fm->slant = (integer) (d > 0 ? d + 0.5 : d - 0.5);
+                        r = s + strlen ("SlantFont");
+                    } else if (str_prefix (s, "ExtendFont")) {
+                        d *= 1000.0;
+                        fm->extend = (integer) (d > 0 ? d + 0.5 : d - 0.5);
+                        if (fm->extend == 1000)
+                            fm->extend = 0;
+                        r = s + strlen ("ExtendFont");
+                    } else {    /* unknown name */
+                        for (r = s; 
+                             *r != ' ' && *r != '"' && *r != '\0'; 
+                             r++); /* jump over name */
+                        c = *r; /* remember char for temporary end of string */
+                        *r = '\0';
+                        snprintf(warn_s,127,
+                            "invalid entry for `%s': unknown name `%s' ignored",
+                             fm->tfm_name, s);
+                        wterm(warn_s); wlog(warn_s);
+                        *r = c;
+                    }
+                } else
+                    for (; *r != ' ' && *r != '"' && *r != '\0'; r++);
+            }
+            while (*r == ' ');
+            if (*r == '"')      /* closing quote */
+                r++;
+            else {
+                snprintf(warn_s,127,
+                    "invalid entry for `%s': closing quote missing",
+                     fm->tfm_name);
+                     wterm(warn_s); wlog(warn_s);
+                goto bad_line;
+            }
+            break;
+        case 'P':              /* handle cases for subfonts like 'PidEid=3,1' */
+            if (sscanf (r, "PidEid=%i, %i %n", &a, &b, &c) >= 2) {
+                fm->pid = a;
+                fm->eid = b;
+                r += c;
+                break;
+            }
+        default:               /* encoding or font file specification */
+            a = b = 0;
+            if (*r == '<') {
+                a = *r++;
+                if (*r == '<' || *r == '[')
+                    b = *r++;
+            }
+            read_field (r, q, buf);
+            /* encoding, formats: '8r.enc' or '<8r.enc' or '<[8r.enc' */
+            if (strlen (buf) > 4 && strcasecmp (strend (buf) - 4, ".enc") == 0) {
+                fm->encoding = mp_add_enc (mp, buf);
+                u = v = 0;      /* u, v used if intervening blank: "<< foo" */
+            } else if (strlen (buf) > 0) {      /* file name given */
+                /* font file, formats:
+                 * subsetting:    '<cmr10.pfa'
+                 * no subsetting: '<<cmr10.pfa'
+                 * no embedding:  'cmr10.pfa'
+                 */
+                if (a == '<' || u == '<') {
+		  set_included (fm);
+		  if ((a == '<' && b == 0) || (a == 0 && v == 0))
+		    set_subsetted (fm);
+		  /* otherwise b == '<' (or '[') => no subsetting */
+                }
+                set_field (ff_name);
+                u = v = 0;
+            } else {
+                u = a;
+                v = b;
+            }
+        }
+    }
+  DONE:
+    if (fm->ps_name != NULL && check_basefont (fm->ps_name))
+        set_basefont (fm);
+    if (is_fontfile (fm)
+        && strcasecmp (strend (fm_fontfile (fm)) - 4, ".ttf") == 0)
+        set_truetype (fm);
+    if (check_fm_entry (mp,fm, true) != 0)
+        goto bad_line;
+    /*
+       Until here the map line has been completely scanned without errors;
+       fm points to a valid, freshly filled-out fm_entry structure.
+       Now follows the actual work of registering/deleting.
+     */
+    if (avl_do_entry (mp, fm, mp->mitem->mode) == 0)    /* if success */
+        return;
+  bad_line:
+    delete_fm_entry (fm);
+}
+
+@ 
+@c void fm_read_info (MP mp) {
+    char *n = (char *) mp->name_of_file + 1;
+    if (mp->tfm_tree == NULL)
+        create_avl_trees (mp);
+    if (mp->mitem->map_line == NULL)    /* nothing to do */
+        return;
+    mp->mitem->lineno = 1;
+    switch (mp->mitem->type) {
+    case MAPFILE:
+        if (!(mp->fm_file = fm_open (n))) {
+            wterm ("cannot open font map file");
+            wlog ("cannot open font map file");
+        } else {
+            mp_print (mp, "{");
+            mp_print (mp, n);
+            while (!fm_eof ()) {
+                fm_scan_line (mp);
+                mp->mitem->lineno++;
+            }
+            fm_close ();
+            mp_print (mp,"}");
+            mp->fm_file = NULL;
+        }
+        break;
+    case MAPLINE:
+        fm_scan_line (mp);
+        break;
+    default:
+        assert (0);
+    }
+    mp->mitem->map_line = NULL;         /* done with this line */
+    return;
+}
+
+@ @c font_number tfmoffm (fm_entry * fm_pt) {
+    return ((fm_entry *) fm_pt)->tfm_num;
+}
+
+@ @c fm_entry *mk_ex_fm (MP mp, font_number f, fm_entry * basefm, int ex) {
+    fm_entry *fm;
+    integer e = basefm->extend;
+    if (e == 0)
+        e = 1000;
+    fm = new_fm_entry ();
+    fm->flags = basefm->flags;
+    fm->encoding = basefm->encoding;
+    fm->type = basefm->type;
+    fm->slant = basefm->slant;
+    fm->extend = mp_round_xn_over_d (mp, e, 1000 + ex, 1000); 
+        /* modify ExtentFont to simulate expansion */
+    if (fm->extend == 1000)
+        fm->extend = 0;
+    fm->tfm_name = strdup (str (mp->font_name[f]));
+    if (basefm->ps_name != NULL)
+        fm->ps_name = strdup (basefm->ps_name);
+    fm->ff_name = strdup (basefm->ff_name);
+    fm->ff_objnum = 0;
+    fm->tfm_num = f;
+    fm->tfm_avail = TFM_FOUND;
+    assert (strcmp (fm->tfm_name, nontfm));
+    return fm;
+}
+
+@ @c void init_fm (fm_entry * fm, font_number f) {
+    if (fm->tfm_num == null_font ) {
+        fm->tfm_num = f;
+        fm->tfm_avail = TFM_FOUND;
+    }
+}
+
+@ @<Declarations@>=
+fm_entry * mp_fm_lookup (MP mp, font_number f);
+
+@ @c 
+fm_entry * mp_fm_lookup (MP mp, font_number f) {
+    char *tfm;
+    fm_entry *fm, *exfm;
+    fm_entry tmp;
+    int ai, e;
+    if (mp->tfm_tree == NULL)
+        fm_read_info (mp);        /* only to read default map file */
+    tfm = str (mp->font_name[f]);
+    assert (strcmp (tfm, nontfm));
+
+    /* Look up for full <tfmname>[+-]<expand> */
+    tmp.tfm_name = tfm;
+    fm = (fm_entry *) avl_find (mp->tfm_tree, &tmp);
+    if (fm != NULL) {
+        init_fm (fm, f);
+        return (fm_entry *) fm;
+    }
+    tfm = mk_base_tfm (mp, str(mp->font_name[f]), &e);
+    if (tfm == NULL)            /* not an expanded font, nothing to do */
+        return (fm_entry *) dummy_fm_entry ();
+
+    tmp.tfm_name = tfm;
+    fm = (fm_entry *) avl_find (mp->tfm_tree, &tmp);
+    if (fm != NULL) {           /* found an entry with the base tfm name, e.g. cmr10 */
+        return (fm_entry *) fm; /* font expansion uses the base font */
+        /* the following code would be obsolete, as would be mk_ex_fm() */
+        if (!is_t1fontfile (fm) || !is_included (fm)) {
+            char s[128];
+            snprintf(s,127,
+                "font %s cannot be expanded (not an included Type1 font)", tfm);
+            wterm(s); wlog(s);
+            return (fm_entry *) dummy_fm_entry ();
+        }
+        exfm = mk_ex_fm (mp, f, fm, e);     /* copies all fields from fm except tfm name */
+        init_fm (exfm, f);
+        ai = avl_do_entry (mp, exfm, FM_DUPIGNORE);
+        assert (ai == 0);
+        return (fm_entry *) exfm;
+    }
+    return (fm_entry *) dummy_fm_entry ();
+}
+
+@  Early check whether a font file exists. Used e. g. for replacing fonts
+   of embedded PDF files: Without font file, the font within the embedded
+   PDF-file is used. Search tree ff_tree is used in 1st instance, as it
+   may be faster than the kpse_find_file(), and kpse_find_file() is called
+   only once per font file name + expansion parameter. This might help
+   keeping speed, if many PDF pages with same fonts are to be embedded.
+
+   The ff_tree contains only font files, which are actually needed,
+   so this tree typically is much smaller than the tfm_tree or ps_tree.
+
+@c 
+ff_entry *check_ff_exist (MP mp, fm_entry * fm) {
+    ff_entry *ff;
+    ff_entry tmp;
+    void **aa;
+
+    assert (fm->ff_name != NULL);
+    tmp.ff_name = fm->ff_name;
+    ff = (ff_entry *) avl_find (mp->ff_tree, &tmp);
+    if (ff == NULL) {           /* not yet in database */
+        ff = new_ff_entry ();
+        ff->ff_name = strdup (fm->ff_name);
+        ff->ff_path = strdup (fm->ff_name);
+        aa = avl_probe (mp->ff_tree, ff);
+        assert (aa != NULL);
+    }
+    return ff;
+}
+
+@ @c boolean used_tfm (MP mp, fm_entry * p) {
+    font_number f;
+    str_number s;
+    ff_entry *ff;
+
+    /* check if the font file is not a TrueType font */
+    /* font replacement makes sense only for included Type1 files */
+    if (is_truetype (p) || !is_included (p))
+        return false;
+
+    /* check if the font file is available */
+    ff = check_ff_exist (mp, p);
+    if (ff->ff_path == NULL)
+        return false;
+
+    /* check whether this font has been used */
+    if (mp->font_sizes[p->tfm_num]!=0)
+        return true;
+    assert (p->tfm_name != NULL);
+
+    /* check whether we didn't find a loaded font yet,
+     * and this font has been loaded */
+    if (mp->loaded_tfm_found == NULL && strcmp (p->tfm_name, nontfm)) {
+        s = rts (p->tfm_name);
+        if ((f = mp_tfm_lookup (mp, s, 0)) != null_font ) {
+            mp->loaded_tfm_found = p;
+            if (mp->mp_font_map[f] == NULL)
+                mp->mp_font_map[f] = (fm_entry *) p;
+            if (p->tfm_num == null_font)
+                p->tfm_num = f;
+            assert (p->tfm_num == f);
+            /* don't call flushstr() here as it has been called by tfmlookup() */
+        } else
+          mp_flush_string (mp, s);
+    }
+
+    /* check whether we didn't find either a loaded or a loadable font yet,
+     * and this font is loadable */
+    if (mp->avail_tfm_found == NULL && mp->loaded_tfm_found == NULL &&
+        strcmp (p->tfm_name, nontfm)) {
+        if (p->tfm_avail == TFM_UNCHECKED) {
+            if (access (p->tfm_name,R_OK)) {
+                mp->avail_tfm_found = p;
+                p->tfm_avail = TFM_FOUND;
+            } else {
+                p->tfm_avail = TFM_NOTFOUND;
+                if (mp->not_avail_tfm_found == NULL)
+                    mp->not_avail_tfm_found = p;
+            }
+        }
+    }
+
+    /* check whether the current entry is a <nontfm> entry */
+    if (mp->non_tfm_found == NULL && !strcmp (p->tfm_name, nontfm))
+        mp->non_tfm_found = p;
+
+    return false;
+}
+
+@ Process map file given by its name or map line contents. Items not
+beginning with [+-=] flush default map file, if it has not yet been
+read. Leading blanks and blanks immediately following [+-=] are ignored.
+
+
+@c void mp_process_map_item (MP mp, char *s, int type) {
+    char *p;
+    int mode;
+    if (*s == ' ')
+        s++;                    /* ignore leading blank */
+    switch (*s) {
+    case '+':                  /* +mapfile.map, +mapline */
+        mode = FM_DUPIGNORE;    /* insert entry, if it is not duplicate */
+        s++;
+        break;
+    case '=':                  /* =mapfile.map, =mapline */
+        mode = FM_REPLACE;      /* try to replace earlier entry */
+        s++;
+        break;
+    case '-':                  /* -mapfile.map, -mapline */
+        mode = FM_DELETE;       /* try to delete entry */
+        s++;
+        break;
+    default:
+        mode = FM_DUPIGNORE;    /* like +, but also: */
+        mp->mitem->map_line = NULL;     /* flush default map file name */
+    }
+    if (*s == ' ')
+        s++;                    /* ignore blank after [+-=] */
+    p = s;                      /* map item starts here */
+    switch (type) {
+    case MAPFILE:              /* remove blank at end */
+        while (*p != '\0' && *p != ' ')
+            p++;
+        *p = '\0';
+        break;
+    case MAPLINE:              /* blank at end allowed */
+        break;
+    default:
+        assert (0);
+    }
+    if (mp->mitem->map_line != NULL)    /* read default map file first */
+        fm_read_info (mp);
+    if (*s != '\0') {           /* only if real item to process */
+        mp->mitem->mode = mode;
+        mp->mitem->type = type;
+        mp->mitem->map_line = s;
+        fm_read_info (mp);
+    }
+}
+
+@ @<Declarations@>=
+void mp_map_file (MP mp, str_number t);
+void mp_map_line (MP mp, str_number t);
+
+@ @c 
+void mp_map_file (MP mp, str_number t) {
+  char *s = strdup(str (t));
+  mp_process_map_item (mp, s, MAPFILE);
+  free (s);
+}
+void mp_map_line (MP mp, str_number t) {
+  char *s = strdup(str (t));
+  mp_process_map_item (mp, s, MAPLINE);
+  free (s);
+}
+
+@ @c void mp_init_map_file (MP mp, int is_troff) {
+    assert (mp->mitem == NULL);
+    mp->mitem = malloc (sizeof(mapitem));
+    mp->mitem->mode = FM_DUPIGNORE;
+    mp->mitem->type = MAPFILE;
+    if (access("mpost.map", R_OK))
+      mp->mitem->map_line = strdup ("mpost.map");
+    else {
+      if (is_troff) {
+	mp->mitem->map_line = strdup ("troff.map");
+      } else {
+	mp->mitem->map_line = strdup ("pdftex.map");
+      }
+    }
+}
+
+
+@ cleaning up... 
+
+@c
+void destroy_fm_entry_tfm (void *pa, void *pb) {
+    fm_entry *fm;
+    assert(pb==NULL);
+    fm = (fm_entry *) pa;
+    if (!has_pslink (fm))
+        delete_fm_entry (fm);
+    else
+        unset_tfmlink (fm);
+}
+void destroy_fm_entry_ps (void *pa, void *pb) {
+    fm_entry *fm;
+    assert(pb==NULL);
+    fm = (fm_entry *) pa;
+    if (!has_tfmlink (fm))
+        delete_fm_entry (fm);
+    else
+        unset_pslink (fm);
+}
+void destroy_ff_entry (void *pa, void *pb) {
+    ff_entry *ff;
+    assert(pb==NULL);
+    ff = (ff_entry *) pa;
+    delete_ff_entry (ff);
+} 
+void fm_free (MP mp) {
+    if (mp->tfm_tree != NULL)
+        avl_destroy (mp->tfm_tree, destroy_fm_entry_tfm);
+    if (mp->ps_tree != NULL)
+        avl_destroy (mp->ps_tree, destroy_fm_entry_ps);
+    if (mp->ff_tree != NULL)
+        avl_destroy (mp->ff_tree, destroy_ff_entry);
+}
+
+/**********************************************************************/
+/* end of mapfile.c */
+
+@* \[44c] Helper functions for Type1 fonts.
 
 @<Types...@>=
 typedef char char_entry;
@@ -26631,7 +27521,7 @@ mp->job_id_string = NULL;
 @d Z_NULL  0  
 
 @c 
-void setjobid (MP mp) {
+void mp_set_job_id (MP mp) {
     char *name_string, *format_string, *s;
     size_t slen;
     int i;
@@ -26667,12 +27557,12 @@ void fnstr_append (MP mp, const char *s) {
 /* this is not really a true crc32, but it should be just enough to keep
    subsets prefixes somewhat disjunct */
 unsigned long crc32 (int oldcrc, const Byte *buf, int len) {
-  unsigned long ret;
+  unsigned long ret = 0;
   int i;
   if (oldcrc==0)
 	ret = (23<<24)+(45<<16)+(67<<8)+89;
-  else
-	for (i=0;i<len;i++)
+  else 
+      for (i=0;i<len;i++)
 	  ret = (ret<<2)+buf[i];
   return ret;
 }
@@ -26927,6 +27817,7 @@ int hexline_length;
 @d t1_cleartomark()    t1_prefix("cleartomark")
 
 @d HEXLINE_WIDTH 64
+@d isdigit(A) ((A)>='0'&&(A)<='9')
 
 @c
 void end_hexline (MP mp) {
@@ -27005,7 +27896,6 @@ char *eol (char *s) {
     }
     return p;
 }
-#define isdigit(A) ((A)>='0'&&(A)<='9')
 float t1_scan_num (MP mp, char *p, char **r)
 {
     float f;
@@ -27505,7 +28395,7 @@ typedef struct {
 @ @c
 boolean t1_open_fontfile (MP mp, fm_entry *fm_cur,const char *open_name_prefix) {
     ff_entry *ff;
-    ff = check_ff_exist (fm_cur);
+    ff = check_ff_exist (mp, fm_cur);
     if (ff->ff_path != NULL)
         mp->t1_file = fopen (ff->ff_path,"rb");
     else {
@@ -28256,7 +29146,7 @@ void t1_free (MP mp) {
 }
 
 
-@* \[44c] Embedding fonts.
+@* \[44d] Embedding fonts.
 
 @ @<Types...@>=
 typedef struct {
@@ -28291,20 +29181,23 @@ boolean is_otf_font;
 char fontname_buf[FONTNAME_BUF_SIZE];
 
 @ 
-
 @d F_INCLUDED          0x01
 @d F_SUBSETTED         0x02
 @d F_TRUETYPE          0x04
 @d F_BASEFONT          0x08
-@d F_SUBFONT           0x10
+
+@d set_included(fm)    ((fm)->type |= F_INCLUDED)
+@d set_subsetted(fm)   ((fm)->type |= F_SUBSETTED)
+@d set_truetype(fm)    ((fm)->type |= F_TRUETYPE)
+@d set_basefont(fm)    ((fm)->type |= F_BASEFONT)
 
 @d is_included(fm)     ((fm)->type & F_INCLUDED)
 @d is_subsetted(fm)    ((fm)->type & F_SUBSETTED)
 @d is_truetype(fm)     ((fm)->type & F_TRUETYPE)
 @d is_basefont(fm)     ((fm)->type & F_BASEFONT)
-@d is_subfont(fm)      ((fm)->type & F_SUBFONT)
 @d is_reencoded(fm)    ((fm)->encoding != NULL)
 @d is_fontfile(fm)     (fm_fontfile(fm) != NULL)
+@d is_t1fontfile(fm)   (is_fontfile(fm) && !is_truetype(fm))
 
 @d fm_slant(fm)        (fm)->slant
 @d fm_extend(fm)       (fm)->extend
@@ -28318,7 +29211,7 @@ boolean mp_font_is_subsetted (MP mp, int f);
 @ @c
 boolean mp_font_is_reencoded (MP mp, int f) {
   fm_entry *fm;
-  if (mp->font_sizes[f]!=0 && hasfmentry (f)) { 
+  if (mp->font_sizes[f]!=0 && mp_has_fm_entry (mp, f)) { 
     fm = mp->mp_font_map[f];
     if (fm != NULL 
 	&& (fm->ps_name != NULL)
@@ -28329,7 +29222,7 @@ boolean mp_font_is_reencoded (MP mp, int f) {
 }
 boolean mp_font_is_included (MP mp, int f) {
   fm_entry *fm;
-  if (mp->font_sizes[f]!=0 && hasfmentry (f)) { 
+  if (mp->font_sizes[f]!=0 && mp_has_fm_entry (mp, f)) { 
     fm = mp->mp_font_map[f];
     if (fm != NULL 
 	&& (fm->ps_name != NULL && fm->ff_name != NULL) 
@@ -28340,7 +29233,7 @@ boolean mp_font_is_included (MP mp, int f) {
 }
 boolean mp_font_is_subsetted (MP mp, int f) {
   fm_entry *fm;
-  if (mp->font_sizes[f]!=0 && hasfmentry (f)) { 
+  if (mp->font_sizes[f]!=0 && mp_has_fm_entry (mp, f)) { 
     fm = mp->mp_font_map[f];
     if (fm != NULL 
   	  && (fm->ps_name != NULL && fm->ff_name != NULL) 
@@ -28359,7 +29252,7 @@ integer mp_fm_font_subset_name (MP mp, int f);
 @c str_number mp_fm_encoding_name (MP mp, int f) {
   enc_entry *e;
   fm_entry *fm;
-  if (hasfmentry (f)) { 
+  if (mp_has_fm_entry (mp, f)) { 
     fm = mp->mp_font_map[f];
     if (fm != NULL && (fm->ps_name != NULL)) {
       if (is_reencoded (fm)) {
@@ -28379,7 +29272,7 @@ integer mp_fm_font_subset_name (MP mp, int f);
 }
 str_number mp_fm_font_name (MP mp, int f) {
   fm_entry *fm;
-  if (hasfmentry (f)) { 
+  if (mp_has_fm_entry (mp, f)) { 
     fm = mp->mp_font_map[f];
     if (fm != NULL && (fm->ps_name != NULL)) {
 	  if (mp_font_is_included(mp, f) && !mp->font_ps_name_fixed[f]) {
@@ -28404,7 +29297,7 @@ str_number mp_fm_font_name (MP mp, int f) {
 str_number mp_fm_font_subset_name (MP mp, int f) {
   fm_entry *fm;
   char *s;
-  if (hasfmentry (f)) { 
+  if (mp_has_fm_entry (mp, f)) { 
     fm = mp->mp_font_map[f];
     if (fm != NULL && (fm->ps_name != NULL)) {
       if (is_subsetted(fm)) {
@@ -28429,7 +29322,7 @@ integer mp_fm_font_extend (MP mp, int f);
 @ 
 @c integer mp_fm_font_slant (MP mp, int f) {
   fm_entry *fm;
-  if (hasfmentry (f)) { 
+  if (mp_has_fm_entry (mp, f)) { 
     fm = mp->mp_font_map[f];
     if (fm != NULL && (fm->ps_name != NULL)) {
       return fm->slant;
@@ -28439,7 +29332,7 @@ integer mp_fm_font_extend (MP mp, int f);
 }
 integer mp_fm_font_extend (MP mp, int f) {
   fm_entry *fm;
-  if (hasfmentry (f)) { 
+  if (mp_has_fm_entry (mp, f)) { 
     fm = mp->mp_font_map[f];
     if (fm != NULL && (fm->ps_name != NULL)) {
       return fm->extend;
@@ -28458,7 +29351,7 @@ boolean mp_do_ps_font (MP mp, font_number f);
       mp_print(mp, str(mp->font_name[f]));
       mp_error(mp);
   }
-  if (hasfmentry (f))
+  if (mp_has_fm_entry (mp, f))
     fm_cur = mp->mp_font_map[f];
   else
     fm_cur = NULL;
@@ -28482,8 +29375,6 @@ boolean mp_do_ps_font (MP mp, font_number f);
   }
   return 1;
 }
-
-
 
 @* \[45] Dumping and undumping the tables.
 After \.{INIMP} has seen a collection of macros, it
@@ -28870,6 +29761,7 @@ rarely pay off so handsomely.
 
 @<Glob...@>=
 integer ready_already; /* a sacrifice of purity for economy */
+boolean ini_version; /* are we iniMP? */
 
 @ Now this is really it: \MP\ starts and ends here.
 
@@ -28880,12 +29772,12 @@ The initial test involving |ready_already| should be deleted if the
 @c 
 int main (int argc, char **argv) { /* |start_here| */
   int troff_mode = 0;
-  boolean ini_mode = false;
   MP mp = mp_new();
+  mp->ini_version = false;
   if (argc>1) {
-	if (strcmp(argv[1],"-ini")==0) {
-       ini_mode= true;
-    }
+    if (strcmp(argv[1],"-ini")==0) {
+       mp->ini_version = true;
+    } 
   }
   mp->history=fatal_error_stop; /* in case we quit during initialization */
   t_open_out; /* open the terminal for output */
@@ -28899,7 +29791,7 @@ int main (int argc, char **argv) { /* |start_here| */
     goto FINAL_END;
   }
   mp_initialize(mp); /* set global variables to their starting values */
-  if (ini_mode) {
+  if (mp->ini_version) {
     if ( ! mp_get_strings_started(mp) ) goto FINAL_END;
     mp_init_tab(mp); /* initialize the tables */
     mp_init_prim(mp); /* call |primitive| for each primitive */
@@ -28911,12 +29803,12 @@ int main (int argc, char **argv) { /* |start_here| */
 START_OF_MP: 
   @<Initialize the output routines@>;
   @<Get the first line of input and prepare to start@>;
-  mpinitmapfile(troff_mode);
+  mp_init_map_file(mp, troff_mode);
   mp->history=spotless; /* ready to go! */
   if ( mp->start_sym>0 ) { /* insert the `\&{everyjob}' symbol */
     mp->cur_sym=mp->start_sym; mp_back_input(mp);
   }
-  setjobid(mp);
+  mp_set_job_id(mp);
   mp_main_control(mp); /* come to life */
   mp_final_cleanup(mp); /* prepare for death */
   mp_close_files_and_terminate(mp);
@@ -29060,9 +29952,9 @@ void mp_final_cleanup (MP mp) {
     mp->selector=term_and_log;
   }
   if ( c==1 ) {
-#ifdef INIT
-    mp_store_mem_file(mp); return;
-#endif
+    if (mp->ini_version) {
+      mp_store_mem_file(mp); return;
+    }
     mp_print_nl(mp, "(dump is performed only by INIMP)"); return;
 @.dump...only by INIMP@>
   }
