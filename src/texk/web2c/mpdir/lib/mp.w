@@ -174,11 +174,16 @@ typedef struct MP_instance * MP;
 @<Declarations@>
 MP mp_new (void) {
   MP mp;
-  mp = malloc(sizeof(MP_instance));
-  @<Malloc variables@>
+  mp = xmalloc(sizeof(MP_instance));
+  @<Allocate variables@>
   mp->term_in = stdin;
   mp->term_out = stdout;
   return mp;
+}
+void mp_free (MP mp) {
+  int k; /* loop variable */
+  @<Dealloc variables@>
+  xfree(mp);
 }
 @#
 void mp_initialize (MP mp) { /* this procedure gets things started properly */
@@ -280,13 +285,8 @@ in production versions of \MP.
   length of \MP's own strings, which is currently about 22000 */
 #define font_max 50 /* maximum font number for included text fonts */
 #define font_mem_size 10000 /* number of words for \.{TFM} information for text fonts */
-#define file_name_size 40 /* file names shouldn't be longer than this */
-#define pool_name "MPlib:MP.POOL                         "
-  /* string of length |file_name_size|; tells where the string pool appears */
-@.MPlib@>
-#define ps_tab_name "MPlib:PSFONTS.MAP                     "
-  /* string of length |file_name_size|; locates font name translation
-table */
+#define file_name_size 255 /* file names shouldn't be longer than this */
+#define ps_tab_name "psfonts.map"  /* locates font name translation table */
 #define path_size 300 /* maximum number of knots between breakpoints of a path */
 #define bistack_size 785 /* size of stack for bisection algorithms;
   should probably be left at this value */
@@ -446,12 +446,8 @@ the user's external character set by means of arrays |xord| and |xchr|
 that are analogous to \PASCAL's |ord| and |chr| functions.
 
 @<Glob...@>=
-ASCII_code * xord;  /* specifies conversion of input characters */
-text_char * xchr;  /* specifies conversion of output characters */
-
-@ @<Malloc variables@>=
-mp->xord = malloc(sizeof(ASCII_code)*256);
-mp->xchr = malloc(sizeof(text_char)*256);
+ASCII_code xord[256];  /* specifies conversion of input characters */
+text_char xchr[256];  /* specifies conversion of output characters */
 
 @ Since we are assuming that our \PASCAL\ system is able to read and
 write the visible characters of standard ASCII (although not
@@ -651,13 +647,10 @@ implement \MP\ can open a file whose external name is specified by
 @^system dependencies@>
 
 @<Glob...@>=
-char * name_of_file;
+char name_of_file[file_name_size+1];
   /* on some systems this may be a \&{record} variable */
 int name_length;/* this many characters are actually
   relevant in |name_of_file| (the rest are blank) */
-
-@ @<Malloc variables@>=
-mp->name_of_file = malloc(sizeof(char)*(file_name_size+1));
 
 @ The \ph\ compiler with which the original version of \MF\ was prepared
 extends the rules of \PASCAL\ in a very convenient way. To open file~|f|,
@@ -751,8 +744,11 @@ halfword first; /* the first unused position in |buffer| */
 halfword last; /* end of the line just input to |buffer| */
 halfword max_buf_stack; /* largest index used in |buffer| */
 
-@ @<Malloc variables@>=
-mp->buffer = malloc(sizeof(ASCII_code)*(buf_size+1));
+@ @<Allocate variables@>=
+mp->buffer = xmalloc(sizeof(ASCII_code)*(buf_size+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->buffer);
 
 @ The |input_ln| function brings the next line of input from the specified
 field into available positions of the buffer array and returns the value
@@ -836,12 +832,48 @@ is considered an output file the file variable is |term_out|.
 alpha_file term_in; /* the terminal as an input file */
 alpha_file term_out; /* the terminal as an output file */
 
-@ Here is how to open the terminal files
-in \ph. The `\.{/I}' switch suppresses the first |get|.
+@ Here is how to open the terminal files. In the default configuration,
+nothing happens except that the command line (if there is one) is copied
+to the input buffer.  The variable |command_line| will be filled by the 
+|main| procedure. The copying can not be done earlier in the program 
+logic because in the |INI| version, the |buffer| is also used for primitive 
+initialization.
+
 @^system dependencies@>
 
-@d t_open_in  /* open the terminal for text input */
+@d command_line_size 256
 @d t_open_out  /* open the terminal for text output */
+@d t_open_in  do { /* open the terminal for text input */
+    mp->last = strlen(mp->command_line)+1;
+    strncpy((char *)mp->buffer,mp->command_line,mp->last);
+    xfree(mp->command_line);
+} while (0)
+
+@<Glob...@>=
+char *command_line;
+
+@ @<Initialize the command line@>=
+{
+  mp->command_line = xmalloc(command_line_size);
+  strcpy(mp->command_line,"");
+  if (aindex<argc) {
+    k=0;
+    for(;aindex<argc;aindex++) {
+      char *c = argv[aindex];
+      while (*c) {
+	    if (k<(command_line_size-1)) {
+          mp->command_line[k++] = *c;
+        }
+        c++;
+      }
+      mp->command_line[k++] = ' ';
+    }
+	while (k>0) {
+      if (mp->command_line[(k-1)] == ' ') decr(k); else break;
+    }
+    mp->command_line[k] = 0;
+  }
+}
 
 @ Sometimes it is necessary to synchronize the input/output mixture that
 happens on the user's terminal, and three system-dependent
@@ -929,7 +961,11 @@ if the system permits them.
 
 @c 
 boolean mp_init_terminal (MP mp) { /* gets the terminal input started */
-  t_open_in;
+  t_open_in; 
+  if (mp->last!=0) {
+    loc = mp->first = 0;
+	return true;
+  }
   while (1) { 
     wake_up_terminal; fprintf(mp->term_out,"**"); update_terminal;
 @.**@>
@@ -1011,11 +1047,15 @@ str_number init_str_use; /* the initial number of strings in use */
 pool_pointer max_pool_ptr; /* the maximum so far of |pool_ptr| */
 str_number max_str_ptr; /* the maximum so far of |str_ptr| */
 
+@ @<Allocate variables@>=
+mp->str_pool = xmalloc (sizeof(pool_ASCII_code)* (pool_size +1));
+mp->str_start = xmalloc (sizeof(pool_pointer) * (max_strings+1));
+mp->next_str = xmalloc (sizeof(str_number) * (max_strings+1));
 
-@ @<Malloc variables@>=
-mp->str_pool = malloc (sizeof(pool_ASCII_code)* (pool_size +1));
-mp->str_start = malloc (sizeof(pool_pointer) * (max_strings+1));
-mp->next_str = malloc (sizeof(str_number) * (max_strings+1));
+@ @<Dealloc variables@>=
+xfree(mp->str_pool);
+xfree(mp->str_start);
+xfree(mp->next_str);
 
 @ Most printing is done from |char *|s, but sometimes not. Here is 
 a function that converts an internal string into a |char *| for use
@@ -1025,15 +1065,25 @@ by the printing routines
 @d rts(A) mp_rts(mp,A)
 
 @<Declarations@>=
+int xstrcmp (const char *a, const char *b);
 char * mp_str (MP mp, str_number s);
 str_number mp_rts (MP mp, char *s);
 str_number mp_make_string (MP mp);
 
 @ @c 
+int xstrcmp (const char *a, const char *b) {
+	if (a==NULL && b==NULL) 
+	  return 0;
+    if (a==NULL)
+      return -1;
+    if (b==NULL)
+      return 1;
+    return strcmp(a,b);
+}
 char * mp_str (MP mp, str_number ss) {
   char *s;
   int len = length(ss);
-  s = malloc(len+1);
+  s = xmalloc(len+1);
   strncpy(s,(char *)(mp->str_pool+(mp->str_start[ss])),len);
   s[len] = 0;
   return (char *)s;
@@ -1133,8 +1183,11 @@ put it in this category. Hence a single byte suffices to store each |str_ref|.
 @<Glob...@>=
 int *str_ref;
 
-@ @<Malloc variables@>=
-mp->str_ref = malloc (sizeof(int) * (max_strings+1));
+@ @<Allocate variables@>=
+mp->str_ref = xmalloc (sizeof(int) * (max_strings+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->str_ref);
 
 @ Here's what we do when a string reference disappears:
 
@@ -1342,6 +1395,9 @@ whether it is safe to use |str_room|, |make_string|, or |do_compaction|.
 @<Glob...@>=
 boolean str_overflowed;  /* is \MP\ aborting due to pool size of number of strings? */
 
+@ @<Set init...@>=
+mp->str_overflowed=false;
+
 @ @<Account for the compaction and make sure the statistics agree with...@>=
 if ( (mp->str_start[mp->str_ptr]!=mp->pool_in_use)||(str_use!=mp->strs_in_use) )
   mp_confusion(mp, "string");
@@ -1524,19 +1580,19 @@ characters have appeared so far on the current line that has been output
 to the terminal, the transcript file, or the \ps\ output file, respectively.
 
 @d new_string max_write_files /* printing is deflected to the string pool */
-@d ps_file_only new_string+1 /* printing goes to the \ps\ output file */
-@d pseudo new_string+2 /* special |selector| setting for |show_context| */
-@d no_print new_string+3 /* |selector| setting that makes data disappear */
-@d term_only new_string+4 /* printing is destined for the terminal only */
-@d log_only new_string+5 /* printing is destined for the transcript file only */
-@d term_and_log new_string+6 /* normal |selector| setting */
+@d ps_file_only (new_string+1) /* printing goes to the \ps\ output file */
+@d pseudo (new_string+2) /* special |selector| setting for |show_context| */
+@d no_print (new_string+3) /* |selector| setting that makes data disappear */
+@d term_only (new_string+4) /* printing is destined for the terminal only */
+@d log_only (new_string+5) /* printing is destined for the transcript file only */
+@d term_and_log (new_string+6) /* normal |selector| setting */
 @d max_selector term_and_log /* highest selector setting */
 
 @<Glob...@>=
 alpha_file log_file; /* transcript of \MP\ session */
 alpha_file ps_file; /* the generic font output goes here */
 unsigned int selector; /* where to print a message */
-unsigned char *dig; /* digits in a number being output */
+unsigned char dig[23]; /* digits in a number being output */
 integer tally; /* the number of characters recently printed */
 unsigned int term_offset;
   /* the number of characters on the current terminal line */
@@ -1548,9 +1604,11 @@ ASCII_code *trick_buf; /* circular buffer for pseudoprinting */
 integer trick_count; /* threshold for pseudoprinting, explained later */
 integer first_count; /* another variable for pseudoprinting */
 
-@ @<Malloc variables@>=
-mp->dig = malloc (sizeof(unsigned char)* 23);
-mp->trick_buf = malloc(sizeof(ASCII_code)* (error_line+1));
+@ @<Allocate variables@>=
+mp->trick_buf = xmalloc(sizeof(ASCII_code)* (error_line+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->trick_buf);
 
 @ @<Initialize the output routines@>=
 mp->selector=term_only; mp->tally=0; mp->term_offset=0; mp->file_offset=0; mp->ps_offset=0;
@@ -2470,7 +2528,7 @@ void mp_print_scaled (MP mp,scaled s) { /* prints scaled real, rounded to five  
       mp_print_char(mp, '0'+(s / unity)); 
       s=10*(s % unity); 
       delta=delta*10;
-    } while (delta);
+    } while (s>delta);
   }
 }
 
@@ -3266,13 +3324,13 @@ to be computationally simplest.
 @d negate_y 2
 @d switch_x_and_y 4
 @d first_octant 1
-@d second_octant first_octant+switch_x_and_y
-@d third_octant first_octant+switch_x_and_y+negate_x
-@d fourth_octant first_octant+negate_x
-@d fifth_octant first_octant+negate_x+negate_y
-@d sixth_octant first_octant+switch_x_and_y+negate_x+negate_y
-@d seventh_octant first_octant+switch_x_and_y+negate_y
-@d eighth_octant first_octant+negate_y
+@d second_octant (first_octant+switch_x_and_y)
+@d third_octant (first_octant+switch_x_and_y+negate_x)
+@d fourth_octant (first_octant+negate_x)
+@d fifth_octant (first_octant+negate_x+negate_y)
+@d sixth_octant (first_octant+switch_x_and_y+negate_x+negate_y)
+@d seventh_octant (first_octant+switch_x_and_y+negate_y)
+@d eighth_octant (first_octant+negate_y)
 
 @c 
 angle mp_n_arg (MP mp,integer x, integer y) {
@@ -3607,10 +3665,10 @@ obvious way when |min_halfword=0|. Similarly, |qi| and |qo| are used for
 input to and output from quarterwords.
 @^system dependencies@>
 
-@d ho(A) (A)-min_halfword
+@d ho(A) ((A)-min_halfword)
   /* to take a sixteen-bit item from a halfword */
-@d qo(A) (A)-min_quarterword /* to read eight bits from a quarterword */
-@d qi(A) (A)+min_quarterword /* to store eight bits in a quarterword */
+@d qo(A) ((A)-min_quarterword) /* to read eight bits from a quarterword */
+@d qi(A) ((A)+min_quarterword) /* to store eight bits in a quarterword */
 
 @ The reader should study the following definitions closely:
 @^system dependencies@>
@@ -3668,6 +3726,7 @@ void mp_print_word (MP mp,memory_word w) {
 
 
 @* \[10] Dynamic memory allocation.
+
 The \MP\ system does nearly all of its own memory allocation, so that it
 can readily be transported into environments that do not have automatic
 facilities for strings, garbage collection, etc., and so that it can be in
@@ -3711,8 +3770,41 @@ memory_word *mem; /* the big dynamic storage area */
 pointer lo_mem_max; /* the largest location of variable-size memory in use */
 pointer hi_mem_min; /* the smallest location of one-word memory in use */
 
-@ @<Malloc variables@>=
-mp->mem = malloc (sizeof (memory_word) * (mem_max+1));
+
+@ @<Declarations@>=
+void  xfree (void *x);
+void *xmalloc (size_t s) ;
+char *xstrdup(const char *s);
+
+@ 
+@c
+void xfree (void *x) {
+  if (x!=NULL) free(x);
+}
+void  *xmalloc (size_t s) {
+  void *w = malloc (s);
+  if (w==NULL) {
+    fprintf(stderr,"Out of memory!\n");
+    exit(1);
+  }
+  return w;
+}
+char *xstrdup(const char *s) {
+  char *w = strdup(s);
+  if (w==NULL) {
+    fprintf(stderr,"Out of memory!\n");
+    exit(1);
+  }
+  return w;
+}
+
+
+@ 
+@<Allocate variables@>=
+mp->mem = xmalloc (sizeof (memory_word) * (mem_max+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->mem);
 
 @ Users who wish to study the memory requirements of particular applications can
 can use optional special features that keep track of current and
@@ -3980,23 +4072,23 @@ symbolic names to the fixed positions. Static variable-size nodes appear
 in locations |mem_min| through |lo_mem_stat_max|, and static single-word nodes
 appear in locations |hi_mem_stat_min| through |mem_top|, inclusive.
 
-@d null_dash mem_min+2 /* the first two words are reserved for a null value */
-@d dep_head null_dash+3 /* we will define |dash_node_size=3| */
-@d zero_val dep_head+2 /* two words for a permanently zero value */
-@d temp_val zero_val+2 /* two words for a temporary value node */
+@d null_dash (mem_min+2) /* the first two words are reserved for a null value */
+@d dep_head (null_dash+3) /* we will define |dash_node_size=3| */
+@d zero_val (dep_head+2) /* two words for a permanently zero value */
+@d temp_val (zero_val+2) /* two words for a temporary value node */
 @d end_attr temp_val /* we use |end_attr+2| only */
-@d inf_val end_attr+2 /* and |inf_val+1| only */
-@d test_pen inf_val+2
+@d inf_val (end_attr+2) /* and |inf_val+1| only */
+@d test_pen (inf_val+2)
   /* nine words for a pen used when testing the turning number */
-@d bad_vardef test_pen+9 /* two words for \&{vardef} error recovery */
-@d lo_mem_stat_max bad_vardef+1  /* largest statically
+@d bad_vardef (test_pen+9) /* two words for \&{vardef} error recovery */
+@d lo_mem_stat_max (bad_vardef+1)  /* largest statically
   allocated word in the variable-size |mem| */
 @#
 @d sentinel mem_top /* end of sorted lists */
-@d temp_head mem_top-1 /* head of a temporary list of some kind */
-@d hold_head mem_top-2 /* head of a temporary list of another kind */
-@d spec_head mem_top-3 /* head of a list of unprocessed \&{special} items */
-@d hi_mem_stat_min mem_top-3 /* smallest statically allocated word in
+@d temp_head (mem_top-1) /* head of a temporary list of some kind */
+@d hold_head (mem_top-2) /* head of a temporary list of another kind */
+@d spec_head (mem_top-3) /* head of a list of unprocessed \&{special} items */
+@d hi_mem_stat_min (mem_top-3) /* smallest statically allocated word in
   the one-word |mem| */
 
 @ The following code gets the dynamic part of |mem| off to a good start,
@@ -4068,18 +4160,18 @@ pointer was_mem_end; pointer was_lo_max; pointer was_hi_min;
   /* previous |mem_end|, |lo_mem_max|,and |hi_mem_min| */
 boolean panicking; /* do we want to check memory constantly? */
 
-@ @<Malloc variables@>=
-#ifdef DEBUG
-mp->free = malloc (sizeof (boolean) * (mem_max+1));
-mp->was_free = malloc (sizeof (boolean) * (mem_max+1));
-#endif
+@ @<Allocate variables@>=
+mp->free = xmalloc (sizeof (boolean) * (mem_max+1));
+mp->was_free = xmalloc (sizeof (boolean) * (mem_max+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->free);
+xfree(mp->was_free);
 
 @ @<Set initial...@>=
-#ifdef DEBUG
 mp->was_mem_end=mem_min; /* indicate that everything was previously free */
 mp->was_lo_max=mem_min; mp->was_hi_min=mem_max;
 mp->panicking=false;
-#endif
 
 @ Procedure |check_mem| makes sure that the available space lists of
 |mem| are well formed, and it optionally prints out all locations
@@ -4275,7 +4367,7 @@ At any rate, here is the list, for future reference.
 @d scan_tokens 11 /* put a string into the input buffer */
 @d expand_after 12 /* look ahead one token */
 @d defined_macro 13 /* a macro defined by the user */
-@d min_command defined_macro+1
+@d min_command (defined_macro+1)
 @d save_command 14 /* save a list of tokens (\&{save}) */
 @d interim_command 15 /* save an internal quantity (\&{interim}) */
 @d let_command 16 /* redefine a symbolic token (\&{let}) */
@@ -4359,12 +4451,12 @@ At any rate, here is the list, for future reference.
 @d colon 80 /* the operator `\.:' */
 @#
 @d comma 81 /* the operator `\.,', must be |colon+1| */
-@d end_of_statement mp->cur_cmd>comma
+@d end_of_statement (mp->cur_cmd>comma)
 @d semicolon 82 /* the operator `\.;', must be |comma+1| */
 @d end_group 83 /* end a group (\&{endgroup}), must be |semicolon+1| */
 @d stop 84 /* end a job (\&{end}, \&{dump}), must be |end_group+1| */
 @d max_command_code stop
-@d outer_tag max_command_code+1 /* protection code added to command code */
+@d outer_tag (max_command_code+1) /* protection code added to command code */
 
 @<Types...@>=
 typedef int command_code;
@@ -4383,15 +4475,15 @@ and |string_type| in that order.
 @d unknown_tag 1 /* this constant is added to certain type codes below */
 @d vacuous 1 /* no expression was present */
 @d boolean_type 2 /* \&{boolean} with a known value */
-@d unknown_boolean boolean_type+unknown_tag
+@d unknown_boolean (boolean_type+unknown_tag)
 @d string_type 4 /* \&{string} with a known value */
-@d unknown_string string_type+unknown_tag
+@d unknown_string (string_type+unknown_tag)
 @d pen_type 6 /* \&{pen} with a known value */
-@d unknown_pen pen_type+unknown_tag
+@d unknown_pen (pen_type+unknown_tag)
 @d path_type 8 /* \&{path} with a known value */
-@d unknown_path path_type+unknown_tag
+@d unknown_path (path_type+unknown_tag)
 @d picture_type 10 /* \&{picture} with a known value */
-@d unknown_picture picture_type+unknown_tag
+@d unknown_picture (picture_type+unknown_tag)
 @d transform_type 12 /* \&{transform} variable or capsule */
 @d color_type 13 /* \&{color} variable or capsule */
 @d cmykcolor_type 14 /* \&{cmykcolor} variable or capsule */
@@ -4740,12 +4832,15 @@ scaled *internal;  /* the values of internal quantities */
 char **int_name;  /* their names */
 int int_ptr;  /* the maximum internal quantity defined so far */
 
-@ @<Malloc variables@>=
-mp->internal = malloc (sizeof(scaled)* (max_internal+1));
-mp->int_name = malloc (sizeof(char *)* (max_internal+1));
+@ @<Allocate variables@>=
+mp->internal = xmalloc (sizeof(scaled)* (max_internal+1));
+mp->int_name = xmalloc (sizeof(char *)* (max_internal+1));
 
 @ @<Set init...@>=
-for (k=1;k<= max_given_internal; k++ ) { mp->internal[k]=0; }
+for (k=0;k<= max_internal; k++ ) { 
+   mp->internal[k]=0; 
+   mp->int_name[k]=NULL; 
+}
 mp->int_ptr=max_given_internal;
 
 @ The symbolic names for internal quantities are put into \MP's hash table
@@ -4855,43 +4950,43 @@ mp->internal[restore_clip_color]=unity;
 printouts.
 
 @<Initialize table...@>=
-mp->int_name[tracing_titles]="tracingtitles";
-mp->int_name[tracing_equations]="tracingequations";
-mp->int_name[tracing_capsules]="tracingcapsules";
-mp->int_name[tracing_choices]="tracingchoices";
-mp->int_name[tracing_specs]="tracingspecs";
-mp->int_name[tracing_commands]="tracingcommands";
-mp->int_name[tracing_restores]="tracingrestores";
-mp->int_name[tracing_macros]="tracingmacros";
-mp->int_name[tracing_output]="tracingoutput";
-mp->int_name[tracing_stats]="tracingstats";
-mp->int_name[tracing_lost_chars]="tracinglostchars";
-mp->int_name[tracing_online]="tracingonline";
-mp->int_name[year]="year";
-mp->int_name[month]="month";
-mp->int_name[day]="day";
-mp->int_name[time]="time";
-mp->int_name[char_code]="charcode";
-mp->int_name[char_ext]="charext";
-mp->int_name[char_wd]="charwd";
-mp->int_name[char_ht]="charht";
-mp->int_name[char_dp]="chardp";
-mp->int_name[char_ic]="charic";
-mp->int_name[design_size]="designsize";
-mp->int_name[pausing]="pausing";
-mp->int_name[showstopping]="showstopping";
-mp->int_name[fontmaking]="fontmaking";
-mp->int_name[linejoin]="linejoin";
-mp->int_name[linecap]="linecap";
-mp->int_name[miterlimit]="miterlimit";
-mp->int_name[warning_check]="warningcheck";
-mp->int_name[boundary_char]="boundarychar";
-mp->int_name[prologues]="prologues";
-mp->int_name[true_corners]="truecorners";
-mp->int_name[default_color_model]="defaultcolormodel";
-mp->int_name[mpprocset]="mpprocset";
-mp->int_name[gtroffmode]="troffmode";
-mp->int_name[restore_clip_color]="restoreclipcolor";
+mp->int_name[tracing_titles]=xstrdup("tracingtitles");
+mp->int_name[tracing_equations]=xstrdup("tracingequations");
+mp->int_name[tracing_capsules]=xstrdup("tracingcapsules");
+mp->int_name[tracing_choices]=xstrdup("tracingchoices");
+mp->int_name[tracing_specs]=xstrdup("tracingspecs");
+mp->int_name[tracing_commands]=xstrdup("tracingcommands");
+mp->int_name[tracing_restores]=xstrdup("tracingrestores");
+mp->int_name[tracing_macros]=xstrdup("tracingmacros");
+mp->int_name[tracing_output]=xstrdup("tracingoutput");
+mp->int_name[tracing_stats]=xstrdup("tracingstats");
+mp->int_name[tracing_lost_chars]=xstrdup("tracinglostchars");
+mp->int_name[tracing_online]=xstrdup("tracingonline");
+mp->int_name[year]=xstrdup("year");
+mp->int_name[month]=xstrdup("month");
+mp->int_name[day]=xstrdup("day");
+mp->int_name[time]=xstrdup("time");
+mp->int_name[char_code]=xstrdup("charcode");
+mp->int_name[char_ext]=xstrdup("charext");
+mp->int_name[char_wd]=xstrdup("charwd");
+mp->int_name[char_ht]=xstrdup("charht");
+mp->int_name[char_dp]=xstrdup("chardp");
+mp->int_name[char_ic]=xstrdup("charic");
+mp->int_name[design_size]=xstrdup("designsize");
+mp->int_name[pausing]=xstrdup("pausing");
+mp->int_name[showstopping]=xstrdup("showstopping");
+mp->int_name[fontmaking]=xstrdup("fontmaking");
+mp->int_name[linejoin]=xstrdup("linejoin");
+mp->int_name[linecap]=xstrdup("linecap");
+mp->int_name[miterlimit]=xstrdup("miterlimit");
+mp->int_name[warning_check]=xstrdup("warningcheck");
+mp->int_name[boundary_char]=xstrdup("boundarychar");
+mp->int_name[prologues]=xstrdup("prologues");
+mp->int_name[true_corners]=xstrdup("truecorners");
+mp->int_name[default_color_model]=xstrdup("defaultcolormodel");
+mp->int_name[mpprocset]=xstrdup("mpprocset");
+mp->int_name[gtroffmode]=xstrdup("troffmode");
+mp->int_name[restore_clip_color]=xstrdup("restoreclipcolor");
 
 @ The following procedure, which is called just before \MP\ initializes its
 input and output, establishes the initial values of the date and time.
@@ -4978,10 +5073,7 @@ class numbers in nonstandard extensions of \MP.
 @d max_class 20 /* the largest class number */
 
 @<Glob...@>=
-int *char_class; /* the class numbers */
-
-@ @<Malloc variables@>=
-mp->char_class = malloc(sizeof(int)*256);
+int char_class[256]; /* the class numbers */
 
 @ If changes are made to accommodate non-ASCII character sets, they should
 follow the guidelines in Appendix~C of {\sl The {\logos METAFONT\/}book}.
@@ -5080,32 +5172,35 @@ integer st_count; /* total number of known identifiers */
 @ Certain entries in the hash table are ``frozen'' and not redefinable,
 since they are used in error recovery.
 
-@d hash_top hash_base+hash_size /* the first location of the frozen area */
+@d hash_top (hash_base+hash_size) /* the first location of the frozen area */
 @d frozen_inaccessible hash_top /* |hash| location to protect the frozen area */
-@d frozen_repeat_loop hash_top+1 /* |hash| location of a loop-repeat token */
-@d frozen_right_delimiter hash_top+2 /* |hash| location of a permanent `\.)' */
-@d frozen_left_bracket hash_top+3 /* |hash| location of a permanent `\.[' */
-@d frozen_slash hash_top+4 /* |hash| location of a permanent `\./' */
-@d frozen_colon hash_top+5 /* |hash| location of a permanent `\.:' */
-@d frozen_semicolon hash_top+6 /* |hash| location of a permanent `\.;' */
-@d frozen_end_for hash_top+7 /* |hash| location of a permanent \&{endfor} */
-@d frozen_end_def hash_top+8 /* |hash| location of a permanent \&{enddef} */
-@d frozen_fi hash_top+9 /* |hash| location of a permanent \&{fi} */
-@d frozen_end_group hash_top+10
-  /* |hash| location of a permanent `\.{endgroup}' */
-@d frozen_etex hash_top+11 /* |hash| location of a permanent \&{etex} */
-@d frozen_mpx_break hash_top+12 /* |hash| location of a permanent \&{mpxbreak} */
-@d frozen_bad_vardef hash_top+13 /* |hash| location of `\.{a bad variable}' */
-@d frozen_undefined hash_top+14 /* |hash| location that never gets defined */
-@d hash_end hash_top+14 /* the actual size of the |hash| and |eqtb| arrays */
+@d frozen_repeat_loop (hash_top+1) /* |hash| location of a loop-repeat token */
+@d frozen_right_delimiter (hash_top+2) /* |hash| location of a permanent `\.)' */
+@d frozen_left_bracket (hash_top+3) /* |hash| location of a permanent `\.[' */
+@d frozen_slash (hash_top+4) /* |hash| location of a permanent `\./' */
+@d frozen_colon (hash_top+5) /* |hash| location of a permanent `\.:' */
+@d frozen_semicolon (hash_top+6) /* |hash| location of a permanent `\.;' */
+@d frozen_end_for (hash_top+7) /* |hash| location of a permanent \&{endfor} */
+@d frozen_end_def (hash_top+8) /* |hash| location of a permanent \&{enddef} */
+@d frozen_fi (hash_top+9) /* |hash| location of a permanent \&{fi} */
+@d frozen_end_group (hash_top+10) /* |hash| location of a permanent `\.{endgroup}' */
+@d frozen_etex (hash_top+11) /* |hash| location of a permanent \&{etex} */
+@d frozen_mpx_break (hash_top+12) /* |hash| location of a permanent \&{mpxbreak} */
+@d frozen_bad_vardef (hash_top+13) /* |hash| location of `\.{a bad variable}' */
+@d frozen_undefined (hash_top+14) /* |hash| location that never gets defined */
+@d hash_end (hash_top+14) /* the actual size of the |hash| and |eqtb| arrays */
 
 @<Glob...@>=
 two_halves *hash; /* the hash table */
 two_halves *eqtb; /* the equivalents */
 
-@ @<Malloc variables@>=
-mp->hash = malloc(sizeof(two_halves)*(hash_end+1));
-mp->eqtb = malloc(sizeof(two_halves)*(hash_end+1));
+@ @<Allocate variables@>=
+mp->hash = xmalloc(sizeof(two_halves)*(hash_end+1));
+mp->eqtb = xmalloc(sizeof(two_halves)*(hash_end+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->hash);
+xfree(mp->eqtb);
 
 @ @<Set init...@>=
 next(1)=0; text(1)=0; eq_type(1)=tag_token; equiv(1)=null;
@@ -5417,11 +5512,11 @@ printer's sense. It's curious that the same word is used in such different ways.
 @d type(A)   mp->mem[(A)].hh.b0 /* identifies what kind of value this is */
 @d name_type(A)   mp->mem[(A)].hh.b1 /* a clue to the name of this value */
 @d token_node_size 2 /* the number of words in a large token node */
-@d value_loc(A) (A)+1 /* the word that contains the |value| field */
+@d value_loc(A) ((A)+1) /* the word that contains the |value| field */
 @d value(A) mp->mem[value_loc((A))].cint /* the value stored in a large token node */
-@d expr_base hash_end+1 /* code for the zeroth \&{expr} parameter */
-@d suffix_base expr_base+param_size /* code for the zeroth \&{suffix} parameter */
-@d text_base suffix_base+param_size /* code for the zeroth \&{text} parameter */
+@d expr_base (hash_end+1) /* code for the zeroth \&{expr} parameter */
+@d suffix_base (expr_base+param_size) /* code for the zeroth \&{suffix} parameter */
+@d text_base (suffix_base+param_size) /* code for the zeroth \&{text} parameter */
 
 @<Check the ``constant''...@>=
 if ( text_base+param_size>max_halfword ) mp->bad=18;
@@ -5840,10 +5935,10 @@ subscript attributes do not carry actual values except for macro identifiers;
 branches of the structure below subscript nodes do not carry significant
 information in their collective subscript attributes.
 
-@d attr_loc_loc(A) (A)+2 /* where the |attr_loc| and |parent| fields are */
+@d attr_loc_loc(A) ((A)+2) /* where the |attr_loc| and |parent| fields are */
 @d attr_loc(A) info(attr_loc_loc((A))) /* hash address of this attribute */
 @d parent(A) link(attr_loc_loc((A))) /* pointer to |structured| variable */
-@d subscript_loc(A) (A)+2 /* where the |subscript| field lives */
+@d subscript_loc(A) ((A)+2) /* where the |subscript| field lives */
 @d subscript(A) mp->mem[subscript_loc((A))].sc /* subscript of this variable */
 @d attr_node_size 3 /* the number of words in an attribute node */
 @d subscr_node_size 3 /* the number of words in a subscript node */
@@ -5872,18 +5967,18 @@ Some variables have no name; they just are used for temporary storage
 while expressions are being evaluated. We call them {\sl capsules}.
 
 @d x_part_loc(A) (A) /* where the \&{xpart} is found in a pair or transform node */
-@d y_part_loc(A) (A)+2 /* where the \&{ypart} is found in a pair or transform node */
-@d xx_part_loc(A) (A)+4 /* where the \&{xxpart} is found in a transform node */
-@d xy_part_loc(A) (A)+6 /* where the \&{xypart} is found in a transform node */
-@d yx_part_loc(A) (A)+8 /* where the \&{yxpart} is found in a transform node */
-@d yy_part_loc(A) (A)+10 /* where the \&{yypart} is found in a transform node */
+@d y_part_loc(A) ((A)+2) /* where the \&{ypart} is found in a pair or transform node */
+@d xx_part_loc(A) ((A)+4) /* where the \&{xxpart} is found in a transform node */
+@d xy_part_loc(A) ((A)+6) /* where the \&{xypart} is found in a transform node */
+@d yx_part_loc(A) ((A)+8) /* where the \&{yxpart} is found in a transform node */
+@d yy_part_loc(A) ((A)+10) /* where the \&{yypart} is found in a transform node */
 @d red_part_loc(A) (A) /* where the \&{redpart} is found in a color node */
-@d green_part_loc(A) (A)+2 /* where the \&{greenpart} is found in a color node */
-@d blue_part_loc(A) (A)+4 /* where the \&{bluepart} is found in a color node */
+@d green_part_loc(A) ((A)+2) /* where the \&{greenpart} is found in a color node */
+@d blue_part_loc(A) ((A)+4) /* where the \&{bluepart} is found in a color node */
 @d cyan_part_loc(A) (A) /* where the \&{cyanpart} is found in a color node */
-@d magenta_part_loc(A) (A)+2 /* where the \&{magentapart} is found in a color node */
-@d yellow_part_loc(A) (A)+4 /* where the \&{yellowpart} is found in a color node */
-@d black_part_loc(A) (A)+6 /* where the \&{blackpart} is found in a color node */
+@d magenta_part_loc(A) ((A)+2) /* where the \&{magentapart} is found in a color node */
+@d yellow_part_loc(A) ((A)+4) /* where the \&{yellowpart} is found in a color node */
+@d black_part_loc(A) ((A)+6) /* where the \&{blackpart} is found in a color node */
 @d grey_part_loc(A) (A) /* where the \&{greypart} is found in a color node */
 @#
 @d pair_node_size 4 /* the number of words in a pair node */
@@ -5892,14 +5987,9 @@ while expressions are being evaluated. We call them {\sl capsules}.
 @d cmykcolor_node_size 8 /* the number of words in a color node */
 
 @<Glob...@>=
-small_number *big_node_size;
-small_number *sector0;
-small_number *sector_offset;
-
-@ @<Malloc variables@>=
-mp->big_node_size = malloc (sizeof(small_number)*(pair_type+1));
-mp->sector0 = malloc (sizeof(small_number)*(pair_type+1));
-mp->sector_offset = malloc (sizeof(small_number)*(black_part_sector+1));
+small_number big_node_size[pair_type+1];
+small_number sector0[pair_type+1];
+small_number sector_offset[black_part_sector+1];
 
 @ The |sector0| array gives for each big node type, |name_type| values
 for its first subfield; the |sector_offset| array gives for each
@@ -6152,7 +6242,7 @@ pointer mp_find_variable (MP mp,pointer t) {
   memory_word save_word; /* temporary storage for a word of |mem| */
 @^inner loop@>
   p=info(t); t=link(t);
-  if ( eq_type(p) % outer_tag!=tag_token ) abort_find;
+  if ( (eq_type(p) % outer_tag) != tag_token ) abort_find;
   if ( equiv(p)==null ) mp_new_root(mp, p);
   p=equiv(p); pp=p;
   while ( t!=null ) { 
@@ -6533,8 +6623,8 @@ to knot~0, and the control points $z_0^-$ and $z_n^+$ are not used.
 @d left_y(A)   mp->mem[(A)+4].sc /* the |y| coordinate of previous control point */
 @d right_x(A)   mp->mem[(A)+5].sc /* the |x| coordinate of next control point */
 @d right_y(A)   mp->mem[(A)+6].sc /* the |y| coordinate of next control point */
-@d x_loc(A)   (A)+1 /* where the |x| coordinate is stored in a knot */
-@d y_loc(A)   (A)+2 /* where the |y| coordinate is stored in a knot */
+@d x_loc(A)   ((A)+1) /* where the |x| coordinate is stored in a knot */
+@d y_loc(A)   ((A)+2) /* where the |y| coordinate is stored in a knot */
 @d knot_coord(A)   mp->mem[(A)].sc /* |x| or |y| coordinate given |x_loc| or |y_loc| */
 @d left_coord(A)   mp->mem[(A)+2].sc
   /* coordinate of previous control point given |x_loc| or |y_loc| */
@@ -6911,7 +7001,7 @@ do {
 angles around an entire cycle. In this case the |left_type| of the first
 node is temporarily changed to |end_cycle|.
 
-@d end_cycle open+1
+@d end_cycle (open+1)
 
 @<Find the first breakpoint, |h|, on the path...@>=
 h=knots;
@@ -7078,11 +7168,17 @@ scaled *delta_y;
 scaled *delta; /* knot differences */
 angle  *psi; /* turning angles */
 
-@ @<Malloc variables@>=
-mp->delta_x = malloc (sizeof (scaled)*(path_size+1));
-mp->delta_y = malloc (sizeof (scaled)*(path_size+1));
-mp->delta = malloc (sizeof (scaled)*(path_size+1));
-mp->psi = malloc (sizeof (angle)*(path_size+1));
+@ @<Allocate variables@>=
+mp->delta_x = xmalloc (sizeof (scaled)*(path_size+1));
+mp->delta_y = xmalloc (sizeof (scaled)*(path_size+1));
+mp->delta = xmalloc (sizeof (scaled)*(path_size+1));
+mp->psi = xmalloc (sizeof (angle)*(path_size+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->delta_x);
+xfree(mp->delta_y);
+xfree(mp->delta);
+xfree(mp->psi);
 
 @ @<Other local variables for |make_choices|@>=
   int k,n; /* current and final knot numbers */
@@ -7182,11 +7278,17 @@ fraction *uu; /* values of $u_k$ */
 angle *vv; /* values of $v_k$ */
 fraction *ww; /* values of $w_k$ */
 
-@ @<Malloc variables@>=
-mp->theta = malloc (sizeof (angle)*(path_size+1));
-mp->uu = malloc (sizeof (fraction)*(path_size+1));
-mp->vv = malloc (sizeof (angle)*(path_size+1));
-mp->ww = malloc (sizeof (fraction)*(path_size+1));
+@ @<Allocate variables@>=
+mp->theta = xmalloc (sizeof (angle)*(path_size+1));
+mp->uu = xmalloc (sizeof (fraction)*(path_size+1));
+mp->vv = xmalloc (sizeof (angle)*(path_size+1));
+mp->ww = xmalloc (sizeof (fraction)*(path_size+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->theta);
+xfree(mp->uu);
+xfree(mp->vv);
+xfree(mp->ww);
 
 @ Our immediate problem is to get the ball rolling by setting up the
 first equation or by realizing that no equations are needed, and to fit
@@ -8727,7 +8829,7 @@ give the relevant information.
 @d pen_p(A) info((A)+1)
   /* a pointer to the pen to fill or stroke with */
 @d color_model(A) type((A)+2) /*  the color model  */
-@d obj_red_loc(A) (A)+3  /* the first of three locations for the color */
+@d obj_red_loc(A) ((A)+3)  /* the first of three locations for the color */
 @d obj_cyan_loc obj_red_loc  /* the first of four locations for the color */
 @d obj_grey_loc obj_red_loc  /* the location for the color */
 @d red_val(A) mp->mem[(A)+3].sc
@@ -8869,7 +8971,7 @@ black with its reference point at the origin.
 @d width_val(A) mp->mem[(A)+7].sc  /* unscaled width of the text */
 @d height_val(A) mp->mem[(A)+9].sc  /* unscaled height of the text */
 @d depth_val(A) mp->mem[(A)+10].sc  /* unscaled depth of the text */
-@d text_tx_loc(A) (A)+11
+@d text_tx_loc(A) ((A)+11)
   /* the first of six locations for transformation parameters */
 @d tx_val(A) mp->mem[(A)+11].sc  /* $x$ shift amount */
 @d ty_val(A) mp->mem[(A)+12].sc  /* $y$ shift amount */
@@ -9009,7 +9111,7 @@ field is needed to keep track of this.
 @d maxy_val(A) mp->mem[(A)+5].sc
 @d bblast(A) link((A)+6)  /* last item considered in bounding box computation */
 @d bbtype(A) info((A)+6)  /* tells how bounding box data depends on \&{truecorners} */
-@d dummy_loc(A) (A)+7  /* where the object list begins in an edge header */
+@d dummy_loc(A) ((A)+7)  /* where the object list begins in an edge header */
 @d no_bounds 0
   /* |bbtype| value when bounding box data is valid for all \&{truecorners} values */
 @d bounds_set 1
@@ -11135,11 +11237,11 @@ the quantities needed for bisection-intersection.
   /* $U\submax$, $V\submax$, $X\submax$, or $Y\submax$ */
 @d int_packets 20 /* number of words to represent $U_k$, $V_k$, $X_k$, and $Y_k$ */
 @#
-@d u_packet(A) (A)-5
-@d v_packet(A) (A)-10
-@d x_packet(A) (A)-15
-@d y_packet(A) (A)-20
-@d l_packets mp->bisect_ptr-int_packets
+@d u_packet(A) ((A)-5)
+@d v_packet(A) ((A)-10)
+@d x_packet(A) ((A)-15)
+@d y_packet(A) ((A)-20)
+@d l_packets (mp->bisect_ptr-int_packets)
 @d r_packets mp->bisect_ptr
 @d ul_packet u_packet(l_packets) /* base of $U'_k$ variables */
 @d vl_packet v_packet(l_packets) /* base of $V'_k$ variables */
@@ -11180,14 +11282,17 @@ the quantities needed for bisection-intersection.
 @d stack_tol mp->bisect_stack[mp->bisect_ptr+2] /* stacked value of |tol| */
 @d stack_uv mp->bisect_stack[mp->bisect_ptr+3] /* stacked value of |uv| */
 @d stack_xy mp->bisect_stack[mp->bisect_ptr+4] /* stacked value of |xy| */
-@d int_increment int_packets+int_packets+5 /* number of stack words per level */
+@d int_increment (int_packets+int_packets+5) /* number of stack words per level */
 
 @<Glob...@>=
 integer *bisect_stack;
 unsigned int bisect_ptr;
 
-@ @<Malloc variables@>=
-mp->bisect_stack = malloc(sizeof(integer)*(bistack_size+1));
+@ @<Allocate variables@>=
+mp->bisect_stack = xmalloc(sizeof(integer)*(bistack_size+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->bisect_stack);
 
 @ @<Check the ``constant''...@>=
 if ( int_packets+17*int_increment>bistack_size ) mp->bad=19;
@@ -12327,8 +12432,11 @@ integer input_ptr; /* first unused location of |input_stack| */
 integer max_in_stack; /* largest value of |input_ptr| when pushing */
 in_state_record cur_input; /* the ``top'' input state */
 
-@ @<Malloc variables@>=
-mp->input_stack = malloc(sizeof(in_state_record)*(stack_size+1));
+@ @<Allocate variables@>=
+mp->input_stack = xmalloc(sizeof(in_state_record)*(stack_size+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->input_stack);
 
 @ We've already defined the special variable |@!loc==cur_input.loc_field|
 in our discussion of basic input-output routines. The other components of
@@ -12431,6 +12539,18 @@ char *iname_stack[(max_in_open+1)]; /* used for naming \.{MPX} files */
 char *iarea_stack[(max_in_open+1)]; /* used for naming \.{MPX} files */
 halfword mpx_name[(max_in_open+1)];
 
+@ @<Set init...@>=
+for (k=0;k<=max_in_open;k++) {
+  mp->iname_stack[k] =NULL;
+  mp->iarea_stack[k] =NULL;
+}
+
+@ @<Dealloc variables@>=
+for (k=0;k<=max_in_open;k++) {
+  xfree(mp->iname_stack[k]);
+  xfree(mp->iarea_stack[k]);
+}
+
 @ However, all this discussion about input state really applies only to the
 case that we are inputting from a file. There is another important case,
 namely when we are currently getting input from a token list. In this case
@@ -12487,12 +12607,12 @@ macro|.
 @d token_state (index>max_in_open) /* are we scanning a token list? */
 @d file_state (index<=max_in_open) /* are we scanning a file line? */
 @d param_start limit /* base of macro parameters in |param_stack| */
-@d forever_text max_in_open+1 /* |token_type| code for loop texts */
-@d loop_text max_in_open+2 /* |token_type| code for loop texts */
-@d parameter max_in_open+3 /* |token_type| code for parameter texts */
-@d backed_up max_in_open+4 /* |token_type| code for texts to be reread */
-@d inserted max_in_open+5 /* |token_type| code for inserted texts */
-@d macro max_in_open+6 /* |token_type| code for macro replacement texts */
+@d forever_text (max_in_open+1) /* |token_type| code for loop texts */
+@d loop_text (max_in_open+2) /* |token_type| code for loop texts */
+@d parameter (max_in_open+3) /* |token_type| code for parameter texts */
+@d backed_up (max_in_open+4) /* |token_type| code for texts to be reread */
+@d inserted (max_in_open+5) /* |token_type| code for inserted texts */
+@d macro (max_in_open+6) /* |token_type| code for macro replacement texts */
 
 @ The |param_stack| is an auxiliary array used to hold pointers to the token
 lists for parameters at the current level and subsidiary levels of input.
@@ -12503,8 +12623,11 @@ pointer *param_stack;  /* token list pointers for parameters */
 integer param_ptr; /* first unused entry in |param_stack| */
 integer max_param_stack;  /* largest value of |param_ptr| */
 
-@ @<Malloc variables@>=
-mp->param_stack = malloc(sizeof(pointer)*(param_size+1));
+@ @<Allocate variables@>=
+mp->param_stack = xmalloc(sizeof(pointer)*(param_size+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->param_stack);
 
 @ Notice that the |line| isn't valid when |token_state| is true because it
 depends on |index|.  If we really need to know the line number for the
@@ -12520,9 +12643,11 @@ integer mp_true_line (MP mp) {
      return line;
   } else { 
     k=mp->input_ptr;
-    while (((k>0)&&(mp->input_stack[k].index_field>max_in_open))||
-           (mp->input_stack[k].name_field<=max_spec_src) )
+    while ((k>0) &&
+           ((mp->input_stack[(k-1)].index_field>max_in_open)||
+            (mp->input_stack[(k-1)].name_field<=max_spec_src))) {
       decr(k);
+    }
     return mp->line_stack[k];
   }
 }
@@ -12621,7 +12746,7 @@ We'll discuss capsules later; for now, all we need to know is that
 the |link| field in a capsule parameter is |void| and that
 |print_exp(p,0)| displays the value of capsule~|p| in abbreviated form.
 
-@d diov null+1 /* a null pointer different from |null| */
+@d diov (null+1) /* a null pointer different from |null| */
 
 @<Print the current loop value@>=
 { mp_print_nl(mp, "<for("); p=mp->param_stack[param_start];
@@ -12768,8 +12893,8 @@ new level (having, initially, the same properties as the old).
 
 @ And of course what goes up must come down.
 
-@d pop_input @t@> /* leave an input level, re-enter the old */
-  { decr(mp->input_ptr); mp->cur_input=mp->input_stack[mp->input_ptr];
+@d pop_input { /* leave an input level, re-enter the old */
+    decr(mp->input_ptr); mp->cur_input=mp->input_stack[mp->input_ptr];
   }
 
 @ Here is a procedure that starts a new level of token-list input, given
@@ -12911,7 +13036,8 @@ off the file stack.
   if ( name>max_spec_src ) {
     a_close(cur_file);
     delete_str_ref(name);
-    free(in_name); free(in_area);
+    xfree(in_name); in_name=NULL;
+    xfree(in_area); in_area=NULL;
   }
   pop_input; decr(mp->in_open);
 }
@@ -13321,7 +13447,7 @@ because the |clear_for_error_prompt| routine might have reinstated
 @.Incomplete string token...@>
   help3("Strings should finish on the same line as they began.")
     ("I've deleted the partial string; you might want to")
-    ("insert another by typing, e.g., `I""new string""'.");
+    ("insert another by typing, e.g., `I\"new string\"'.");
   mp->deletions_allowed=false; mp_error(mp);
   mp->deletions_allowed=true; 
   goto RESTART;
@@ -14912,14 +15038,14 @@ that edge header.
 \yskip\noindent In the case of a progression node, the first word is not used
 because the link field of words in the dynamic memory area cannot be arbitrary.
 
-@d loop_list_loc(A) (A)+1 /* where the |loop_list| field resides */
+@d loop_list_loc(A) ((A)+1) /* where the |loop_list| field resides */
 @d loop_type(A) info(loop_list_loc((A))) /* the type of \&{for} loop */
 @d loop_list(A) link(loop_list_loc((A))) /* the remaining list elements */
 @d loop_node_size 2 /* the number of words in a loop control node */
 @d progression_node_size 4 /* the number of words in a progression node */
 @d step_size(A) mp->mem[(A)+2].sc /* the step size in an arithmetic progression */
 @d final_value(A) mp->mem[(A)+3].sc /* the final value in an arithmetic progression */
-@d progression_flag null+2
+@d progression_flag (null+2)
   /* |loop_type| value when |loop_list| points to a progression node */
 
 @<Glob...@>=
@@ -15244,9 +15370,14 @@ char * cur_ext; /* file extension just scanned, or \.{""} */
 @ It is easier to maintain reference counts if we assign initial values.
 
 @<Set init...@>=
-mp->cur_name=strdup(""); 
-mp->cur_area=strdup(""); 
-mp->cur_ext=strdup("");
+mp->cur_name=xstrdup(""); 
+mp->cur_area=xstrdup(""); 
+mp->cur_ext=xstrdup("");
+
+@ @<Dealloc variables@>=
+xfree(mp->cur_area);
+xfree(mp->cur_name);
+xfree(mp->cur_ext);
 
 @ The file names we shall deal with for illustrative purposes have the
 following structure:  If the name contains `\.>' or `\.:', the file area
@@ -15277,7 +15408,7 @@ This system area name will, of course, vary from place to place.
 @.MPinputs@>
 @d MF_area "MFinputs:"
 @.MFinputs@>
-@d MP_font_area "TeXfonts:"
+@d MP_font_area ""
 @.TeXfonts@>
 
 @ Here now is the first of the system-dependent routines for file name scanning.
@@ -15285,9 +15416,9 @@ This system area name will, of course, vary from place to place.
 
 @<Declare subroutines for parsing file names@>=
 void mp_begin_name (MP mp) { 
-  free(mp->cur_name); 
-  free(mp->cur_area); 
-  free(mp->cur_ext);
+  xfree(mp->cur_name); 
+  xfree(mp->cur_area); 
+  xfree(mp->cur_ext);
   mp->area_delimiter=-1; 
   mp->ext_delimiter=-1;
 }
@@ -15315,9 +15446,9 @@ boolean mp_more_name (MP mp, ASCII_code c) {
 @^system dependencies@>
 
 @d copy_pool_segment(A,B,C) { 
-      A = malloc(C+1); 
+      A = xmalloc(C+1); 
       strncpy(A,(char *)(mp->str_pool+B),C);  
-      A[C+1] = 0;}
+      A[C] = 0;}
 
 @<Declare subroutines for parsing file names@>=
 void mp_end_name (MP mp) {
@@ -15326,17 +15457,17 @@ void mp_end_name (MP mp) {
   /* "my/w.mp" */
   s = mp->str_start[mp->str_ptr];
   if ( mp->area_delimiter<0 ) {
-    mp->cur_area=strdup("");
+    mp->cur_area=xstrdup("");
   } else {
     len = mp->area_delimiter-s; 
     copy_pool_segment(mp->cur_area,s,len);
     s += len+1;
   }
   if ( mp->ext_delimiter<0 ) {
-    mp->cur_ext=strdup("");
+    mp->cur_ext=xstrdup("");
     len = mp->pool_ptr-s; 
   } else {
-    copy_pool_segment(mp->cur_ext,(s+mp->ext_delimiter),(mp->pool_ptr-mp->ext_delimiter));
+    copy_pool_segment(mp->cur_ext,mp->ext_delimiter,(mp->pool_ptr-mp->ext_delimiter));
     len = mp->ext_delimiter-s;
   }
   copy_pool_segment(mp->cur_name,s,len);
@@ -15358,9 +15489,12 @@ to the |name_of_file| value that is used to open files. The present code
 allows both lowercase and uppercase letters in the file name.
 @^system dependencies@>
 
-@d append_to_name(A) { c=(A); incr(k);
-  if ( k<=file_name_size ) mp->name_of_file[k]=mp->xchr[c];
+@d append_to_name(A) { c=(A); 
+  if ( k<file_name_size ) {
+    mp->name_of_file[k]=mp->xchr[c];
+    incr(k);
   }
+}
 
 @<Declare subroutines for parsing file names@>=
 void mp_pack_file_name (MP mp, char *n, char *a, char *e) {
@@ -15371,13 +15505,8 @@ void mp_pack_file_name (MP mp, char *n, char *a, char *e) {
   for (j=a;*j;j++) { append_to_name(*j); }
   for (j=n;*j;j++) { append_to_name(*j); }
   for (j=e;*j;j++) { append_to_name(*j); }
-  if ( k<=file_name_size ) 
-    mp->name_length=k; 
-  else 
-    mp->name_length=file_name_size;
-  for (k=mp->name_length+1;k<=file_name_size;k++) {
-    mp->name_of_file[k]=' ';
-  }
+  mp->name_of_file[k]=0;
+  mp->name_length=k; 
 }
 
 @ A messier routine is also needed, since mem file names must be scanned
@@ -15386,23 +15515,20 @@ global variable |MP_mem_default| to supply the text for default system areas
 and extensions related to mem files.
 @^system dependencies@>
 
-@d mem_default_length 15 /* length of the |MP_mem_default| string */
-@d mem_area_length 6 /* length of its area part */
+@d mem_default_length 9 /* length of the |MP_mem_default| string */
 @d mem_ext_length 4 /* length of its `\.{.mem}' part */
 @d mem_extension ".mem" /* the extension, as a \.{WEB} constant */
 
 @<Glob...@>=
 char *MP_mem_default;
 
-@ @<Malloc variables@>=
-mp->MP_mem_default = malloc(sizeof(char)*(mem_default_length+1+1));
-
-
-@ @<Set init...@>=
-mp->MP_mem_default="MPlib:plain.mem";
-@.MPlib@>
+@ @<Allocate variables@>=
+mp->MP_mem_default = xstrdup("plain.mem");
 @.plain@>
 @^system dependencies@>
+
+@ @<Dealloc variables@>=
+xfree(mp->MP_mem_default);
 
 @ @<Check the ``constant'' values for consistency@>=
 if ( mem_default_length>file_name_size ) mp->bad=20;
@@ -15426,23 +15552,18 @@ isn't found.
   if ( n+b-a+1+mem_ext_length>file_name_size )
     b=a+file_name_size-n-1-mem_ext_length;
   k=0;
-  for (j=1;j<=n;j++) {
+  for (j=0;j<n;j++) {
     append_to_name(mp->xord[(int)mp->MP_mem_default[j]]);
   }
-  for (j=a;j<= b;j++) {
+  for (j=a;j< b;j++) {
     append_to_name(mp->buffer[j]);
   }
-  for (j=mem_default_length-mem_ext_length+1;
-      j<=mem_default_length;j++) {
+  for (j=mem_default_length-mem_ext_length;
+      j<mem_default_length;j++) {
     append_to_name(mp->xord[(int)mp->MP_mem_default[j]]);
-  }
-  if ( k<=file_name_size ) 
-    mp->name_length=k; 
-  else 
-    mp->name_length=file_name_size;
-  for (k=mp->name_length+1;k<=file_name_size;k++) {
-    mp->name_of_file[k]=' ';
-  }
+  } 
+  mp->name_of_file[k]=0;
+  mp->name_length=k; 
 }
 
 @ Here is the only place we use |pack_buffered_name|. This part of the program
@@ -15461,17 +15582,13 @@ boolean mp_open_mem_file (MP mp) {
     while ( mp->buffer[j]!=' ' ) incr(j);
     mp_pack_buffered_name(mp, 0,loc,j-1); /* try first without the system file area */
     if ( mp_w_open_in(mp, &mp->mem_file) ) goto FOUND;
-    mp_pack_buffered_name(mp, mem_area_length,loc,j-1);
-    /* now try the system mem file area */
-    if ( mp_w_open_in(mp, &mp->mem_file) ) goto FOUND;
     wake_up_terminal;
-    wterm_ln("Sorry, I can\'t find that mem file;");
-    wterm(" will try PLAIN.");
+    wterm_ln("Sorry, I can\'t find that mem file; will try PLAIN.");
 @.Sorry, I can't find...@>
     update_terminal;
   }
   /* now pull out all the stops: try for the system \.{plain} file */
-  mp_pack_buffered_name(mp, mem_default_length-mem_ext_length,1,0);
+  mp_pack_buffered_name(mp, mem_default_length-mem_ext_length,0,0);
   if ( ! mp_w_open_in(mp, &mp->mem_file) ) {
     wake_up_terminal;
     wterm_ln("I can\'t find the PLAIN mem file!");
@@ -15505,7 +15622,7 @@ str_number mp_make_name_string (MP mp) {
     return (str_number)'?';
   } else { 
    str_room(mp->name_length);
-    for (k=1;k<=mp->name_length;k++) {
+    for (k=0;k<mp->name_length;k++) {
       append_char(mp->xord[(int)mp->name_of_file[k]]);
     }
     return mp_make_string(mp);
@@ -15585,6 +15702,9 @@ except of course for a short time just after |job_name| has become nonzero.
 @<Initialize the output...@>=
 mp->job_name=NULL; mp->log_opened=false;
 
+@ @<Dealloc variables@>=
+xfree(mp->job_name);
+
 @ Here is a routine that manufactures the output file names, assuming that
 |job_name<>0|. It ignores and changes the current settings of |cur_area|
 and |cur_ext|.
@@ -15595,9 +15715,9 @@ and |cur_ext|.
 void mp_pack_job_name (MP mp, char *s) ;
 
 @ @c void mp_pack_job_name (MP mp, char  *s) { /* |s = ".log"|, |".mem"|, |".ps"|, or .\\{nnn} */
-  free(mp->cur_name);  mp->cur_name=strdup(mp->job_name);
-  free(mp->cur_area);  mp->cur_area=strdup(""); 
-  free(mp->cur_ext);   mp->cur_ext=strdup(s);
+  xfree(mp->cur_name); mp->cur_name=xstrdup(mp->job_name);
+  xfree(mp->cur_area); mp->cur_area=xstrdup(""); 
+  xfree(mp->cur_ext);  mp->cur_ext=xstrdup(s);
   pack_cur_name;
 }
 
@@ -15660,13 +15780,14 @@ it catch up to what has previously been printed on the terminal.
   char *months="JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC"; 
     /* abbreviations of month names */
   old_setting=mp->selector;
-  if ( mp->job_name==NULL ) 
-     mp->job_name=strdup("mpout");
+  if ( mp->job_name==NULL ) {
+     mp->job_name=xstrdup("mpout");
+  }
   mp_pack_job_name(mp,".log");
   while ( ! mp_a_open_out(mp, &mp->log_file) ) {
     @<Try to get a different log file name@>;
   }
-  mp->log_name=strdup(mp->name_of_file);
+  mp->log_name=xstrdup(mp->name_of_file);
   mp->selector=log_only; mp->log_opened=true;
   @<Print the banner line, including the date and time@>;
   mp->input_stack[mp->input_ptr]=mp->cur_input; 
@@ -15678,6 +15799,9 @@ it catch up to what has previously been printed on the terminal.
   mp_print_ln(mp); /* now the transcript file contains the first line of input */
   mp->selector=old_setting+2; /* |log_only| or |term_and_log| */
 }
+
+@ @<Dealloc variables@>=
+xfree(mp->log_name);
 
 @ Sometimes |open_log_file| is called at awkward moments when \MP\ is
 unable to print error messages or even to |show_context|.
@@ -15720,13 +15844,13 @@ can't find the file in |cur_area| or the appropriate system area.
 
 @c boolean mp_try_extension (MP mp,char *ext) { 
   mp_pack_file_name(mp, mp->cur_name,mp->cur_area, ext);
-  in_name=strdup(mp->cur_name); 
-  in_area=strdup(mp->cur_area);
+  in_name=xstrdup(mp->cur_name); 
+  in_area=xstrdup(mp->cur_area);
   if ( mp_a_open_in(mp, &cur_file) ) {
     return true;
   } else { 
-    if (strcmp(ext,".mf")==0 ) in_area=strdup(MF_area);
-    else in_area=strdup(MP_area);
+    if (strcmp(ext,".mf")==0 ) in_area=xstrdup(MF_area);
+    else in_area=xstrdup(MP_area);
     mp_pack_file_name(mp, mp->cur_name,in_area,ext);
     return mp_a_open_in(mp, &cur_file);
   }
@@ -15739,7 +15863,7 @@ when an `\.{input}' command is being processed.
   @<Put the desired file name in |(cur_name,cur_ext,cur_area)|@>;
   while (1) { 
     mp_begin_file_reading(mp); /* set up |cur_file| and new level of input */
-    if ( mp->cur_ext=="" ) {
+    if ( strlen(mp->cur_ext)==0 ) {
       if ( mp_try_extension(mp, ".mp") ) break;
       else if ( mp_try_extension(mp, "") ) break;
       else if ( mp_try_extension(mp, ".mf") ) break;
@@ -15752,7 +15876,7 @@ when an `\.{input}' command is being processed.
   }
   name=mp_a_make_name_string(mp, cur_file);
   if ( mp->job_name==NULL ) {
-    mp->job_name=strdup(mp->cur_name); 
+    mp->job_name=xstrdup(mp->cur_name); 
     mp_open_log_file(mp);
   } /* |open_log_file| doesn't |show_context|, so |limit|
         and |loc| needn't be set to meaningful values yet */
@@ -15770,7 +15894,7 @@ than just a copy of its argument and the full file name is needed for opening
 @^system dependencies@>
 
 @<Flush |name| and replace it with |cur_name| if it won't be needed@>=
-mp_flush_string(mp, name); name=rts(mp->cur_name); mp->cur_name=0
+mp_flush_string(mp, name); name=rts(mp->cur_name); mp->cur_name=NULL
 
 @ Here we have to remember to tell the |input_ln| routine not to
 start with a |get|. If the file is empty, it is considered to
@@ -15780,7 +15904,7 @@ contain a single blank line.
 @<Read the first line...@>=
 { 
   line=1;
-  /* if ( mp_input_ln(mp, cur_file,false) ) do_nothing; */
+  (void)mp_input_ln(mp, cur_file,false); 
   mp_firm_up_the_line(mp);
   mp->buffer[limit]='%'; mp->first=limit+1; loc=start;
 }
@@ -15795,8 +15919,13 @@ if ( token_state ) {
     ("Please delete the tokens and insert the name again.");
   mp_error(mp);
 }
-if ( file_state ) mp_scan_file_name(mp);
-else  { mp->cur_name=""; mp->cur_ext=""; mp->cur_area=""; }
+if ( file_state ) {
+  mp_scan_file_name(mp);
+} else { 
+   xfree(mp->cur_name); mp->cur_name=xstrdup(""); 
+   xfree(mp->cur_ext);  mp->cur_ext =xstrdup(""); 
+   xfree(mp->cur_area); mp->cur_area=xstrdup(""); 
+}
 
 @ Sometimes we need to deal with two file names at once.  This procedure
 copies the given string into a special array for an old file name.
@@ -15810,19 +15939,13 @@ copies the given string into a special array for an old file name.
     if ( k<=file_name_size ) 
       mp->old_file_name[k]=mp->xchr[so(mp->str_pool[j])];
   }
-  if ( k<=file_name_size ) mp->old_name_length=k;
-  else mp->old_name_length=file_name_size;
-  for (k=mp->old_name_length+1;k<=file_name_size;k++) {
-    mp->old_file_name[k]=' ';
-  }
+  mp->old_file_name[++k] = 0;
+  mp->old_name_length=k;
 }
 
 @ @<Glob...@>=
-char *old_file_name;  /* analogous to |name_of_file| */
+char old_file_name[file_name_size+1];  /* analogous to |name_of_file| */
 int old_name_length; /* this many relevant characters followed by blanks */
-
-@ @<Malloc variables@>=
-mp->old_file_name = malloc(sizeof(char)*(file_name_size+1+1));
 
 @ The following simple routine starts reading the \.{MPX} file associated
 with the current input file.
@@ -15910,7 +16033,7 @@ be opened.  Otherwise it updates |rd_file[n]| and |rd_fname[n]|.
     a_close(mp->rd_file[n]); 
 	goto NOT_FOUND; 
   }
-  mp->rd_fname[n]=strdup(mp->name_of_file);
+  mp->rd_fname[n]=xstrdup(mp->name_of_file);
   return true;
 NOT_FOUND: 
   mp_end_file_reading(mp);
@@ -15927,7 +16050,7 @@ void mp_open_write_file (MP mp,str_number s, readf_index  n) ;
   pack_cur_name;
   while ( ! mp_a_open_out(mp, &mp->wr_file[n]) )
     mp_prompt_file_name(mp, "file name for write output","");
-  mp->wr_fname[n]=strdup(mp->name_of_file);
+  mp->wr_fname[n]=xstrdup(mp->name_of_file);
 }
 
 
@@ -16297,7 +16420,7 @@ void mp_disp_err (MP mp,pointer p, char *s) {
   mp_print_nl(mp, ">> ");
 @.>>@>
   mp_print_exp(mp, p,1); /* ``medium verbose'' printing of the expression */
-  if (!strcmp(s,"")) { 
+  if (strlen(s)) { 
     mp_print_nl(mp, "! "); mp_print(mp, s);
 @.!\relax@>
   }
@@ -19262,7 +19385,7 @@ CONTINUE:
   if ( mp->rd_fname[n]==0 ) { 
     n0=n; goto CONTINUE; 
   };
-} while (strcmp(str(mp->cur_exp),mp->rd_fname[n])!=0);
+} while (xstrcmp(str(mp->cur_exp),mp->rd_fname[n])!=0);
 if ( c==close_from_op ) { 
   a_close(mp->rd_file[n]); 
   goto NOT_FOUND; 
@@ -19282,7 +19405,7 @@ if ( c==close_from_op ) {
 }
 
 @ @<Record the end of file and set |cur_exp| to a dummy value@>=
-free(mp->rd_fname[n]);
+xfree(mp->rd_fname[n]);
 mp->rd_fname[n]=NULL;
 if ( n==mp->read_files-1 ) mp->read_files=n;
 if ( c==close_from_op ) 
@@ -21482,11 +21605,23 @@ void mp_do_new_internal (MP mp) ;
     mp_get_clear_symbol(mp); incr(mp->int_ptr);
     eq_type(mp->cur_sym)=internal_quantity; 
     equiv(mp->cur_sym)=mp->int_ptr;
+    if(mp->int_name[mp->int_ptr]!=NULL)
+      xfree(mp->int_name[mp->int_ptr]);
     mp->int_name[mp->int_ptr]=str(text(mp->cur_sym)); 
     mp->internal[mp->int_ptr]=0;
     mp_get_x_next(mp);
   } while (mp->cur_cmd==comma);
 }
+
+@ @<Dealloc variables@>=
+for (k=0;k<=max_internal;k++) {
+   if (mp->int_name[k]!=NULL) {
+      xfree(mp->int_name[k]);
+   }
+}
+xfree(mp->internal); 
+xfree(mp->int_name); 
+
 
 @ The various `\&{show}' commands are distinguished by modifier fields
 in the usual way.
@@ -22103,7 +22238,7 @@ pointer mp_find_edges_var (MP mp, pointer t) ;
 @.Variable x is the wrong type@>
     mp_print(mp, " is the wrong type ("); 
     mp_print_type(mp, type(p)); mp_print_char(mp, ')');
-    help2("I was looking for a ""known"" picture variable.")
+    help2("I was looking for a \"known\" picture variable.")
          ("So I'll not change anything just now."); 
     mp_put_get_error(mp);
   } else { 
@@ -22528,7 +22663,7 @@ CONTINUE:
     decr(n);
     if ( mp->wr_fname[n]==0 ) { n0=n; goto CONTINUE; }
   }
-} while (strcmp(str(mp->cur_exp),mp->wr_fname[n])!=0)
+} while (xstrcmp(str(mp->cur_exp),mp->wr_fname[n])!=0)
 
 @ @<Insert |cur_exp| at index |n0| and call |open_write_file|@>=
 { 
@@ -22542,7 +22677,7 @@ CONTINUE:
 
 @ @<Record the end of file on |wr_file[n]|@>=
 { a_close(mp->wr_file[n]);
-  free(mp->wr_fname[n]);
+  xfree(mp->wr_fname[n]);
   mp->wr_fname[n]=NULL;
   if ( n==mp->write_files-1 ) mp->write_files=n;
 }
@@ -22754,9 +22889,9 @@ If such an instruction is encountered during
 normal program execution, it denotes an unconditional halt; no ligature
 command is performed.
 
-@d stop_flag 128+min_quarterword
+@d stop_flag (128+min_quarterword)
   /* value indicating `\.{STOP}' in a lig/kern program */
-@d kern_flag 128+min_quarterword /* op code for a kern step */
+@d kern_flag (128+min_quarterword) /* op code for a kern step */
 @d skip_byte(A) mp->lig_kern[(A)].b0
 @d next_char(A) mp->lig_kern[(A)].b1
 @d op_byte(A) mp->lig_kern[(A)].b2
@@ -22838,48 +22973,43 @@ is kept in additional arrays called |header_byte|, |lig_kern|,
 @<Glob...@>=
 eight_bits bc;
 eight_bits ec; /* smallest and largest character codes shipped out */
-scaled *tfm_width; /* \&{charwd} values */
-scaled *tfm_height; /* \&{charht} values */
-scaled *tfm_depth; /* \&{chardp} values */
-scaled *tfm_ital_corr; /* \&{charic} values */
-boolean *char_exists; /* has this code been shipped out? */
-int *char_tag; /* |remainder| category */
-int *char_remainder; /* the |remainder| byte */
+scaled tfm_width[tfm_items]; /* \&{charwd} values */
+scaled tfm_height[tfm_items]; /* \&{charht} values */
+scaled tfm_depth[tfm_items]; /* \&{chardp} values */
+scaled tfm_ital_corr[tfm_items]; /* \&{charic} values */
+boolean char_exists[tfm_items]; /* has this code been shipped out? */
+int char_tag[tfm_items]; /* |remainder| category */
+int char_remainder[tfm_items]; /* the |remainder| byte */
 int *header_byte; /* bytes of the \.{TFM} header, or $-1$ if unset */
 four_quarters *lig_kern; /* the ligature/kern table */
 short nl; /* the number of ligature/kern steps so far */
 scaled *kern; /* distinct kerning amounts */
 short nk; /* the number of distinct kerns so far */
-four_quarters *exten; /* extensible character recipes */
+four_quarters exten[tfm_items]; /* extensible character recipes */
 short ne; /* the number of extensible characters so far */
 scaled *param; /* \&{fontinfo} parameters */
 short np; /* the largest \&{fontinfo} parameter specified so far */
 short nw;short nh;short nd;short ni; /* sizes of \.{TFM} subtables */
-short *skip_table; /* local label status */
+short skip_table[tfm_items]; /* local label status */
 boolean lk_started; /* has there been a lig/kern step in this command yet? */
 integer bchar; /* right boundary character */
 short bch_label; /* left boundary starting location */
 short ll;short lll; /* registers used for lig/kern processing */
-short *label_loc; /* lig/kern starting addresses */
-eight_bits *label_char; /* characters for |label_loc| */
+short label_loc[257]; /* lig/kern starting addresses */
+eight_bits label_char[257]; /* characters for |label_loc| */
 short label_ptr; /* highest position occupied in |label_loc| */
 
-@ @<Malloc variables@>=
-mp->tfm_width = malloc(sizeof(scaled)*(tfm_items));
-mp->tfm_height = malloc(sizeof(scaled)*(tfm_items));
-mp->tfm_depth = malloc(sizeof(scaled)*(tfm_items));
-mp->tfm_ital_corr = malloc(sizeof(scaled)*(tfm_items));
-mp->char_exists = malloc(sizeof(boolean)*(tfm_items));
-mp->char_tag = malloc(sizeof(int)*(tfm_items));
-mp->char_remainder = malloc(sizeof(int)*(tfm_items));
-mp->header_byte = malloc(sizeof(int)*(header_size+1));
-mp->lig_kern = malloc(sizeof(four_quarters)*(lig_table_size+1));
-mp->kern = malloc(sizeof(scaled)*(max_kerns+1));
-mp->exten = malloc(sizeof(four_quarters)*(tfm_items));
-mp->param = malloc(sizeof(scaled)*(max_font_dimen+1));
-mp->skip_table = malloc(sizeof(short)*(tfm_items));
-mp->label_loc = malloc(sizeof(short)*(257));
-mp->label_char = malloc(sizeof(eight_bits)*(257));
+@ @<Allocate variables@>=
+mp->header_byte = xmalloc(sizeof(int)*(header_size+1));
+mp->lig_kern = xmalloc(sizeof(four_quarters)*(lig_table_size+1));
+mp->kern = xmalloc(sizeof(scaled)*(max_kerns+1));
+mp->param = xmalloc(sizeof(scaled)*(max_font_dimen+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->header_byte);
+xfree(mp->lig_kern);
+xfree(mp->kern);
+xfree(mp->param);
 
 @ @<Set init...@>=
 for (k=0;k<= 255;k++ ) {
@@ -23417,10 +23547,7 @@ mp->nw=mp_skimp(mp, 255)+1; mp->dimen_head[1]=link(temp_head);
 if ( mp->perturbation>=010000 ) mp_tfm_warning(mp, char_wd)
 
 @ @<Glob...@>=
-pointer *dimen_head; /* lists of \.{TFM} dimensions */
-
-@ @<Malloc variables@>=
-mp->dimen_head = malloc(sizeof(pointer)*5);
+pointer dimen_head[5]; /* lists of \.{TFM} dimensions */
 
 @ Heights, depths, and italic corrections are different from widths
 not only because their list length is more severely restricted, but
@@ -23571,7 +23698,7 @@ if ( mp->job_name==NULL ) mp_open_log_file(mp);
 mp_pack_job_name(mp, ".tfm");
 while ( ! mp_b_open_out(mp, &mp->tfm_file) )
   mp_prompt_file_name(mp, "file name for font metrics",".tfm");
-mp->metric_file_name=strdup(mp->name_of_file);
+mp->metric_file_name=xstrdup(mp->name_of_file);
 @<Output the subfile sizes and header bytes@>;
 @<Output the character information bytes, then
   output the dimensions themselves@>;
@@ -23763,15 +23890,27 @@ font_number last_ps_fnum; /* last valid |font_ps_name| index */
 eight_bits  *font_bc;
 eight_bits  *font_ec;  /* first and last character code */
 
-@ @<Malloc variables@>=
-mp->font_info = malloc (sizeof(memory_word)*(font_mem_size+1));
-mp->font_enc_name = malloc(sizeof(char *)*(font_max+1));
-mp->font_ps_name_fixed = malloc(sizeof(boolean)*(font_max+1));
-mp->font_dsize = malloc(sizeof(scaled)*(font_max+1));
-mp->font_name = malloc(sizeof(char *)*(font_max+1));
-mp->font_ps_name = malloc(sizeof(char *)*(font_max+1));
-mp->font_bc = malloc(sizeof(eight_bits)*(font_max+1));
-mp->font_ec = malloc(sizeof(eight_bits)*(font_max+1));
+@ @<Allocate variables@>=
+mp->font_info = xmalloc (sizeof(memory_word)*(font_mem_size+1));
+mp->font_enc_name = xmalloc(sizeof(char *)*(font_max+1));
+mp->font_ps_name_fixed = xmalloc(sizeof(boolean)*(font_max+1));
+mp->font_dsize = xmalloc(sizeof(scaled)*(font_max+1));
+mp->font_name = xmalloc(sizeof(char *)*(font_max+1));
+mp->font_ps_name = xmalloc(sizeof(char *)*(font_max+1));
+mp->font_bc = xmalloc(sizeof(eight_bits)*(font_max+1));
+mp->font_ec = xmalloc(sizeof(eight_bits)*(font_max+1));
+mp->last_fnum = null_font;
+
+@ @<Dealloc variables@>=
+xfree(mp->font_info);
+xfree(mp->font_enc_name);
+xfree(mp->font_ps_name_fixed);
+xfree(mp->font_dsize);
+xfree(mp->font_name);
+xfree(mp->font_ps_name);
+xfree(mp->font_bc);
+xfree(mp->font_ec);
+
 
 @ The |font_info| array is indexed via a group directory arrays.
 For example, the |char_info| data for character~|c| in font~|f| will be
@@ -23783,11 +23922,17 @@ int *width_base; /* index for zeroth character width */
 int *height_base; /* index for zeroth character height */
 int *depth_base; /* index for zeroth character depth */
 
-@ @<Malloc variables@>=
-mp->char_base = malloc(sizeof(int)*(font_max+1));
-mp->width_base = malloc(sizeof(int)*(font_max+1));
-mp->height_base = malloc(sizeof(int)*(font_max+1));
-mp->depth_base = malloc(sizeof(int)*(font_max+1));
+@ @<Allocate variables@>=
+mp->char_base = xmalloc(sizeof(int)*(font_max+1));
+mp->width_base = xmalloc(sizeof(int)*(font_max+1));
+mp->height_base = xmalloc(sizeof(int)*(font_max+1));
+mp->depth_base = xmalloc(sizeof(int)*(font_max+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->char_base);
+xfree(mp->width_base);
+xfree(mp->height_base);
+xfree(mp->depth_base);
 
 @ A |null_font| containing no characters is useful for error recovery.  Its
 |font_name| entry starts out empty but is reset each time an erroneous font is
@@ -23798,8 +23943,6 @@ wasting a lot of space.
 
 @<Initialize table...@>=
 mp->font_dsize[null_font]=0;
-mp->font_name[null_font]=strdup("");
-mp->font_ps_name[null_font]=strdup("");
 mp->font_bc[null_font]=1;
 mp->font_ec[null_font]=0;
 mp->char_base[null_font]=0;
@@ -23809,6 +23952,10 @@ mp->depth_base[null_font]=0;
 mp->next_fmem=0;
 mp->last_fnum=null_font;
 mp->last_ps_fnum=null_font;
+
+@ @<Set initial...@>=
+mp->font_name[null_font]="nullfont";
+mp->font_ps_name[null_font]="";
 
 @ Each |char_info| word is of type |four_quarters|.  The |b0| field contains
 |min_quarter_word| plus the |width index|; the |b1| field contains the height
@@ -23835,8 +23982,6 @@ $$\hbox{|char_width(f)(char_info(f)(c)).sc|.}$$
 @ The |font_ps_name| for a built-in font should be what PostScript expects.
 A preliminary name is obtained here from the \.{TFM} name as given in the
 |fname| argument.  This gets updated later from an external table if necessary.
-
-@d bad_tfm 11 /* go here if the \.{TFM} file is bad */
 
 @<Declare text measuring subroutines@>=
 @<Declare subroutines for parsing file names@>;
@@ -24004,8 +24149,8 @@ a C string already.
 @<Open |tfm_infile| for input@>=
 file_opened=false;
 mp_ptr_scan_file(mp, fname);
-if ( mp->cur_area=="" ) mp->cur_area=MP_font_area;
-if ( mp->cur_ext=="" ) mp->cur_ext=".tfm";
+if ( strlen(mp->cur_area)==0 ) mp->cur_area=xstrdup(MP_font_area);
+if ( strlen(mp->cur_ext)==0 ) mp->cur_ext=xstrdup(".tfm");
 pack_cur_name;
 if ( ! mp_b_open_in(mp, &mp->tfm_infile) ) goto BAD_TFM;
 file_opened=true
@@ -24017,7 +24162,7 @@ we scan the |font_name| array before calling |read_font_info|.
 font_number mp_find_font (MP mp, char *f) {
   font_number n;
   for (n=0;n<=mp->last_fnum;n++) {
-    if (strcmp(f,mp->font_name[n])==0 )
+    if (xstrcmp(f,mp->font_name[n])==0 )
       return n;
   }
   return mp_read_font_info(mp, f);
@@ -24148,15 +24293,15 @@ font_number mp_tfm_lookup (MP mp, char *s, scaled  fs) {
   font_number k;
   if ( fs != 0 ) { /*  should not be used!  */
     for (k = null_font + 1;k<=mp->last_fnum;k++) {
-      if ( strcmp( mp->font_name[k], s) && (mp->font_sizes[k] == fs) ) {
-         free(s);
+      if ( xstrcmp( mp->font_name[k], s) && (mp->font_sizes[k] == fs) ) {
+         xfree(s);
          return k;
       }
     }
   } else {
     for (k = null_font + 1;k<=mp->last_fnum;k++) {
-      if ( strcmp(mp->font_name[k], s) ) {
-        free(s);
+      if ( xstrcmp(mp->font_name[k], s) ) {
+        xfree(s);
         return k;
       }
     }
@@ -24221,12 +24366,8 @@ accurary.
 scaled one_bp; /* scaled value corresponds to 1bp */
 scaled one_hundred_bp; /* scaled value corresponds to 100bp */
 scaled one_hundred_inch; /* scaled value corresponds to 100in */
-integer *ten_pow; /* $10^0..10^9$ */
+integer ten_pow[10]; /* $10^0..10^9$ */
 integer scaled_out; /* amount of |scaled| that was taken out in |divide_scaled| */
-
-
-@ @<Malloc variables@>=
-mp->ten_pow = malloc(sizeof(integer)*10);
 
 @ @<Set init...@>=
 mp->one_bp = 65782; /* 65781.76 */
@@ -24236,13 +24377,15 @@ mp->ten_pow[0] = 1;
 for (i = 1;i<= 9; i++ ) {
   mp->ten_pow[i] = 10*mp->ten_pow[i - 1];
 }
-mp->mp_font_map=malloc(sizeof(fm_entry *)*font_max);
+mp->mp_font_map=xmalloc(sizeof(fm_entry *)*(font_max+1));
 for (i = null_font;i<= font_max;i++ ) {
   mp->font_enc_name[i] = NULL;
   mp->font_ps_name_fixed[i] = false;
   mp->mp_font_map[i] = 0;
 }
 
+@ @<Dealloc variables@>=
+xfree(mp->mp_font_map);
 
 
 @ The following function divides |s| by |m|. |dd| is number of decimal digits.
@@ -24286,7 +24429,7 @@ void mp_read_psname_table (MP mp) ;
   unsigned int j; /* characters left to read before string gets too long */
   char *s; /* possible font name to match */
   text_char c=0; /* character being read from |ps_tab_file| */
-  mp->name_of_file=ps_tab_name;
+  strcpy(mp->name_of_file,ps_tab_name);
   if ( mp_a_open_in(mp, &mp->ps_tab_file) ) {
     @<Set |lmax| to the maximum |font_name| length for fonts
       |last_ps_fnum+1| through |last_fnum|@>;
@@ -24294,12 +24437,12 @@ void mp_read_psname_table (MP mp) ;
       @<Read at most |lmax| characters from |ps_tab_file| into string |s|
         but |goto common_ending| if there is trouble@>;
       for (k=mp->last_ps_fnum+1;k<=mp->last_fnum;k++) {
-        if ( strcmp(s,mp->font_name[k])==0 ) {
+        if ( xstrcmp(s,mp->font_name[k])==0 ) {
           @<|flush_string(s)|, read in |font_ps_name[k]|, and
             |goto common_ending|@>;
         }
       }
-      free(s);
+      xfree(s);
     COMMON_ENDING:
       c = fgetc(mp->ps_tab_file);
 	  if (c=='\r') {
@@ -24324,7 +24467,7 @@ for (k=mp->last_ps_fnum+1;k<=mp->last_fnum;k++) {
 }
 
 @ @<Read at most |lmax| characters from |ps_tab_file| into string |s|...@>=
-s=malloc(lmax+1);
+s=xmalloc(lmax+1);
 j=0;
 while (1) { 
   if (c == '\n' || c == '\r' )
@@ -24334,7 +24477,7 @@ while (1) {
   if (j<lmax) {
    s[j++] = mp->xord[c];
   } else { 
-    free(s);
+    xfree(s);
     s=NULL;
     goto COMMON_ENDING;
   }
@@ -24347,13 +24490,13 @@ just to be safe.
 @<|flush_string(s)|, read in |font_ps_name[k]|, and...@>=
 { 
   char *ps_name =NULL;
-  free(s);
+  xfree(s);
   do {  
     if (c=='\n' || c == '\r') 
       mp_fatal_error(mp, "The psfont map file is bad!");
     c = fgetc(mp->ps_tab_file);
   } while (c==' ');
-  ps_name = malloc(33);
+  ps_name = xmalloc(33);
   j=0;
   do {  
     if (j>31) {
@@ -24366,7 +24509,7 @@ just to be safe.
       c = fgetc(mp->ps_tab_file);
   } while (c != ' ');
   ps_name[j]= 0;
-  free(mp->font_ps_name[k]);
+  xfree(mp->font_ps_name[k]);
   mp->font_ps_name[k]=ps_name;
   goto COMMON_ENDING;
 }
@@ -24394,11 +24537,11 @@ void mp_open_output_file (MP mp) ;
   if ( mp->filename_template==0 ) {
     char *s; /* a file extension derived from |c| */
     if ( c<0 ) 
-      s=strdup(".ps");
+      s=xstrdup(".ps");
     else 
       @<Use |c| to compute the file extension |s|@>;
     mp_pack_job_name(mp, s);
-    free(s);
+    xfree(s);
     while ( ! mp_a_open_out(mp, &mp->ps_file) )
       mp_prompt_file_name(mp, "file name for output",s);
   } else { /* initializations */
@@ -24471,7 +24614,7 @@ extreme cases so it may have to be shortened on some systems.
 
 @<Use |c| to compute the file extension |s|@>=
 { 
-  s = malloc(128);
+  s = xmalloc(128);
   snprintf(s,128,".%i",c);
 }
 
@@ -24484,10 +24627,12 @@ creation.
 @<Store the true output file name if appropriate@>=
 if ((c<mp->first_output_code)&&(mp->first_output_code>=0)) {
   mp->first_output_code=c;
+  xfree(mp->first_file_name);
   mp->first_file_name=str(mp_a_make_name_string(mp, mp->ps_file));
 }
 if ( c>=mp->last_output_code ) {
   mp->last_output_code=c;
+  xfree(mp->last_file_name);
   mp->last_file_name=str(mp_a_make_name_string(mp, mp->ps_file));
 }
 
@@ -24499,11 +24644,15 @@ integer first_output_code;integer last_output_code; /* rounded \&{charcode} valu
 integer total_shipped; /* total number of |ship_out| operations completed */
 
 @ @<Set init...@>=
-mp->first_file_name=strdup("");
-mp->last_file_name=strdup("");
+mp->first_file_name=xstrdup("");
+mp->last_file_name=xstrdup("");
 mp->first_output_code=32768;
 mp->last_output_code=-32768;
 mp->total_shipped=0;
+
+@ @<Dealloc variables@>=
+xfree(mp->first_file_name);
+xfree(mp->last_file_name);
 
 @ @<Begin the progress report for the output of picture~|c|@>=
 if ( mp->term_offset>max_print_line-6 ) mp_print_ln(mp);
@@ -25372,8 +25521,11 @@ position in the size list for its font.
 @<Glob...@>=
 pointer *font_sizes;
 
-@ @<Malloc variables@>=
-mp->font_sizes = malloc(sizeof(pointer)*(font_max+1));
+@ @<Allocate variables@>=
+mp->font_sizes = xmalloc(sizeof(pointer)*(font_max+1));
+
+@ @<Dealloc variables@>=
+xfree(mp->font_sizes);
 
 @ @d fscale_tolerance 65 /* that's $.001\times2^{16}$ */
 
@@ -25591,9 +25743,9 @@ void mp_ship_out (MP mp, pointer h) { /* output edge structure |h| */
     mp_print(mp, mp_fm_font_subset_name(mp,(A)));
   else 
     mp_print(mp, mp->font_ps_name[(A)]);
-  if ( strcmp(mp->font_name[(A)],"psyrgo")==0 )
+  if ( xstrcmp(mp->font_name[(A)],"psyrgo")==0 )
     mp_ps_print(mp, "-Slanted");
-  if ( strcmp(mp->font_name[(A)],"zpzdr-reversed")==0 ) 
+  if ( xstrcmp(mp->font_name[(A)],"zpzdr-reversed")==0 ) 
     mp_ps_print(mp, "-Reverse");
   if ( applied_reencoding((A)) ) { 
     mp_ps_print(mp, "-");
@@ -25666,8 +25818,8 @@ void mp_ship_out (MP mp, pointer h) { /* output edge structure |h| */
 @ @<Write font definition@>=
 if ( (applied_reencoding(f))||(mp_fm_font_slant(mp,f)!=0)||
      (mp_fm_font_extend(mp,f)!=0)||
-    (strcmp(mp->font_name[f],"psyrgo")==0)||
-    (strcmp(mp->font_name[f],"zpzdr-reversed")==0) ) {
+    (xstrcmp(mp->font_name[f],"psyrgo")==0)||
+    (xstrcmp(mp->font_name[f],"zpzdr-reversed")==0) ) {
   if ( (mp_font_is_subsetted(mp,f))&&
        (mp_font_is_included(mp,f))&&(mp->internal[prologues]==three))
     mp_ps_name_out(mp, mp_fm_font_subset_name(mp,f),true);
@@ -25688,11 +25840,11 @@ if ( (applied_reencoding(f))||(mp_fm_font_slant(mp,f)!=0)||
     mp_print_int(mp, mp_fm_font_extend(mp,f));
     mp_ps_print(mp, " ExtendFont ");
   };
-  if ( strcmp(mp->font_name[f],"psyrgo")==0 ) {
+  if ( xstrcmp(mp->font_name[f],"psyrgo")==0 ) {
     mp_ps_print(mp, " 890 ScaleFont ");
     mp_ps_print(mp, " 277 SlantFont ");
   };
-  if ( strcmp(mp->font_name[f],"zpzdr-reversed")==0 ) {
+  if ( xstrcmp(mp->font_name[f],"zpzdr-reversed")==0 ) {
     mp_ps_print(mp, " FontMatrix [-1 0 0 1 0 0] matrix concatmatrix /FontMatrix exch def ");
     mp_ps_print(mp, "/Metrics 2 dict dup begin ");
     mp_ps_print(mp, "/space[0 -278]def ");
@@ -25727,7 +25879,7 @@ void mp_list_used_resources (MP mp);
     if ( (mp->font_sizes[f]!=null)&&(mp_font_is_reencoded(mp,f)) ) {
 	  for (ff=ldf;ff>=null_font;ff--) {
         if ( mp->font_sizes[ff]!=null )
-          if ( strcmp(mp->font_enc_name[f],mp->font_enc_name[ff])==0 )
+          if ( xstrcmp(mp->font_enc_name[f],mp->font_enc_name[ff])==0 )
             goto FOUND;
       }
       if ( mp_font_is_subsetted(mp,f) )
@@ -25751,7 +25903,7 @@ void mp_list_used_resources (MP mp);
     if ( mp->font_sizes[f]!=null ) {
       for (ff=ldf;ff>=null_font;ff--) {
         if ( mp->font_sizes[ff]!=null )
-          if ( strcmp(mp->font_name[f],mp->font_name[ff])==0 )
+          if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
             goto FOUND2;
       }
       if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>max_print_line )
@@ -25791,7 +25943,7 @@ void mp_list_supplied_resources (MP mp);
     if ( (mp->font_sizes[f]!=null)&&(mp_font_is_reencoded(mp,f)) )  {
        for (ff=ldf;ff>= null_font;ff++) {
          if ( mp->font_sizes[ff]!=null )
-           if ( strcmp(mp->font_enc_name[f],mp->font_enc_name[ff])==0 )
+           if ( xstrcmp(mp->font_enc_name[f],mp->font_enc_name[ff])==0 )
              goto FOUND;
         }
       if ( (mp->internal[prologues]==three)&&(mp_font_is_subsetted(mp,f)))
@@ -25816,7 +25968,7 @@ void mp_list_supplied_resources (MP mp);
       if ( mp->font_sizes[f]!=null ) {
         for (ff=ldf;ff>= null_font;ff++) {
           if ( mp->font_sizes[ff]!=null )
-            if ( strcmp(mp->font_name[f],mp->font_name[ff])==0 )
+            if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
                goto FOUND2;
         }
         if ( ! mp_font_is_included(mp,f) )
@@ -25855,7 +26007,7 @@ void mp_list_needed_resources (MP mp);
     if ( mp->font_sizes[f]!=null ) {
       for (ff=ldf;ff>=null_font;ff--) {
         if ( mp->font_sizes[ff]!=null )
-          if ( strcmp(mp->font_name[f],mp->font_name[ff])==0 )
+          if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
              goto FOUND;
       };
       if ((mp->internal[prologues]==three)&&(mp_font_is_included(mp,f)) )
@@ -25881,7 +26033,7 @@ void mp_list_needed_resources (MP mp);
       if ( mp->font_sizes[f]!=null ) {
         for (ff=ldf;ff>=null_font;ff-- ) {
           if ( mp->font_sizes[ff]!=null )
-            if ( strcmp(mp->font_name[f],mp->font_name[ff])==0 )
+            if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
               goto FOUND2;
         }
         if ((mp->internal[prologues]==three)&&(mp_font_is_included(mp,f)) )
@@ -25938,7 +26090,7 @@ for (f=null_font+1;f<=mp->last_fnum;f++) {
     mp->font_sizes[f]=null;
   }
   if ( mp->font_enc_name[f]!=NULL )
-     free(mp->font_enc_name[f]);
+     xfree(mp->font_enc_name[f]);
   mp->font_enc_name[f] = NULL;
 }
 for (f=null_font+1;f<=mp->last_fnum;f++) {
@@ -26083,7 +26235,7 @@ search.
         mp_print_nl(mp, "%%DocumentFonts:");
       for (ff=ldf;ff>=null_font;ff--) {
         if ( mp->font_sizes[ff]!=null )
-          if ( strcmp(mp->font_ps_name[f],mp->font_ps_name[ff])==0 )
+          if ( xstrcmp(mp->font_ps_name[f],mp->font_ps_name[ff])==0 )
             goto FOUND;
       }
       if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>max_print_line )
@@ -26423,7 +26575,7 @@ void mp_load_enc (MP mp, char *enc_name,
     mp_error(mp);
   }
   while (*(r-1)==' ') r--; /* strip trailing spaces from encoding name */
-  myname = malloc(r-mp->enc_line);
+  myname = xmalloc(r-mp->enc_line);
   memcpy(myname,mp->enc_line+1,(r-mp->enc_line)-1);
   *(myname+(r-mp->enc_line-1))=0;
   *enc_encname = myname;
@@ -26441,8 +26593,8 @@ void mp_load_enc (MP mp, char *enc_name,
         print_err ("encoding vector contains more than 256 names");
         mp_error(mp);
       }
-      if (strcmp (buf, notdef) != 0)
-        glyph_names[names_count] = strdup (buf);
+      if (xstrcmp (buf, notdef) != 0)
+        glyph_names[names_count] = xstrdup (buf);
       names_count++;
     }
     if (*r != 10 && *r != '%') {
@@ -26531,11 +26683,11 @@ void avl_xfree (struct libavl_allocator *allocator, void *block);
 @ @c
 void *avl_xmalloc (struct libavl_allocator *allocator, size_t size) {
     assert(allocator);
-    return malloc (size);
+    return xmalloc (size);
 }
 void avl_xfree (struct libavl_allocator *allocator, void *block) {
     assert(allocator);
-    free (block);
+    xfree (block);
 }
 
 @ @<Glob...@>=
@@ -26563,12 +26715,12 @@ enc_entry * mp_add_enc (MP mp, char *s) {
     p = (enc_entry *) avl_find (mp->enc_tree, &tmp);
     if (p != NULL)              /* encoding already registered */
         return p;
-    p = malloc (sizeof (enc_entry));
+    p = xmalloc (sizeof (enc_entry));
     p->loaded = false;
-    p->file_name = strdup (s);
+    p->file_name = xstrdup (s);
     p->objnum = 0;
     p->tounicode = 0;
-    p->glyph_names = malloc (256 * sizeof (char *));
+    p->glyph_names = xmalloc (256 * sizeof (char *));
     for (i = 0; i < 256; i++)
         p->glyph_names[i] = (char *) notdef;
     aa = avl_probe (mp->enc_tree, p);
@@ -26687,7 +26839,7 @@ const char nontfm[] = "<nontfm>";
 
 @d set_field(F) do {
     if (q > buf)
-        fm->F = strdup(buf);
+        fm->F = xstrdup(buf);
     if (*r == '\0')
         goto DONE;
 } while (0)
@@ -26701,7 +26853,7 @@ const char nontfm[] = "<nontfm>";
 @c
 fm_entry *new_fm_entry (void) {
     fm_entry *fm;
-    fm = malloc (sizeof(fm_entry));
+    fm = xmalloc (sizeof(fm_entry));
     fm->tfm_name = NULL;
     fm->ps_name = NULL;
     fm->flags = 4;
@@ -26735,7 +26887,7 @@ void delete_fm_entry (fm_entry * fm) {
 
 static ff_entry *new_ff_entry (void) {
     ff_entry *ff;
-    ff = malloc (sizeof(ff_entry));
+    ff = xmalloc (sizeof(ff_entry));
     ff->ff_name = NULL;
     ff->ff_path = NULL;
     return ff;
@@ -27266,10 +27418,10 @@ int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
         /* modify ExtentFont to simulate expansion */
     if (fm->extend == 1000)
         fm->extend = 0;
-    fm->tfm_name = strdup (mp->font_name[f]);
+    fm->tfm_name = xstrdup (mp->font_name[f]);
     if (basefm->ps_name != NULL)
-        fm->ps_name = strdup (basefm->ps_name);
-    fm->ff_name = strdup (basefm->ff_name);
+        fm->ps_name = xstrdup (basefm->ps_name);
+    fm->ff_name = xstrdup (basefm->ff_name);
     fm->ff_objnum = 0;
     fm->tfm_num = f;
     fm->tfm_avail = TFM_FOUND;
@@ -27351,8 +27503,8 @@ ff_entry *check_ff_exist (MP mp, fm_entry * fm) {
     ff = (ff_entry *) avl_find (mp->ff_tree, &tmp);
     if (ff == NULL) {           /* not yet in database */
         ff = new_ff_entry ();
-        ff->ff_name = strdup (fm->ff_name);
-        ff->ff_path = strdup (fm->ff_name);
+        ff->ff_name = xstrdup (fm->ff_name);
+        ff->ff_path = xstrdup (fm->ff_name);
         aa = avl_probe (mp->ff_tree, ff);
         assert (aa != NULL);
     }
@@ -27389,9 +27541,9 @@ ff_entry *check_ff_exist (MP mp, fm_entry * fm) {
             if (p->tfm_num == null_font)
                 p->tfm_num = f;
             assert (p->tfm_num == f);
-            /* don't call free() here as it has been called by tfmlookup() */
+            /* don't call xfree() here as it has been called by tfmlookup() */
         } else
-          free(s);
+          xfree(s);
     }
 
     /* check whether we didn't find either a loaded or a loadable font yet,
@@ -27474,32 +27626,38 @@ void mp_map_line (MP mp, str_number t);
 
 @ @c 
 void mp_map_file (MP mp, str_number t) {
-  char *s = strdup(str (t));
+  char *s = xstrdup(str (t));
   mp_process_map_item (mp, s, MAPFILE);
   free (s);
 }
 void mp_map_line (MP mp, str_number t) {
-  char *s = strdup(str (t));
+  char *s = xstrdup(str (t));
   mp_process_map_item (mp, s, MAPLINE);
   free (s);
 }
 
 @ @c void mp_init_map_file (MP mp, int is_troff) {
-    assert (mp->mitem == NULL);
-    mp->mitem = malloc (sizeof(mapitem));
+    
+    mp->mitem = xmalloc (sizeof(mapitem));
     mp->mitem->mode = FM_DUPIGNORE;
     mp->mitem->type = MAPFILE;
-    if (access("mpost.map", R_OK))
-      mp->mitem->map_line = strdup ("mpost.map");
-    else {
+    mp->mitem->map_line = NULL;
+    if (access("mpost.map", R_OK)) {
+      mp->mitem->map_line = xstrdup ("mpost.map");
+    } else {
       if (is_troff) {
-	mp->mitem->map_line = strdup ("troff.map");
+	     mp->mitem->map_line = xstrdup ("troff.map");
       } else {
-	mp->mitem->map_line = strdup ("pdftex.map");
+	     mp->mitem->map_line = xstrdup ("pdftex.map");
       }
     }
 }
 
+@ @<Dealloc variables@>=
+if (mp->mitem!=NULL) {
+  xfree(mp->mitem->map_line);
+  xfree(mp->mitem);
+}
 
 @ cleaning up... 
 
@@ -27552,9 +27710,6 @@ char_entry *char_ptr, *char_array;
 size_t char_limit;
 char *job_id_string;
 
-@ @<Initialize table...@>
-mp->job_id_string = NULL;
-
 @ 
 @d SMALL_ARRAY_SIZE    256
 @d Z_NULL  0  
@@ -27565,13 +27720,15 @@ void mp_set_job_id (MP mp) {
     size_t slen;
     int i;
     if (mp->job_id_string != NULL)
-        return;
-    name_string = strdup (mp->job_name);
-    format_string = strdup (mp->mem_ident);
+       return;
+    if ( mp->job_name==NULL )
+       mp->job_name=xstrdup("mpout");
+    name_string = xstrdup (mp->job_name);
+    format_string = xstrdup (mp->mem_ident);
     slen = SMALL_BUF_SIZE +
         strlen (name_string) +
         strlen (format_string);
-    s = malloc (slen * sizeof (char));
+    s = xmalloc (slen * sizeof (char));
     i = snprintf (s, slen,
                   "%.4d/%.2d/%.2d %.2d:%.2d %s %s",
                   (mp->internal[year]>>16),
@@ -27580,12 +27737,11 @@ void mp_set_job_id (MP mp) {
                   (mp->internal[time]>>16) / 60, 
                   (mp->internal[time]>>16) % 60,
                   name_string, format_string);
-    mp->job_id_string = strdup (s);
+    mp->job_id_string = xstrdup (s);
     free (s);
     free (name_string);
     free (format_string);
 }
-
 void fnstr_append (MP mp, const char *s) {
     size_t l = strlen (s) + 1;
     alloc_array (char, l, SMALL_ARRAY_SIZE);
@@ -27593,8 +27749,13 @@ void fnstr_append (MP mp, const char *s) {
     mp->char_ptr = strend (mp->char_ptr);
 }
 
-/* this is not really a true crc32, but it should be just enough to keep
-   subsets prefixes somewhat disjunct */
+@ @<Dealloc variables@>=
+xfree(mp->job_id_string);
+
+@ this is not really a true crc32, but it should be just enough to keep
+  subsets prefixes somewhat disjunct
+
+@c
 unsigned long crc32 (int oldcrc, const Byte *buf, int len) {
   unsigned long ret = 0;
   int i;
@@ -27656,7 +27817,7 @@ void make_subset_tag (MP mp, fm_entry * fm_cur, char **glyph_names, int tex_font
         crc /= 26;
     }
     tag[6] = 0;
-    fm_cur->subset_tag = strdup (tag);
+    fm_cur->subset_tag = xstrdup (tag);
 }
 
 
@@ -27973,7 +28134,7 @@ static boolean str_suffix (const char *begin_buf, const char *end_buf,
         mp->T##_limit = (s);
         if ((unsigned)(n) > mp->T##_limit)
             mp->T##_limit = (n);
-        mp->T##_array = malloc (mp->T##_limit*sizeof(T##_entry));
+        mp->T##_array = xmalloc (mp->T##_limit*sizeof(T##_entry));
         mp->T##_ptr = mp->T##_array;
     }
     else if ((unsigned)(mp->T##_ptr - mp->T##_array + (n)) > mp->T##_limit) {
@@ -28282,7 +28443,7 @@ void copy_glyph_names (char **glyph_names, int a, int b) {
         glyph_names[b] = (char *) notdef;
     }
     if (glyph_names[a] != notdef) {
-        glyph_names[b] = strdup (glyph_names[a]);
+        glyph_names[b] = xstrdup (glyph_names[a]);
     }
 }
 void t1_builtin_enc (MP mp) {
@@ -28299,7 +28460,7 @@ void t1_builtin_enc (MP mp) {
                     mp->t1_builtin_glyph_names[i] = (char *) notdef;
                 else
                     mp->t1_builtin_glyph_names[i] =
-                        strdup (standard_glyph_names[i]);
+                        xstrdup (standard_glyph_names[i]);
             mp->t1_encoding = ENC_STANDARD;
         } else {
             char s[128];
@@ -28343,7 +28504,7 @@ void t1_builtin_enc (MP mp) {
                         (mp, "encoding vector contains more than 256 names");
                 }
                 if (strcmp (mp->t1_buf_array, notdef) != 0)
-                  mp->t1_builtin_glyph_names[counter] = strdup (mp->t1_buf_array);
+                  mp->t1_builtin_glyph_names[counter] = xstrdup (mp->t1_buf_array);
                 counter++;
             }
             if (*r != 10 && *r != '%') {
@@ -28374,7 +28535,7 @@ void t1_builtin_enc (MP mp) {
             if (sscanf (p, "dup %i%256s put", &i, mp->t1_buf_array) == 2 &&
                 *mp->t1_buf_array == '/' && valid_code (i)) {
                 if (strcmp (mp->t1_buf_array + 1, notdef) != 0)
-                    mp->t1_builtin_glyph_names[i] = strdup (mp->t1_buf_array + 1);
+                    mp->t1_builtin_glyph_names[i] = xstrdup (mp->t1_buf_array + 1);
                 p = strstr (p, " put") + strlen (" put");
                 skip (p, ' ');
             }
@@ -28529,7 +28690,7 @@ void cs_store (MP mp, boolean is_subr) {
         if (strcmp (mp->t1_buf_array + 1, notdef) == 0)     /* skip the slash */
             ptr->glyph_name = (char *) notdef;
         else
-            ptr->glyph_name = strdup (mp->t1_buf_array + 1);
+            ptr->glyph_name = xstrdup (mp->t1_buf_array + 1);
     }
     /* copy " RD " + cs data to mp->t1_buf_array */
     memcpy (mp->t1_buf_array, mp->t1_line_array + mp->cs_start - 4,
@@ -28542,7 +28703,7 @@ void cs_store (MP mp, boolean is_subr) {
         mp->cs_token_pair = check_cs_token_pair (mp);
     ptr->len = mp->t1_buf_ptr - mp->t1_buf_array;
     ptr->cslen = mp->t1_cslen;
-    ptr->data = malloc (ptr->len *sizeof (byte));
+    ptr->data = xmalloc (ptr->len *sizeof (byte));
     memcpy (ptr->data, mp->t1_buf_array, ptr->len);
     ptr->valid = true;
 }
@@ -28890,10 +29051,10 @@ static void t1_read_subrs (MP mp, int tex_font, fm_entry *fm_cur)
         return;
     }
 	//    subr_tab = xtalloc (subr_size, cs_entry);
-	mp->subr_tab = (cs_entry *)malloc (mp->subr_size*sizeof (cs_entry));
+	mp->subr_tab = (cs_entry *)xmalloc (mp->subr_size*sizeof (cs_entry));
     for (ptr = mp->subr_tab; ptr - mp->subr_tab < mp->subr_size; ptr++)
         init_cs_entry (ptr);
-    mp->subr_array_start = strdup (mp->t1_line_array);
+    mp->subr_array_start = xstrdup (mp->t1_line_array);
     t1_getline (mp);
     while (mp->t1_cslen) {
         store_subr (mp);
@@ -28920,7 +29081,7 @@ static void t1_read_subrs (MP mp, int tex_font, fm_entry *fm_cur)
         strcat (mp->t1_buf_array, mp->t1_line_array);
         t1_getline (mp);
     }
-    mp->subr_array_end = strdup (mp->t1_buf_array);
+    mp->subr_array_end = xstrdup (mp->t1_buf_array);
     if (i == POST_SUBRS_SCAN) { /* CharStrings not found;
                                    suppose synthetic font */
         for (ptr = mp->subr_tab; ptr - mp->subr_tab < mp->subr_size; ptr++)
@@ -28975,7 +29136,7 @@ static void t1_flush_cs (MP mp, boolean is_subr)
     if (is_subr) {
         cr = 4330;
         cs_len = 0;
-        return_cs = malloc ( mp->t1_lenIV + 1 * sizeof(byte));
+        return_cs = xmalloc ( mp->t1_lenIV + 1 * sizeof(byte));
         if ( mp->t1_lenIV > 0) {
             for (cs_len = 0, r = return_cs; cs_len <  mp->t1_lenIV; cs_len++, r++)
                 *r = cencrypt (mp,0x00, &cr);
@@ -29081,17 +29242,17 @@ static void t1_subset_charstrings (MP mp, int tex_font)
     /* cs_size_pos points to the number indicating
        dict size after "/CharStrings" */
     mp->cs_size = t1_scan_num (mp,mp->t1_line_array + mp->cs_size_pos, 0);
-    mp->cs_ptr = mp->cs_tab = malloc (mp->cs_size* sizeof(cs_entry));
+    mp->cs_ptr = mp->cs_tab = xmalloc (mp->cs_size* sizeof(cs_entry));
     for (ptr = mp->cs_tab; ptr - mp->cs_tab < mp->cs_size; ptr++)
         init_cs_entry (ptr);
     mp->cs_notdef = NULL;
-    mp->cs_dict_start = strdup (mp->t1_line_array);
+    mp->cs_dict_start = xstrdup (mp->t1_line_array);
     t1_getline (mp);
     while (mp->t1_cslen) {
         store_cs (mp);
         t1_getline (mp);
     }
-    mp->cs_dict_end = strdup (mp->t1_line_array);
+    mp->cs_dict_end = xstrdup (mp->t1_line_array);
     t1_mark_glyphs (mp,tex_font);
     if (mp->subr_tab != NULL) {
         if (mp->cs_token_pair == NULL) 
@@ -29139,7 +29300,7 @@ int t1_updatefm (MP mp, int f, fm_entry *fm)
 	return 0;
   }
   t1_scan_only (mp,f, fm);
-  s = strdup(mp->fontname_buf);
+  s = xstrdup(mp->fontname_buf);
   p = s;
   while (*p != ' ' && *p != 0) 
      p++;
@@ -29297,7 +29458,7 @@ char * mp_fm_font_subset_name (MP mp, int f);
       if (is_reencoded (fm)) {
    	e = fm->encoding;
       	if (e->enc_name!=NULL)
-     	  return strdup(e->enc_name);
+     	  return xstrdup(e->enc_name);
       } else {
 	return NULL;
       }
@@ -29323,7 +29484,7 @@ char * mp_fm_font_name (MP mp, int f) {
           mp_error(mp);
 	}
       }
-      return strdup(fm->ps_name);
+      return xstrdup(fm->ps_name);
     }
   }
   print_err ("fontmap name problems for font ");
@@ -29338,11 +29499,11 @@ char * mp_fm_font_subset_name (MP mp, int f) {
     fm = mp->mp_font_map[f];
     if (fm != NULL && (fm->ps_name != NULL)) {
       if (is_subsetted(fm)) {
-	char *s = malloc(strlen(fm->ps_name)+8);
+	char *s = xmalloc(strlen(fm->ps_name)+8);
 	snprintf(s,strlen(fm->ps_name)+8,"%s-%s",fm->subset_tag,fm->ps_name);
 	return s;
       } else {
-        return strdup(fm->ps_name);
+        return xstrdup(fm->ps_name);
       }
     }
   }
@@ -29437,7 +29598,7 @@ char * mem_ident;
 mp->mem_ident=NULL;
 
 @ @<Initialize table entries...@>=
-mp->mem_ident=strdup(" (INIMP)");
+mp->mem_ident=xstrdup(" (INIMP)");
 
 @ @<Declare act...@>=
 void mp_store_mem_file (MP mp) ;
@@ -29485,7 +29646,7 @@ boolean mp_load_mem_file (MP mp) {
   return true; /* it worked! */
 OFF_BASE: 
   wake_up_terminal;
-  wterm_ln("(Fatal mem file error; I""m stymied)");
+  wterm_ln("(Fatal mem file error; I'm stymied)");
 @.Fatal mem file error@>
    return false;
 }
@@ -29497,8 +29658,8 @@ macros to dump words of different types:
 @d dump_int(A)  { WW.cint=(A); fwrite(&WW,sizeof(WW),1,mp->mem_file); }
 @d dump_hh(A)   { WW.hh=(A);   fwrite(&WW,sizeof(WW),1,mp->mem_file); }
 @d dump_qqqq(A) { WW.qqqq=(A); fwrite(&WW,sizeof(WW),1,mp->mem_file); }
-@d dump_string(A) { dump_int(strlen(A));
-                    fwrite(A,strlen(A),1,mp->mem_file); }
+@d dump_string(A) { dump_int(strlen(A)+1);
+                    fwrite(A,strlen(A)+1,1,mp->mem_file); }
 
 @<Glob...@>=
 word_file mem_file; /* for input or output of mem information */
@@ -29518,6 +29679,7 @@ read an integer value |x| that is supposed to be in the range |a<=x<=b|.
                if (x<(A)) goto OFF_BASE; 
                if (x>(B)) { too_small((C)); } else {(D)=x;} }
 @d undump_string(A) { integer XX=0; undump_int(XX);
+                      A = xmalloc(XX);
                       fread(A,XX,1,mp->mem_file); }
 
 @ The next few sections of the program should make it clear how we use the
@@ -29569,9 +29731,12 @@ while ( k<=mp->max_str_ptr ) {
 }
 k=0;
 while (1)  { 
-  dump_int(mp->str_start[k]);
-  if ( k==mp->str_ptr ) break;
-  else k=mp->next_str[k];
+  dump_int((mp->str_start[k])); 
+  if ( k==mp->str_ptr ) {
+    break;
+  } else { 
+    k=mp->next_str[k]; 
+  }
 };
 k=0;
 while (k+4<mp->pool_ptr ) { 
@@ -29734,8 +29899,9 @@ undump_int(x);
 if ( (x!=69073)|| feof(mp->mem_file) ) goto OFF_BASE
 
 @ @<Create the |mem_ident|...@>=
-{
-  mp->mem_ident = malloc(256);
+{ 
+  xfree(mp->mem_ident);
+  mp->mem_ident = xmalloc(256);
   snprintf(mp->mem_ident,256," (preloaded mem=%s %i.%i.%i)", 
            mp->job_name,
            (mp_round_unscaled(mp, mp->internal[year]) % 100),
@@ -29749,6 +29915,9 @@ if ( (x!=69073)|| feof(mp->mem_file) ) goto OFF_BASE
   mp_print(mp, mp->name_of_file); 
   mp_print_nl(mp, mp->mem_ident);
 }
+
+@ @<Dealloc variables@>=
+xfree(mp->mem_ident);
 
 @ @<Close the mem file@>=
 w_close(mp->mem_file)
@@ -29779,50 +29948,31 @@ space consumed by the dumping/undumping routines and the numerous calls on
 The \.{VIRMP} program cannot read a mem file instantaneously, of course;
 the best implementations therefore allow for production versions of \MP\ that
 not only avoid the loading routine for \PASCAL\ object code, they also have
-a mem file pre-loaded. This is impossible to do if we stick to standard
-\PASCAL; but there is a simple way to fool many systems into avoiding the
-initialization, as follows:\quad(1)~We declare a global integer variable
-called |ready_already|. The probability is negligible that this
-variable holds any particular value like 314159 when \.{VIRMP} is first
-loaded.\quad(2)~After we have read in a mem file and initialized
-everything, we set |ready_already:=314159|.\quad(3)~Soon \.{VIRMP}
-will print `\.*', waiting for more input; and at this point we
-interrupt the program and save its core image in some form that the
-operating system can reload speedily.\quad(4)~When that core image is
-activated, the program starts again at the beginning; but now
-|ready_already=314159| and all the other global variables have
-their initial values too. The former chastity has vanished!
-
-In other words, if we allow ourselves to test the condition
-|ready_already=314159|, before |ready_already| has been
-assigned a value, we can avoid the lengthy initialization. Dirty tricks
-rarely pay off so handsomely.
-@^dirty \PASCAL@>
-@^system dependencies@>
+a mem file pre-loaded. 
 
 @<Glob...@>=
-integer ready_already; /* a sacrifice of purity for economy */
 boolean ini_version; /* are we iniMP? */
 
 @ Now this is really it: \MP\ starts and ends here.
 
-The initial test involving |ready_already| should be deleted if the
-\PASCAL\ runtime system is smart enough to detect such a ``mistake.''
-@^system dependencies@>
-
 @c 
 int main (int argc, char **argv) { /* |start_here| */
+  int aindex; /* argc counter */
+  int k; /* index into buffer */
   int troff_mode = 0;
   MP mp = mp_new();
   mp->ini_version = false;
+  mp->job_id_string = NULL;
+  aindex=1;
   if (argc>1) {
     if (strcmp(argv[1],"-ini")==0) {
        mp->ini_version = true;
+       aindex = 2;
     } 
   }
+  @<Initialize the command line@>;
   mp->history=fatal_error_stop; /* in case we quit during initialization */
   t_open_out; /* open the terminal for output */
-  if ( mp->ready_already==314159 ) goto START_OF_MP;
   @<Check the ``constant'' values...@>;
   if ( mp->bad>0 ) {
     wterm_ln("Ouch---my internal constants have been clobbered!");
@@ -29840,21 +29990,19 @@ int main (int argc, char **argv) { /* |start_here| */
     mp->max_str_ptr=mp->str_ptr; mp->max_pool_ptr=mp->pool_ptr;
     mp_fix_date_and_time(mp);
   }
-  mp->ready_already=314159;
-START_OF_MP: 
   @<Initialize the output routines@>;
   @<Get the first line of input and prepare to start@>;
+  mp_set_job_id(mp);
   mp_init_map_file(mp, troff_mode);
   mp->history=spotless; /* ready to go! */
   if ( mp->start_sym>0 ) { /* insert the `\&{everyjob}' symbol */
     mp->cur_sym=mp->start_sym; mp_back_input(mp);
   }
-  mp_set_job_id(mp);
   mp_main_control(mp); /* come to life */
   mp_final_cleanup(mp); /* prepare for death */
   mp_close_files_and_terminate(mp);
 FINAL_END: 
-  mp->ready_already=0;
+  mp_free(mp);
   return 0;
 }
 
@@ -29887,6 +30035,7 @@ void mp_close_files_and_terminate (MP mp) {
       mp_print_nl(mp, "Transcript written on ");
 @.Transcript written...@>
       mp_print(mp, mp->log_name); mp_print_char(mp, '.');
+      mp_print_ln(mp);
     }
   }
 }
@@ -29961,7 +30110,7 @@ been scanned.
 void mp_final_cleanup (MP mp) {
   small_number c; /* 0 for \&{end}, 1 for \&{dump} */
   c=mp->cur_mod;
-  if ( mp->job_name==0 ) mp_open_log_file(mp);
+  if ( mp->job_name==NULL ) mp_open_log_file(mp);
   while ( mp->input_ptr>0 ) {
     if ( token_state ) mp_end_token_list(mp);
     else  mp_end_file_reading(mp);
