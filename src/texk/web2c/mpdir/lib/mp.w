@@ -15830,7 +15830,7 @@ this file.
   mp_print_int(mp, mp_round_unscaled(mp, mp->internal[day])); 
   mp_print_char(mp, ' ');
   m=mp_round_unscaled(mp, mp->internal[month]);
-  for (k=3*m-2;k<=3*m;k++) { wlog_chr(months[k]); }
+  for (k=3*m-3;k<3*m;k++) { wlog_chr(months[k]); }
   mp_print_char(mp, ' '); 
   mp_print_int(mp, mp_round_unscaled(mp, mp->internal[year])); 
   mp_print_char(mp, ' ');
