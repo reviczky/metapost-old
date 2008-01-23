@@ -169,7 +169,6 @@ typedef struct MP_instance * MP;
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <stdarg.h>
 #include <assert.h>
 #include <unistd.h> /* for access() */
@@ -660,100 +659,74 @@ file has been reached; (5)~display of bits on the user's screen.
 The bit-display operation will be discussed in a later section; we shall
 deal here only with more traditional kinds of I/O.
 
-\MP\ needs to deal with two kinds of files.
-We shall use the term |alpha_file| for a file that contains textual data,
-and the term |byte_file| for a file that contains eight-bit binary information.
-These two types turn out to be the same on many computers, but
-sometimes there is a significant distinction, so we shall be careful to
-distinguish between them. Standard protocols for transferring
-such files from computer to computer, via high-speed networks, are
-now becoming available to more and more communities of users.
-
-The program actually makes use also of a third kind of file, called a
-|word_file|, when dumping and reloading mem information for its own
-initialization.  
-
 @<Types...@>=
 typedef unsigned char eight_bits ; /* unsigned one-byte quantity */
-typedef FILE * alpha_file; /* files that contain textual data */
-typedef FILE * byte_file; /* files that contain binary data */
-typedef FILE * word_file;
+enum {
+  mp_filetype_program = 1, /* \MP\ language input */
+  mp_filetype_log,  /* the log file */
+  mp_filetype_postscript, /* the postscript output */
+  mp_filetype_text,  /* text files for readfrom and writeto primitives */
+  mp_filetype_memfile, /* memory dumps */
+  mp_filetype_metrics, /* TeX font metric files */
+  mp_filetype_fontmap, /* PostScript font mapping files */
+  mp_filetype_font, /*  PostScript type1 font programs */
+  mp_filetype_encoding, /*  PostScript font encoding files */
+};
 
-@ Most of what we need to do with respect to input and output can be handled
-by the I/O facilities that are standard in \PASCAL, i.e., the routines
-called |get|, |put|, |eof|, and so on. But
-standard \PASCAL\ does not allow file variables to be associated with file
-names that are determined at run time, so it cannot be used to implement
-\MP; some sort of extension to \PASCAL's ordinary |reset| and |rewrite|
-is crucial for our purposes. We shall assume that |name_of_file| is a variable
-of an appropriate type such that the \PASCAL\ run-time system being used to
-implement \MP\ can open a file whose external name is specified by
-|name_of_file|.
-@^system dependencies@>
+@ The file types that are passed on in |ftype| can be  used to 
+differentiate file searches if a library like kpathsea is used.
+
+@c
+FILE *mp_open_file(MP mp, char *fname, char *fmode, int ftype)  {
+    assert(mp); assert(ftype);
+	return fopen(fname, fmode);
+}
+
+
+@ This is a legacy interface: all file names pass through |name_of_file|.
 
 @<Glob...@>=
-char name_of_file[file_name_size+1];
-  /* on some systems this may be a \&{record} variable */
+char name_of_file[file_name_size+1]; /* the name of a system file */
 int name_length;/* this many characters are actually
   relevant in |name_of_file| (the rest are blank) */
 
-@ The \ph\ compiler with which the original version of \MF\ was prepared
-extends the rules of \PASCAL\ in a very convenient way. To open file~|f|,
-we can write
-$$\vbox{\halign{#\hfil\qquad&#\hfil\cr
-|reset(f,@t\\{name}@>,'/O')|&for input;\cr
-|rewrite(f,@t\\{name}@>,'/O')|&for output.\cr}}$$
-The `\\{name}' parameter, which is of type `\ignorespaces|packed
-array[@t\<\\{any}>@>] of text_char|', stands for the name of
-the external file that is being opened for input or output.
-Blank spaces that might appear in \\{name} are ignored.
-
-The `\.{/O}' parameter tells the operating system not to issue its own
-error messages if something goes wrong. If a file of the specified name
-cannot be found, or if such a file cannot be opened for some other reason
-(e.g., someone may already be trying to write the same file), we will have
-|@!erstat(f)<>0| after an unsuccessful |reset| or |rewrite|.  This allows
-\MP\ to undertake appropriate corrective action.
-@:PASCAL H}{\ph@>
-@^system dependencies@>
-
-\MP's file-opening procedures return |false| if no file identified by
+@ \MP's file-opening procedures return |false| if no file identified by
 |name_of_file| could be opened.
 
 @c 
-boolean mp_a_open_in (MP mp,alpha_file *f) {
+boolean mp_a_open_in (MP mp, FILE **f, int ftype) {
   /* open a text file for input */
-  *f = fopen(mp->name_of_file,"r"); 
+  *f = mp_open_file(mp,mp->name_of_file,"r", ftype); 
   return (*f ? true : false);
 }
 @#
-boolean mp_a_open_out (MP mp,alpha_file *f) {
+boolean mp_a_open_out (MP mp, FILE **f, int ftype) {
   /* open a text file for output */
-  *f = fopen(mp->name_of_file,"w"); 
+  *f = mp_open_file(mp,mp->name_of_file,"w", ftype); 
   return (*f ? true : false);
 }
 @#
-boolean mp_b_open_in (MP mp,byte_file *f) {
+boolean mp_b_open_in (MP mp, FILE **f, int ftype) {
   /* open a binary file for input */
-  *f = fopen(mp->name_of_file,"rb"); 
+  *f = mp_open_file(mp,mp->name_of_file,"rb", ftype); 
   return (*f ? true : false);
 }
 @#
-boolean mp_b_open_out (MP mp,byte_file *f) {
+boolean mp_b_open_out (MP mp, FILE **f, int ftype) {
   /* open a binary file for output */
-  *f = fopen(mp->name_of_file,"wb"); 
+  *f = mp_open_file(mp,mp->name_of_file,"wb", ftype); 
   return (*f ? true : false);
 }
 @#
-boolean mp_w_open_in (MP mp,word_file *f) {
+boolean mp_w_open_in (MP mp, FILE **f) {
   /* open a word file for input */
-  *f = fopen(mp->name_of_file,"rb"); 
+  *f = mp_open_file(mp,mp->name_of_file,"rb",mp_filetype_memfile); 
   return (*f ? true : false);
 }
 @#
-boolean mp_w_open_out (MP mp,word_file *f) {
+boolean mp_w_open_out (MP mp, FILE**f) {
   /* open a word file for output */
-  *f = fopen(mp->name_of_file,"wb"); 
+  *f = mp_open_file(mp,mp->name_of_file,"wb",mp_filetype_memfile); 
   return (*f ? true : false);
 }
 
@@ -829,7 +802,7 @@ occurs in the middle of a line, the system function |eoln| should return
 a |true| result (even though |f^| will be undefined).
 
 @c 
-boolean mp_input_ln (MP mp,alpha_file  f, boolean bypass_eoln) {
+boolean mp_input_ln (MP mp,FILE *  f, boolean bypass_eoln) {
   /* inputs the next line or returns |false| */
   int last_nonblank; /* |last| with trailing blanks removed */
   int c;
@@ -874,8 +847,8 @@ is considered an output file the file variable is |term_out|.
 @^system dependencies@>
 
 @<Glob...@>=
-alpha_file term_in; /* the terminal as an input file */
-alpha_file term_out; /* the terminal as an output file */
+FILE * term_in; /* the terminal as an input file */
+FILE * term_out; /* the terminal as an output file */
 
 @ Here is how to open the terminal files. In the default configuration,
 nothing happens except that the command line (if there is one) is copied
@@ -888,7 +861,7 @@ initialization.
 
 @d t_open_out  /* open the terminal for text output */
 @d t_open_in  do { /* open the terminal for text input */
-    mp->last = strlen(mp->command_line)+1;
+    mp->last = strlen(mp->command_line);
     strncpy((char *)mp->buffer,mp->command_line,mp->last);
     xfree(mp->command_line);
 } while (0)
@@ -1616,8 +1589,8 @@ to the terminal, the transcript file, or the \ps\ output file, respectively.
 @d max_selector term_and_log /* highest selector setting */
 
 @<Glob...@>=
-alpha_file log_file; /* transcript of \MP\ session */
-alpha_file ps_file; /* the generic font output goes here */
+FILE * log_file; /* transcript of \MP\ session */
+FILE * ps_file; /* the generic font output goes here */
 unsigned int selector; /* where to print a message */
 unsigned char dig[23]; /* digits in a number being output */
 integer tally; /* the number of characters recently printed */
@@ -12571,7 +12544,7 @@ by analogy with |line_stack|.
 @^system dependencies@>
 
 @d terminal_input (name==is_term) /* are we reading from the terminal? */
-@d cur_file mp->input_file[index] /* the current |alpha_file| variable */
+@d cur_file mp->input_file[index] /* the current |FILE *| variable */
 @d line mp->line_stack[index] /* current line number in the current source file */
 @d in_name mp->iname_stack[index] /* a string used to construct \.{MPX} file names */
 @d in_area mp->iarea_stack[index] /* another string for naming \.{MPX} files */
@@ -12584,7 +12557,7 @@ by analogy with |line_stack|.
 @<Glob...@>=
 integer in_open; /* the number of lines in the buffer, less one */
 unsigned int open_parens; /* the number of open text files */
-alpha_file input_file[(mp_max_in_open+1)];
+FILE * input_file[(mp_max_in_open+1)];
 integer line_stack[(mp_max_in_open+1)]; /* the line number for each file */
 char *iname_stack[(mp_max_in_open+1)]; /* used for naming \.{MPX} files */
 char *iarea_stack[(mp_max_in_open+1)]; /* used for naming \.{MPX} files */
@@ -15554,9 +15527,14 @@ void mp_pack_file_name (MP mp, char *n, char *a, char *e) {
   ASCII_code c; /* character being packed */
   char *j; /* a character  index */
   k=0;
-  for (j=a;*j;j++) { append_to_name(*j); }
+  assert(n);
+  if (a!=NULL) {
+    for (j=a;*j;j++) { append_to_name(*j); }
+  }
   for (j=n;*j;j++) { append_to_name(*j); }
-  for (j=e;*j;j++) { append_to_name(*j); }
+  if (e!=NULL) {
+    for (j=e;*j;j++) { append_to_name(*j); }
+  }
   mp->name_of_file[k]=0;
   mp->name_length=k; 
 }
@@ -15607,7 +15585,7 @@ isn't found.
   for (j=0;j<n;j++) {
     append_to_name(mp->xord[(int)mp->MP_mem_default[j]]);
   }
-  for (j=a;j< b;j++) {
+  for (j=a;j<=b;j++) {
     append_to_name(mp->buffer[j]);
   }
   for (j=mem_default_length-mem_ext_length;
@@ -15646,7 +15624,7 @@ boolean mp_open_mem_file (MP mp) {
   mp_pack_buffered_name(mp, mem_default_length-mem_ext_length,0,0);
   if ( ! mp_w_open_in(mp, &mp->mem_file) ) {
     wake_up_terminal;
-    wterm_ln("I can\'t find the PLAIN mem file!");
+    wterm_ln("I can\'t find the PLAIN mem file!\n");
 @.I can't find PLAIN...@>
 @.plain@>
     return false;
@@ -15839,7 +15817,7 @@ it catch up to what has previously been printed on the terminal.
      mp->job_name=xstrdup("mpout");
   }
   mp_pack_job_name(mp,".log");
-  while ( ! mp_a_open_out(mp, &mp->log_file) ) {
+  while ( ! mp_a_open_out(mp, &mp->log_file, mp_filetype_log) ) {
     @<Try to get a different log file name@>;
   }
   mp->log_name=xstrdup(mp->name_of_file);
@@ -15901,13 +15879,13 @@ can't find the file in |cur_area| or the appropriate system area.
   mp_pack_file_name(mp, mp->cur_name,mp->cur_area, ext);
   in_name=xstrdup(mp->cur_name); 
   in_area=xstrdup(mp->cur_area);
-  if ( mp_a_open_in(mp, &cur_file) ) {
+  if ( mp_a_open_in(mp, &cur_file, mp_filetype_program) ) {
     return true;
   } else { 
     if (strcmp(ext,".mf")==0 ) in_area=xstrdup(MF_area);
     else in_area=xstrdup(MP_area);
     mp_pack_file_name(mp, mp->cur_name,in_area,ext);
-    return mp_a_open_in(mp, &cur_file);
+    return mp_a_open_in(mp, &cur_file, mp_filetype_program);
   }
   return false;
 }
@@ -16012,7 +15990,7 @@ with the current input file.
   @<Try to make sure |name_of_file| refers to a valid \.{MPX} file and
     |goto not_found| if there is a problem@>;
   mp_begin_file_reading(mp);
-  if ( ! mp_a_open_in(mp, &cur_file) ) {
+  if ( ! mp_a_open_in(mp, &cur_file, mp_filetype_program) ) {
     mp_end_file_reading(mp);
     goto NOT_FOUND;
   };
@@ -16064,10 +16042,10 @@ typedef unsigned int readf_index; /* 0..max_read_files */
 typedef unsigned int write_index;  /* 0..max_write_files */
 
 @ @<Glob...@>=
-alpha_file rd_file[(max_read_files+1)]; /* \&{readfrom} files */
+FILE * rd_file[(max_read_files+1)]; /* \&{readfrom} files */
 char *rd_fname[(max_read_files+1)]; /* corresponding file name or 0 if file not open */
 readf_index read_files; /* number of valid entries in the above arrays */
-alpha_file wr_file[(mp_max_write_files+1)]; /* \&{write} files */
+FILE * wr_file[(mp_max_write_files+1)]; /* \&{write} files */
 char *wr_fname[(mp_max_write_files+1)]; /* corresponding file name or 0 if file not open */
 write_index write_files; /* number of valid entries in the above arrays */
 
@@ -16083,7 +16061,7 @@ be opened.  Otherwise it updates |rd_file[n]| and |rd_fname[n]|.
   mp_str_scan_file(mp, s);
   pack_cur_name;
   mp_begin_file_reading(mp);
-  if ( ! mp_a_open_in(mp, &mp->rd_file[n]) ) 
+  if ( ! mp_a_open_in(mp, &mp->rd_file[n], mp_filetype_text) ) 
 	goto NOT_FOUND;
   if ( ! mp_input_ln(mp, mp->rd_file[n], false) ) {
     a_close(mp->rd_file[n]); 
@@ -16104,7 +16082,7 @@ void mp_open_write_file (MP mp,str_number s, readf_index  n) ;
 @ @c void mp_open_write_file (MP mp,str_number s, readf_index  n) {
   mp_str_scan_file(mp, s);
   pack_cur_name;
-  while ( ! mp_a_open_out(mp, &mp->wr_file[n]) )
+  while ( ! mp_a_open_out(mp, &mp->wr_file[n], mp_filetype_text) )
     mp_prompt_file_name(mp, "file name for write output","");
   mp->wr_fname[n]=xstrdup(mp->name_of_file);
 }
@@ -18921,6 +18899,7 @@ that receives eight integers corresponding to the four controlling points,
 and returns a single angle.  Besides those, we have to account for discrete
 moves at the actual points.
 
+@d floor(a) (a>=0 ? a : -(int)(-a))
 @d bezier_error (720<<20)+1
 @d sign(v) ((v)>0 ? 1 : ((v)<0 ? -1 : 0 ))
 @d print_roots(a) { if (debuglevel>(65536*2))
@@ -22775,7 +22754,7 @@ Lyle Ramshaw in 1980. The intent is to convey a lot of different kinds
 of information in a compact but useful form.
 
 @<Glob...@>=
-byte_file tfm_file; /* the font metric output goes here */
+FILE * tfm_file; /* the font metric output goes here */
 char * metric_file_name; /* full name of the font metric file */
 
 @ The first 24 bytes (6 words) of a \.{TFM} file contain twelve 16-bit
@@ -23770,7 +23749,7 @@ void mp_tfm_qqqq (MP mp,four_quarters x) { /* output four quarterwords to |tfm_f
 @ @<Finish the \.{TFM} file@>=
 if ( mp->job_name==NULL ) mp_open_log_file(mp);
 mp_pack_job_name(mp, ".tfm");
-while ( ! mp_b_open_out(mp, &mp->tfm_file) )
+while ( ! mp_b_open_out(mp, &mp->tfm_file, mp_filetype_metrics) )
   mp_prompt_file_name(mp, "file name for font metrics",".tfm");
 mp->metric_file_name=xstrdup(mp->name_of_file);
 @<Output the subfile sizes and header bytes@>;
@@ -23939,7 +23918,7 @@ of a sequence of typeset characters.  Thus it needs to read \.{TFM} files as
 well as write them.
 
 @<Glob...@>=
-byte_file tfm_infile;
+FILE * tfm_infile;
 
 @ All the width, height, and depth information is stored in an array called
 |font_info|.  This array is allocated sequentially and each font is stored
@@ -24226,7 +24205,7 @@ mp_ptr_scan_file(mp, fname);
 if ( strlen(mp->cur_area)==0 ) mp->cur_area=xstrdup(MP_font_area);
 if ( strlen(mp->cur_ext)==0 ) mp->cur_ext=xstrdup(".tfm");
 pack_cur_name;
-if ( ! mp_b_open_in(mp, &mp->tfm_infile) ) goto BAD_TFM;
+if ( ! mp_b_open_in(mp, &mp->tfm_infile, mp_filetype_metrics) ) goto BAD_TFM;
 file_opened=true
 
 @ When we have a font name and we don't know whether it has been loaded yet,
@@ -24503,8 +24482,7 @@ void mp_read_psname_table (MP mp) ;
   unsigned int j; /* characters left to read before string gets too long */
   char *s; /* possible font name to match */
   text_char c=0; /* character being read from |ps_tab_file| */
-  strcpy(mp->name_of_file,ps_tab_name);
-  if ( mp_a_open_in(mp, &mp->ps_tab_file) ) {
+  if ( (mp->ps_tab_file = mp_open_file(mp, ps_tab_name, "r", mp_filetype_fontmap)) ) {
     @<Set |lmax| to the maximum |font_name| length for fonts
       |last_ps_fnum+1| through |last_fnum|@>;
     while (! feof(mp->ps_tab_file) ) {
@@ -24531,7 +24509,7 @@ void mp_read_psname_table (MP mp) ;
 }
 
 @ @<Glob...@>=
-alpha_file ps_tab_file; /* file for font name translation table */
+FILE * ps_tab_file; /* file for font name translation table */
 
 @ @<Set |lmax| to the maximum |font_name| length for fonts...@>=
 lmax=0;
@@ -24616,7 +24594,7 @@ void mp_open_output_file (MP mp) ;
       @<Use |c| to compute the file extension |s|@>;
     mp_pack_job_name(mp, s);
     xfree(s);
-    while ( ! mp_a_open_out(mp, &mp->ps_file) )
+    while ( ! mp_a_open_out(mp, &mp->ps_file, mp_filetype_postscript) )
       mp_prompt_file_name(mp, "file name for output",s);
   } else { /* initializations */
     str_number s, n; /* a file extension derived from |c| */
@@ -24673,7 +24651,7 @@ void mp_open_output_file (MP mp) ;
        s=rts("");
     };
     mp_pack_file_name(mp, str(n),"",str(s));
-    while ( ! mp_a_open_out(mp, &mp->ps_file) )
+    while ( ! mp_a_open_out(mp, &mp->ps_file, mp_filetype_postscript) )
       mp_prompt_file_name(mp, "file name for output",str(s));
     delete_str_ref(n);
     delete_str_ref(s);
@@ -26607,8 +26585,8 @@ FILE *enc_file;
 
 @c 
 boolean mp_enc_open (MP mp, char *n) {
-  mp->enc_file = fopen(n,"rb");
-  if (mp->enc_file)
+  mp_pack_file_name(mp,n,NULL,NULL);
+  if (mp_b_open_in(mp, &mp->enc_file, mp_filetype_encoding))
     return true;
   else
    return false;
@@ -26768,7 +26746,7 @@ void avl_xfree (struct libavl_allocator *allocator, void *block) {
 @ @<Glob...@>=
 struct libavl_allocator avl_xallocator;
 
-@ @<Initialize table...@>=
+@ @<Set initial...@>=
 mp->avl_xallocator.libavl_malloc=avl_xmalloc;
 mp->avl_xallocator.libavl_free= avl_xfree;
 mp->enc_tree = NULL;
@@ -26873,7 +26851,6 @@ void mp_font_encodings (MP mp, int lastfnum, int encodings_only) {
 FILE *fm_file;
 
 @
-@d fm_open(A)      mp->fm_file = fopen(A,"rb")
 @d fm_close()      fclose(mp->fm_file)
 @d fm_getchar()    fgetc(mp->fm_file)
 @d fm_eof()        feof(mp->fm_file)
@@ -26998,6 +26975,7 @@ boolean mp_has_fm_entry (MP mp,font_number f);
 
 @ @c
 boolean mp_has_fm_entry (MP mp,font_number f) {
+    
     if (mp->mp_font_map[f] == NULL)
         mp->mp_font_map[f] = mp_fm_lookup (mp, f);
     return mp->mp_font_map[f] != (fm_entry *) dummy_fm_entry ();
@@ -27442,7 +27420,7 @@ int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
 
 @ 
 @c void fm_read_info (MP mp) {
-    char *n = (char *) mp->name_of_file + 1;
+    char *n;
     if (mp->tfm_tree == NULL)
         create_avl_trees (mp);
     if (mp->mitem->map_line == NULL)    /* nothing to do */
@@ -27450,10 +27428,14 @@ int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
     mp->mitem->lineno = 1;
     switch (mp->mitem->type) {
     case MAPFILE:
-        if (!(mp->fm_file = fm_open (n))) {
+        n = mp->mitem->map_line;
+        mp->fm_file = mp_open_file(mp, n, "r", mp_filetype_fontmap);
+        if (!mp->fm_file) {
             wterm ("cannot open font map file");
             wlog ("cannot open font map file");
         } else {
+            int save_selector = mp->selector;
+            mp_normalize_selector(mp);
             mp_print (mp, "{");
             mp_print (mp, n);
             while (!fm_eof ()) {
@@ -27462,6 +27444,7 @@ int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
             }
             fm_close ();
             mp_print (mp,"}");
+            mp->selector = save_selector;
             mp->fm_file = NULL;
         }
         break;
@@ -28675,9 +28658,10 @@ typedef struct {
 boolean t1_open_fontfile (MP mp, fm_entry *fm_cur,const char *open_name_prefix) {
     ff_entry *ff;
     ff = check_ff_exist (mp, fm_cur);
-    if (ff->ff_path != NULL)
-        mp->t1_file = fopen (ff->ff_path,"rb");
-    else {
+    if (ff->ff_path != NULL) {
+        mp_pack_file_name(mp,ff->ff_path,NULL,NULL);
+        mp_b_open_in(mp,&mp->t1_file, mp_filetype_font);
+    } else {
         wterm ("cannot open Type 1 font file for reading");
         wlog ("cannot open Type 1 font file for reading");
         return false;
@@ -29724,7 +29708,7 @@ boolean mp_load_mem_file (MP mp) {
   return true; /* it worked! */
 OFF_BASE: 
   wake_up_terminal;
-  wterm_ln("(Fatal mem file error; I'm stymied)");
+  wterm_ln("(Fatal mem file error; I'm stymied)\n");
 @.Fatal mem file error@>
    return false;
 }
@@ -29743,7 +29727,7 @@ macros to dump words of different types:
                     fwrite(A,strlen(A)+1,1,mp->mem_file); }
 
 @<Glob...@>=
-word_file mem_file; /* for input or output of mem information */
+FILE * mem_file; /* for input or output of mem information */
 
 @ The inverse macros are slightly more complicated, since we need to check
 the range of the values we are reading in. We say `|undump(a)(b)(x)|' to
