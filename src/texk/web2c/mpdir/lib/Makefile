@@ -7,7 +7,7 @@ CC = gcc
 CTANGLE = ctangle
 
 CFLAGS = -Wall -W -g
-OBJECTS = avl.o mp.o
+OBJECTS = avl.o mp.o mpost.o
 
 
 newmpost: $(OBJECTS) avl.h
