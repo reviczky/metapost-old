@@ -139,6 +139,7 @@ int main (int argc, char **argv) { /* |start_here| */
   @<Copy the rest of the command line@>;
   if(!mp_initialize(mp))
 	exit(EXIT_FAILURE);
+  mp_run(mp);
   history = mp->history;
   mp_free(mp);
   exit(history);
