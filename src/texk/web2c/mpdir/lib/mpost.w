@@ -22,6 +22,8 @@ avl_allocator that is defined in |mplib.h|
 #include <stdlib.h>
 #include <string.h>
 #include "avl.h"
+#include "mpbasictypes.h"
+#include "mppstypes.h"
 #include "mplib.h"
 #define HAVE_BOOLEAN 1
 #define HAVE_PROTOTYPES 1
@@ -181,7 +183,6 @@ int main (int argc, char **argv) { /* |start_here| */
   if (mp==NULL)
 	exit(EXIT_FAILURE);
   mp->ini_version = false;
-  mp->job_id_string = NULL;
   @<Read and set commmand line options@>;
   @<Copy the rest of the command line@>;
   @<Register the file finding routine@>;
