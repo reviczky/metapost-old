@@ -659,6 +659,16 @@ file has been reached; (5)~display of bits on the user's screen.
 The bit-display operation will be discussed in a later section; we shall
 deal here only with more traditional kinds of I/O.
 
+@ Finding files happens in a slightly roundabout fashion: the \MP\
+instance object contains a field that holds a function pointer that finds a
+file, and returns its name, or NULL. For this, it receives three
+parameters: the non-qualified name |fname|, the intended |fopen|
+operation type |fmode|, and the type of the file |ftype|.
+
+The file types that are passed on in |ftype| can be  used to 
+differentiate file searches if a library like kpathsea is used,
+the fopen mode is passed along for the same reason.
+
 @<Types...@>=
 typedef unsigned char eight_bits ; /* unsigned one-byte quantity */
 enum {
@@ -672,31 +682,19 @@ enum {
   mp_filetype_font, /*  PostScript type1 font programs */
   mp_filetype_encoding, /*  PostScript font encoding files */
 };
-
-@ The file types that are passed on in |ftype| can be  used to 
-differentiate file searches if a library like kpathsea is used.
-
-@<Types...@>=
 typedef char *(*file_finder)(char *, char *, int);
 
 @ @<Glob...@>=
 file_finder find_file;
 
-@ @<Exported function headers@>=
-char *mp_find_file (char *fname, char *fmode, int ftype) ;
+@ The default function for finding files is |mp_find_file|. It is 
+pretty stupid: it will only find files in the current directory.
 
-@ @c
+@c
 char *mp_find_file (char *fname, char *fmode, int ftype)  {
   if (fmode[0] != 'r' || access (fname,R_OK) || ftype)  
      return fname;
   return NULL;
-}
-FILE *mp_open_file(MP mp, char *fname, char *fmode, int ftype)  {
-	char * s = (mp->find_file)(fname,fmode,ftype);
-	if (s) 
-	  return fopen(s, fmode);
-    else 
-      return NULL;
 }
 
 @ This has to be done very early on, so it is best to put it in with
@@ -704,6 +702,23 @@ the |mp_new| allocations
 
 @<Allocate variables@>=
 mp->find_file = mp_find_file;
+
+@ Because |mp_find_file| is used so early, it has to be in the helpers
+section.
+
+@<Declare helpers@>=
+char *mp_find_file (char *fname, char *fmode, int ftype) ;
+
+@ The function to open files can now be very short.
+
+@c
+FILE *mp_open_file(MP mp, char *fname, char *fmode, int ftype)  {
+	char *s = (mp->find_file)(fname,fmode,ftype);
+	if (s!=NULL) 
+	  return fopen(s, fmode);
+    else 
+      return NULL;
+}
 
 @ This is a legacy interface: all file names pass through |name_of_file|.
 
