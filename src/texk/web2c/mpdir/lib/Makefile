@@ -16,8 +16,8 @@ OBJECTS = avl.o mp.o mpost.o
 newmpost: $(OBJECTS) avl.h $(KPSEBUILDDIR)/libkpathsea.a
 	$(LD) -o newmpost $(OBJECTS) $(KPSEBUILDDIR)/libkpathsea.a 
 
-mp.c: mp.w mp.ch
-	$(CTANGLE) mp.w mp.ch
+mp.c: mp.w 
+	$(CTANGLE) mp.w
 
 mpost.c: mpost.w
 	$(CTANGLE) mpost.w 

@@ -676,12 +676,34 @@ enum {
 @ The file types that are passed on in |ftype| can be  used to 
 differentiate file searches if a library like kpathsea is used.
 
-@c
+@<Types...@>=
+typedef char *(*file_finder)(char *, char *, int);
+
+@ @<Glob...@>=
+file_finder find_file;
+
+@ @<Exported function headers@>=
+char *mp_find_file (char *fname, char *fmode, int ftype) ;
+
+@ @c
+char *mp_find_file (char *fname, char *fmode, int ftype)  {
+  if (fmode[0] != 'r' || access (fname,R_OK) || ftype)  
+     return fname;
+  return NULL;
+}
 FILE *mp_open_file(MP mp, char *fname, char *fmode, int ftype)  {
-    assert(mp); assert(ftype);
-	return fopen(fname, fmode);
+	char * s = (mp->find_file)(fname,fmode,ftype);
+	if (s) 
+	  return fopen(s, fmode);
+    else 
+      return NULL;
 }
 
+@ This has to be done very early on, so it is best to put it in with
+the |mp_new| allocations
+
+@<Allocate variables@>=
+mp->find_file = mp_find_file;
 
 @ This is a legacy interface: all file names pass through |name_of_file|.
 
@@ -27622,7 +27644,7 @@ ff_entry *check_ff_exist (MP mp, fm_entry * fm) {
     if (mp->avail_tfm_found == NULL && mp->loaded_tfm_found == NULL &&
         strcmp (p->tfm_name, nontfm)) {
         if (p->tfm_avail == TFM_UNCHECKED) {
-            if (access (p->tfm_name,R_OK)) {
+           if ((mp->find_file)(p->tfm_name, "rb", mp_filetype_metrics) != NULL) {
                 mp->avail_tfm_found = p;
                 p->tfm_avail = TFM_FOUND;
             } else {
@@ -27715,7 +27737,7 @@ void mp_map_line (MP mp, str_number t) {
     mp->mitem->mode = FM_DUPIGNORE;
     mp->mitem->type = MAPFILE;
     mp->mitem->map_line = NULL;
-    if (access("mpost.map", R_OK)) {
+    if ((mp->find_file)("mpost.map", "rb", mp_filetype_fontmap) != NULL) {
       mp->mitem->map_line = xstrdup ("mpost.map");
     } else {
       if (is_troff) {
