@@ -2688,7 +2688,7 @@ such changes aren't advisable; simplicity and robustness are
 preferable to trickery, unless the cost is too high.
 @^inner loop@>
 
-@<Declarations@>=
+@<Exported...@>=
 fraction mp_make_fraction (MP mp,integer p, integer q);
 integer mp_take_scaled (MP mp,integer q, scaled f) ;
 
@@ -25479,26 +25479,6 @@ void mp_ps_name_out (MP mp, char *s, boolean lit) {
   }
 }
 
-@ We also need to keep track of which characters are used in text nodes
-in the edge structure that is being shipped out.  This is done by procedures
-that use the left-over |b3| field in the |char_info| words; i.e.,
-|char_info(f)(c).b3| gives the status of character |c| in font |f|.
-
-@d unused 0
-@d used 1
-
-@<Declare the \ps\ output procedures@>=
-void mp_unmark_font (MP mp,font_number f) ;
-
-@ @c
-void mp_unmark_font (MP mp,font_number f) {
-  int k; /* an index into |font_info| */
-  for (k= mp->char_base[f]+si(mp->font_bc[f]);
-       k<=mp->char_base[f]+si(mp->font_ec[f]);
-       k++)
-    mp->font_info[k].qqqq.b3=unused;
-}
-
 @ @<Declare the \ps\ output procedures@>= 
 void mp_mark_string_chars (MP mp,font_number f, str_number s) ;
 
@@ -25516,82 +25496,6 @@ void mp_mark_string_chars (MP mp,font_number f, str_number s) {
     if ( (mp->str_pool[k]>=bc)&&(mp->str_pool[k]<=ec) )
       mp->font_info[b+mp->str_pool[k]].qqqq.b3=used;
   }
-}
-
-@ @<Declare the \ps\ output procedures@>=
-void mp_hex_digit_out (MP mp,small_number d) { 
-  if ( d<10 ) mp_print_char(mp, d+'0');
-  else mp_print_char(mp, d+'a'-10);
-}
-
-@ We output the marks as a hexadecimal bit string starting at |c| or
-|font_bc[f]|, whichever is greater.  If the output has to be truncated
-to avoid exceeding |emergency_line_length| the return value says where to
-start scanning next time.
-
-@<Declare the \ps\ output procedures@>=
-halfword mp_ps_marks_out (MP mp,font_number f, eight_bits c) {
-  eight_bits bc,ec; /* only encode characters between these bounds */
-  integer lim; /* the maximum number of marks to encode before truncating */
-  int p; /* |font_info| index for the current character */
-  int d,b; /* used to construct a hexadecimal digit */
-  lim=4*(emergency_line_length-mp->ps_offset-4);
-  bc=mp->font_bc[f];
-  ec=mp->font_ec[f];
-  if ( c>bc ) bc=c;
-  @<Restrict the range |bc..ec| so that it contains no unused characters
-    at either end and has length at most |lim|@>;
-  @<Print the initial label indicating that the bitmap starts at |bc|@>;
-  @<Print a hexadecimal encoding of the marks for characters |bc..ec|@>;
-  while ( (ec<mp->font_ec[f])&&(mp->font_info[p].qqqq.b3==unused) ) {
-    incr(p); incr(ec);
-  }
-  return (ec+1);
-}
-
-@ We could save time by setting the return value before the loop that
-decrements |ec|, but there is no point in being so tricky.
-
-@<Restrict the range |bc..ec| so that it contains no unused characters...@>=
-p=mp->char_base[f]+si(bc);
-while ( (mp->font_info[p].qqqq.b3==unused)&&(bc<ec) ) {
-  incr(p); incr(bc);
-}
-if ( ec>=bc+lim ) ec=bc+lim-1;
-p=mp->char_base[f]+si(ec);
-while ( (mp->font_info[p].qqqq.b3==unused)&&(bc<ec) ) { 
-  decr(p); decr(ec);
-}
-
-@ @<Print the initial label indicating that the bitmap starts at |bc|@>=
-mp_print_char(mp, ' ');
-mp_hex_digit_out(mp, bc / 16);
-mp_hex_digit_out(mp, bc % 16);
-mp_print_char(mp, ':')
-
-@ @<Print a hexadecimal encoding of the marks for characters |bc..ec|@>=
-b=8; d=0;
-for (p=mp->char_base[f]+si(bc);p<=mp->char_base[f]+si(ec);p++) {
-  if ( b==0 ) {
-    mp_hex_digit_out(mp, d);
-    d=0; b=8;
-  }
-  if ( mp->font_info[p].qqqq.b3!=unused ) d=d+b;
-  b=halfp(b);
-}
-mp_hex_digit_out(mp, d)
-
-@ Here is a simple function that determines whether there are any marked
-characters in font~|f| with character code at least~|c|.
-
-@<Declare the \ps\ output procedures@>=
-boolean mp_check_ps_marks (MP mp,font_number f, integer  c) {
-  int p; /* |font_info| index for the current character */
-  for (p=mp->char_base[f]+si(c);p<=mp->char_base[f]+si(mp->font_ec[f]);p++) {
-    if ( mp->font_info[p].qqqq.b3==used ) 
-       return true;
-  }
-  return false;
 }
 
 @ There may be many sizes of one font and we need to keep track of the
@@ -25732,13 +25636,9 @@ void mp_ship_out (MP mp, pointer h) { /* output edge structure |h| */
   pointer q; /* something that |p| points to */
   integer t; /* a temporary value */
   font_number f; /* fonts used in a text node or as loop counters */
-  int ff; /* a loop counter */
-  boolean done_fonts; /* have we finished listing the fonts in the header? */
-  quarterword next_size; /* the size index for fonts being listed */
-  pointer cur_fsize[font_max+1]; /* current positions in |font_sizes| */
+  font_number ldf;
   scaled ds,scf; /* design size and scale factor for a text node */
   boolean transformed; /* is the coordinate system being transformed? */
-  font_number ldf=0; /* the last \.{DocumentFont} listed (otherwise |null_font|) */
   mp_open_output_file(mp);
   mp->non_ps_setting=mp->selector; mp->selector=ps_file_only;
   if ( (mp->internal[prologues]==two)||(mp->internal[prologues]==three) ) {
@@ -25776,10 +25676,7 @@ void mp_ship_out (MP mp, pointer h) { /* output edge structure |h| */
     @<Print the initial comment and give the bounding box for edge structure~|h|@>;
     if ( (mp->internal[prologues]>0) && (mp->last_ps_fnum<mp->last_fnum) )
       mp_read_psname_table(mp);
-    mp_print(mp, "%%BeginProlog"); mp_print_ln(mp);
-    if ( (mp->internal[prologues]>0)||(mp->internal[mpprocset]>0) ) 
-      @<Print the prologue@>;
-    mp_print(mp, "%%EndProlog");
+    mp_print_prologue(mp, (mp->internal[prologues]>>16), (mp->internal[mpprocset]>>16), ldf);
     mp_print_nl(mp, "%%Page: 1 1"); mp_print_ln(mp);
     @<Print any pending specials@>;
     mp_unknown_graphics_state(mp, 0);
@@ -25811,76 +25708,27 @@ void mp_ship_out (MP mp, pointer h) { /* output edge structure |h| */
    mp_print_edges(mp, h," (just shipped out)",true);
 }
 
-@ @<Print the procset@>=
-{
-  mp_print_nl(mp, "/hlw{0 dtransform exch truncate exch idtransform pop setlinewidth}bd");
-  mp_print_nl(mp, "/vlw{0 exch dtransform truncate idtransform setlinewidth pop}bd");
-  mp_print_nl(mp, "/l{lineto}bd/r{rlineto}bd/c{curveto}bd/m{moveto}bd"
-                  "/p{closepath}bd/n{newpath}bd");
-  mp_print_nl(mp, "/C{setcmykcolor}bd/G{setgray}bd/R{setrgbcolor}bd"
-                  "/lj{setlinejoin}bd/ml{setmiterlimit}bd");
-  mp_print_nl(mp, "/lc{setlinecap}bd/S{stroke}bd/F{fill}bd/q{gsave}bd"
-                  "/Q{grestore}bd/s{scale}bd/t{concat}bd");
-  mp_print_nl(mp, "/sd{setdash}bd/rd{[] 0 setdash}bd/P{showpage}bd/B{q F Q}bd/W{clip}bd");
- }
+@ @<Exported...@>=
+void mp_apply_mark_string_chars(MP mp, pointer h, int next_size);
 
+@ @c
+void mp_apply_mark_string_chars(MP mp, pointer h, int next_size) {
+  pointer p;
+  p=link(dummy_loc(h));
+  while ( p!=null ) {
+    if ( type(p)==text_code )
+      if ( font_n(p)!=null_font )
+        if ( name_type(p)==next_size )
+          mp_mark_string_chars(mp, font_n(p),text_p(p));
+    p=link(p);
+  }
+}
 
 @
 @<Print the improved prologue and setup@>=
 {
-  mp_list_used_resources(mp, (mp->internal[prologues]>>16),(mp->internal[mpprocset]>>16));
-  mp_list_supplied_resources(mp, (mp->internal[prologues]>>16),(mp->internal[mpprocset]>>16));
-  mp_list_needed_resources(mp, (mp->internal[prologues]>>16));
-  mp_print_nl(mp, "%%EndComments");
-  mp_print_nl(mp, "%%BeginProlog");
-  if ( mp->internal[mpprocset]>0 )
-    mp_print_nl(mp, "%%BeginResource: procset mpost");
-  else
-    mp_print_nl(mp, "%%BeginResource: procset mpost-minimal");
-  mp_print_nl(mp, "/bd{bind def}bind def"
-                  "/fshow {exch findfont exch scalefont setfont show}bd");
-  if ( mp->internal[mpprocset]>0 ) @<Print the procset@>;
-  mp_print_nl(mp, "/fcp{findfont dup length dict begin"
-                  "{1 index/FID ne{def}{pop pop}ifelse}forall}bd");
-  mp_print_nl(mp, "/fmc{FontMatrix dup length array copy dup dup}bd"
-                   "/fmd{/FontMatrix exch def}bd");
-  mp_print_nl(mp, "/Amul{4 -1 roll exch mul 1000 div}bd"
-                  "/ExtendFont{fmc 0 get Amul 0 exch put fmd}bd");
-  if ( mp->internal[gtroffmode]>0 ) {
-    mp_print_nl(mp, "/ScaleFont{dup fmc 0 get"
-	                " Amul 0 exch put dup dup 3 get Amul 3 exch put fmd}bd");
-    };
-  mp_print_nl(mp, "/SlantFont{fmc 2 get dup 0 eq{pop 1}if"
-	              " Amul FontMatrix 0 get mul 2 exch put fmd}bd");
-  mp_print_nl(mp, "%%EndResource");
-  @<Include encodings and fonts  for edge structure~|h|@>;
-  mp_print_nl(mp, "%%EndProlog");
-  mp_print_nl(mp, "%%BeginSetup");
-  mp_print_ln(mp);
-  for (f=null_font+1;f<=mp->last_fnum;f++) {
-    if ( mp->font_sizes[f]!=null ) {
-      if ( mp_has_fm_entry(mp,f) ) {
-        mp_write_font_definition(mp,f,(mp->internal[prologues]>>16));
-        mp_ps_name_out(mp, mp->font_name[f],true);
-        mp_ps_print_defined_name(mp,f,(mp->internal[prologues]>>16));
-        mp_ps_print(mp, " def");
-      } else {
-      	mp_begin_diagnostic(mp);
-        if ( mp->selector==log_only ) incr(mp->selector);
-      	print_err("Warning: font ");
-       	mp_print(mp, mp->font_name[f]);
-     	mp_print(mp, " cannot be found in any fontmapfile!");
-     	mp_end_diagnostic(mp, true);
-        mp_ps_name_out(mp, mp->font_name[f],true);
-        mp_ps_name_out(mp, mp->font_name[f],true);
-        mp_ps_print(mp, " def");
-      }
-      mp_print_ln(mp);
-    }
-  }
-  mp_print_nl(mp, "%%EndSetup");
-  mp_print_nl(mp, "%%Page: 1 1");
-  mp_print_ln(mp);
+  mp_print_improved_prologue(mp, (mp->internal[prologues]>>16),(mp->internal[mpprocset]>>16),
+                            (mp->internal[gtroffmode]>>16), null, h);
 }
 
 @
@@ -25912,10 +25760,6 @@ mp_print_dd(mp, t / 60); mp_print_dd(mp, t % 60);
 mp_print_nl(mp, "%%Pages: 1");
 
 @
-
-@ @<Include encodings and fonts for edge structure~|h|@>=
-mp_font_encodings(mp,mp->last_fnum,(mp->internal[prologues]==two));
-@<Embed fonts that are available@>
 
 @ @<Scan all the text nodes and mark the used ...@>=
 for (f=null_font+1;f<=mp->last_fnum;f++) {
@@ -25954,35 +25798,6 @@ for (f=null_font+1;f<=mp->last_fnum;f++) {
     p=link(p);
   }
 }
-
-@ @<Embed fonts that are available@>=
-{ 
-next_size=0;
-@<Make |cur_fsize| a copy of the |font_sizes| array@>;
-do {  
-  done_fonts=true;
-  for (f=null_font+1;f<=mp->last_fnum;f++) {
-    if ( cur_fsize[f]!=null ) {
-      if ( mp->internal[prologues]==three ) {
-        if ( ! mp_do_ps_font(mp,f) ) {
-	      if ( mp_has_fm_entry(mp,f) ) {
-            print_err("Font embedding failed");
-            mp_error(mp);
-          }
-        }
-      }
-      cur_fsize[f]=link(cur_fsize[f]);
-      if ( cur_fsize[f]!=null ) {
-         mp_unmark_font(mp, f); done_fonts=false;  
-      }
-    }
-  }
-  if ( ! done_fonts )
-    @<Increment |next_size| and apply |mark_string_chars| to all text nodes with
-      that size index@>;
-} while (! done_fonts);
-}
-
 
 @ These special comments described in the {\sl PostScript Language Reference
 Manual}, 2nd.~edition are understood by some \ps-reading programs.
@@ -26032,56 +25847,7 @@ mp_print_ln(mp)
   if |internal[prologues]<=0| list the sizes selected by |choose_scale|,
   apply |unmark_font| to each font encountered, and call |mark_string|
   whenever the size index is zero@>;
-if ( mp->internal[prologues]>0 ) {
-  @<Give a \.{DocumentFonts} comment listing all fonts with non-null
-    |font_sizes| and eliminate duplicates@>;
-} else { 
-  next_size=0;
-  @<Make |cur_fsize| a copy of the |font_sizes| array@>;
-  do {  done_fonts=true;
-    for (f=null_font+1;f<=mp->last_fnum;f++) {
-      if ( cur_fsize[f]!=null ) {
-        @<Print the \.{\%*Font} comment for font |f| and advance |cur_fsize[f]|@>;
-      }
-      if ( cur_fsize[f]!=null ) { mp_unmark_font(mp, f); done_fonts=false;  };
-    }
-    if ( ! done_fonts ) {
-      @<Increment |next_size| and apply |mark_string_chars| to all text nodes with
-        that size index@>;
-    }
-  } while (! done_fonts);
-}
-
-@ @<Make |cur_fsize| a copy of the |font_sizes| array@>=
-for (f=null_font+1;f<= mp->last_fnum;f++)
-  cur_fsize[f]=mp->font_sizes[f]
-
-@ It's not a good idea to make any assumptions about the |font_ps_name| entries,
-so we carefully remove duplicates.  There is no harm in using a slow, brute-force
-search.
-
-@<Give a \.{DocumentFonts} comment listing all fonts with non-null...@>=
-{ 
-  ldf=null_font;
-  for (f=null_font+1;f<= mp->last_fnum;f++) {
-    if ( mp->font_sizes[f]!=null ) {
-      if ( ldf==null_font ) 
-        mp_print_nl(mp, "%%DocumentFonts:");
-      for (ff=ldf;ff>=null_font;ff--) {
-        if ( mp->font_sizes[ff]!=null )
-          if ( xstrcmp(mp->font_ps_name[f],mp->font_ps_name[ff])==0 )
-            goto FOUND;
-      }
-      if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>max_print_line )
-        mp_print_nl(mp, "%%+");
-      mp_print_char(mp, ' ');
-      mp_print(mp, mp->font_ps_name[f]);
-      ldf=f;
-    FOUND:
-      ;
-    }
-  }
-}
+ldf = mp_print_font_comments (mp, (mp->internal[prologues]>>16), null, h)
 
 @ @<Scan all the text nodes and set the |font_sizes| lists;...@>=
 for (f=null_font+1;f<=mp->last_fnum;f++) 
@@ -26102,81 +25868,6 @@ while ( p!=null ) {
     }
   }
   p=link(p);
-}
-
-@ If the file name is so long that it can't be printed without exceeding
-|emergency_line_length| then there will be missing items in the \.{\%*Font:}
-line.  We might have to repeat line in order to get the character usage
-information to fit within |emergency_line_length|.
-
-@<Print the \.{\%*Font} comment for font |f| and advance |cur_fsize[f]|@>=
-{ t=0;
-  while ( mp_check_ps_marks(mp, f,t) ) {
-    mp_print_nl(mp, "%*Font: ");
-    if ( mp->ps_offset+strlen(mp->font_name[f])+12>emergency_line_length )
-      break;
-    mp_print(mp, mp->font_name[f]);
-    mp_print_char(mp, ' ');
-    ds=(mp->font_dsize[f] + 8) / 16;
-    mp_print_scaled(mp, mp_take_scaled(mp, ds,sc_factor(cur_fsize[f])));
-    if ( mp->ps_offset+12>emergency_line_length ) break;
-    mp_print_char(mp, ' ');
-    mp_print_scaled(mp, ds);
-    if ( mp->ps_offset+5>emergency_line_length ) break;
-    t=mp_ps_marks_out(mp, f,t);
-  }
-  cur_fsize[f]=link(cur_fsize[f]);
-}
-
-@ @<Increment |next_size| and apply |mark_string_chars| to all text nodes...@>=
-{ 
-  incr(next_size);
-  p=link(dummy_loc(h));
-  while ( p!=null ) {
-    if ( type(p)==text_code )
-      if ( font_n(p)!=null_font )
-        if ( name_type(p)==next_size )
-          mp_mark_string_chars(mp, font_n(p),text_p(p));
-    p=link(p);
-  }
-}
-
-@ The prologue defines \.{fshow} and corrects for the fact that \.{fshow}
-arguments use |font_name| instead of |font_ps_name|.  Downloaded bitmap fonts
-might not have reasonable |font_ps_name| entries, but we just charge ahead
-anyway.  The user should not make \&{prologues} positive if this will cause
-trouble.
-@:prologues_}{\&{prologues} primitive@>
-
-@<Print the prologue@>=
-{
-if ( ldf!=null_font ) {
-  if ( mp->internal[prologues]>0 ) {
-    for (f=null_font+1;f<=mp->last_fnum;f++) {
-      if ( mp->font_sizes[f]!=null ) {
-        mp_ps_name_out(mp, mp->font_name[f],true);
-        mp_ps_name_out(mp, mp->font_ps_name[f],true);
-        mp_ps_print(mp, " def");
-        mp_print_ln(mp);
-      }
-    }
-    if ( mp->internal[mpprocset]==0 ) {
-      mp_print(mp, "/fshow {exch findfont exch scalefont setfont show}bind def");
-      mp_print_ln(mp);
-    }
-  }
-}
-if ( mp->internal[mpprocset]>0 ) {
-  mp_print_nl(mp, "%%BeginResource: procset mpost");
-  if ( (mp->internal[prologues]>0)&&(ldf!=null_font) )
-    mp_print(mp, 
-      "/bd{bind def}bind def/fshow {exch findfont exch scalefont setfont show}bd");
-  else
-    mp_print_nl(mp, "/bd{bind def}bind def");
-  @<Print the procset@>;
-  mp_print_nl(mp, "%%EndResource");
-  mp_print_ln(mp);
-}
 }
 
 @ @<Cases for translating graphical object~|p| into \ps@>=
