@@ -1919,6 +1919,9 @@ void mp_print_int (MP mp,integer n) { /* prints an integer in decimal form */
   mp_print_the_digs(mp, k);
 };
 
+@ @<Exported...@>=
+void mp_print_int (MP mp,integer n);
+
 @ \MP\ also makes use of a trivial procedure to print two digits. The
 following subroutine is usually called with a parameter in the range |0<=n<=99|.
 
@@ -24776,6 +24779,10 @@ void mp_ps_print (MP mp,char *s) {
    mp_print(mp, s);
 };
 
+@ @<Exported...@>=
+void mp_ps_print (MP mp,char *s) ;
+
+
 @ The most important output procedure is the one that gives the \ps\ version of
 a \MP\ path.
 
@@ -25455,7 +25462,7 @@ boolean mp_do_is_ps_name (char *s) {
   return true;
 }
 
-@ @<Declare the \ps\ output procedures@>=
+@ @<Exported...@>=
 void mp_ps_name_out (MP mp, char *s, boolean lit) ;
 
 @ @c
@@ -25603,6 +25610,15 @@ mp->font_sizes = xmalloc(sizeof(pointer)*(font_max+1));
 
 @ @<Dealloc variables@>=
 xfree(mp->font_sizes);
+
+@ @<Exported...@>=
+boolean mp_has_font_size(MP mp, font_number f );
+
+@ @c 
+boolean mp_has_font_size(MP mp, font_number f ) {
+  return (mp->font_sizes[f]!=null);
+}
+
 
 @ @d fscale_tolerance 65 /* that's $.001\times2^{16}$ */
 
@@ -25810,36 +25826,11 @@ void mp_ship_out (MP mp, pointer h) { /* output edge structure |h| */
 
 
 @
-@d applied_reencoding(A) ((mp_font_is_reencoded(mp,(A)))&&
-    ((! mp_font_is_subsetted(mp,(A)))||(mp->internal[prologues]==two)))
-
-@d ps_print_defined_name(A) 
-  mp_ps_print(mp, " /");
-  if ((mp_font_is_subsetted(mp,(A)))&&
-      (mp_font_is_included(mp,(A)))&&(mp->internal[prologues]==three))
-    mp_print(mp, mp_fm_font_subset_name(mp,(A)));
-  else 
-    mp_print(mp, mp->font_ps_name[(A)]);
-  if ( xstrcmp(mp->font_name[(A)],"psyrgo")==0 )
-    mp_ps_print(mp, "-Slanted");
-  if ( xstrcmp(mp->font_name[(A)],"zpzdr-reversed")==0 ) 
-    mp_ps_print(mp, "-Reverse");
-  if ( applied_reencoding((A)) ) { 
-    mp_ps_print(mp, "-");
-    mp_ps_print(mp, mp->font_enc_name[(A)]); 
-  }
-  if ( mp_fm_font_slant(mp,(A))!=0 ) {
-    mp_ps_print(mp, "-Slant_"); mp_print_int(mp, mp_fm_font_slant(mp,(A))) ;
-  }
-  if ( mp_fm_font_extend(mp,(A))!=0 ) {
-    mp_ps_print(mp, "-Extend_"); mp_print_int(mp, mp_fm_font_extend(mp,(A))); 
-  }
-
 @<Print the improved prologue and setup@>=
 {
-  mp_list_used_resources(mp);
-  mp_list_supplied_resources(mp);
-  mp_list_needed_resources(mp);
+  mp_list_used_resources(mp, (mp->internal[prologues]>>16),(mp->internal[mpprocset]>>16));
+  mp_list_supplied_resources(mp, (mp->internal[prologues]>>16),(mp->internal[mpprocset]>>16));
+  mp_list_needed_resources(mp, (mp->internal[prologues]>>16));
   mp_print_nl(mp, "%%EndComments");
   mp_print_nl(mp, "%%BeginProlog");
   if ( mp->internal[mpprocset]>0 )
@@ -25869,9 +25860,9 @@ void mp_ship_out (MP mp, pointer h) { /* output edge structure |h| */
   for (f=null_font+1;f<=mp->last_fnum;f++) {
     if ( mp->font_sizes[f]!=null ) {
       if ( mp_has_fm_entry(mp,f) ) {
-        @<Write font definition@>;
+        mp_write_font_definition(mp,f,(mp->internal[prologues]>>16));
         mp_ps_name_out(mp, mp->font_name[f],true);
-        ps_print_defined_name(f);
+        mp_ps_print_defined_name(mp,f,(mp->internal[prologues]>>16));
         mp_ps_print(mp, " def");
       } else {
       	mp_begin_diagnostic(mp);
@@ -25890,243 +25881,6 @@ void mp_ship_out (MP mp, pointer h) { /* output edge structure |h| */
   mp_print_nl(mp, "%%EndSetup");
   mp_print_nl(mp, "%%Page: 1 1");
   mp_print_ln(mp);
-}
-
-@ @<Write font definition@>=
-if ( (applied_reencoding(f))||(mp_fm_font_slant(mp,f)!=0)||
-     (mp_fm_font_extend(mp,f)!=0)||
-    (xstrcmp(mp->font_name[f],"psyrgo")==0)||
-    (xstrcmp(mp->font_name[f],"zpzdr-reversed")==0) ) {
-  if ( (mp_font_is_subsetted(mp,f))&&
-       (mp_font_is_included(mp,f))&&(mp->internal[prologues]==three))
-    mp_ps_name_out(mp, mp_fm_font_subset_name(mp,f),true);
-  else 
-    mp_ps_name_out(mp, mp->font_ps_name[f],true);
-  mp_ps_print(mp, " fcp");
-  mp_print_ln(mp);
-  if ( applied_reencoding(f) ) {
-    mp_ps_print(mp, "/Encoding ");
-    mp_ps_print(mp, mp->font_enc_name[f]);
-    mp_ps_print(mp, " def ");
-  };
-  if ( mp_fm_font_slant(mp,f)!=0 ) {
-    mp_print_int(mp, mp_fm_font_slant(mp,f));
-    mp_ps_print(mp, " SlantFont ");
-  };
-  if ( mp_fm_font_extend(mp,f)!=0 ) {
-    mp_print_int(mp, mp_fm_font_extend(mp,f));
-    mp_ps_print(mp, " ExtendFont ");
-  };
-  if ( xstrcmp(mp->font_name[f],"psyrgo")==0 ) {
-    mp_ps_print(mp, " 890 ScaleFont ");
-    mp_ps_print(mp, " 277 SlantFont ");
-  };
-  if ( xstrcmp(mp->font_name[f],"zpzdr-reversed")==0 ) {
-    mp_ps_print(mp, " FontMatrix [-1 0 0 1 0 0] matrix concatmatrix /FontMatrix exch def ");
-    mp_ps_print(mp, "/Metrics 2 dict dup begin ");
-    mp_ps_print(mp, "/space[0 -278]def ");
-    mp_ps_print(mp, "/a12[-904 -939]def ");
-    mp_ps_print(mp, "end def ");
-  };  
-  mp_ps_print(mp, "currentdict end");
-  mp_print_ln(mp);
-  ps_print_defined_name(f);
-  mp_ps_print(mp, " exch definefont pop");
-  mp_print_ln(mp);
-}
-
-@ Included subset fonts do not need and encoding vector, make
-sure we skip that case.
-
-@<Declarations@>=
-void mp_list_used_resources (MP mp);
-
-@ @c void mp_list_used_resources (MP mp) {
-  font_number f; /* fonts used in a text node or as loop counters */
-  int ff;  /* a loop counter */
-  font_number ldf; /* the last \.{DocumentFont} listed (otherwise |null_font|) */
-  boolean firstitem;
-  if ( mp->internal[mpprocset]>0 )
-    mp_print_nl(mp, "%%DocumentResources: procset mpost");
-  else
-    mp_print_nl(mp, "%%DocumentResources: procset mpost-minimal");
-  ldf=null_font;
-  firstitem=true;
-  for (f=null_font+1;f<=mp->last_fnum;f++) {
-    if ( (mp->font_sizes[f]!=null)&&(mp_font_is_reencoded(mp,f)) ) {
-	  for (ff=ldf;ff>=null_font;ff--) {
-        if ( mp->font_sizes[ff]!=null )
-          if ( xstrcmp(mp->font_enc_name[f],mp->font_enc_name[ff])==0 )
-            goto FOUND;
-      }
-      if ( mp_font_is_subsetted(mp,f) )
-        goto FOUND;
-      if ( mp->ps_offset+1+strlen(mp->font_enc_name[f])>
-           max_print_line )
-        mp_print_nl(mp, "%%+ encoding");
-      if ( firstitem ) {
-        firstitem=false;
-        mp_print_nl(mp, "%%+ encoding");
-      }
-      mp_print_char(mp, ' ');
-      mp_print(mp, mp->font_enc_name[f]);
-      ldf=f;
-    }
-  FOUND:
-    ;
-  }
-  ldf=null_font;
-  firstitem=true;
-  for (f=null_font+1;f<=mp->last_fnum;f++) {
-    if ( mp->font_sizes[f]!=null ) {
-      for (ff=ldf;ff>=null_font;ff--) {
-        if ( mp->font_sizes[ff]!=null )
-          if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
-            goto FOUND2;
-      }
-      if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>
-	       max_print_line )
-        mp_print_nl(mp, "%%+ font");
-      if ( firstitem ) {
-        firstitem=false;
-        mp_print_nl(mp, "%%+ font");
-      }
-      mp_print_char(mp, ' ');
-	  if ( (mp->internal[prologues]==three)&&
-           (mp_font_is_subsetted(mp,f)) )
-        mp_print(mp, mp_fm_font_subset_name(mp,f));
-      else
-        mp_print(mp, mp->font_ps_name[f]);
-      ldf=f;
-    }
-  FOUND2:
-    ;
-  }
-  mp_print_ln(mp);
-} 
-
-@ @<Declarations@>= 
-void mp_list_supplied_resources (MP mp);
-
-@ @c void mp_list_supplied_resources (MP mp) {
-  font_number f; /* fonts used in a text node or as loop counters */
-  int ff; /* a loop counter */
-  font_number ldf; /* the last \.{DocumentFont} listed (otherwise |null_font|) */
-  boolean firstitem;
-  if ( mp->internal[mpprocset]>0 )
-    mp_print_nl(mp, "%%DocumentSuppliedResources: procset mpost");
-  else
-    mp_print_nl(mp, "%%DocumentSuppliedResources: procset mpost-minimal");
-  ldf=null_font;
-  firstitem=true;
-  for (f=null_font+1;f<=mp->last_fnum;f++) {
-    if ( (mp->font_sizes[f]!=null)&&(mp_font_is_reencoded(mp,f)) )  {
-       for (ff=ldf;ff>= null_font;ff++) {
-         if ( mp->font_sizes[ff]!=null )
-           if ( xstrcmp(mp->font_enc_name[f],mp->font_enc_name[ff])==0 )
-             goto FOUND;
-        }
-      if ( (mp->internal[prologues]==three)&&(mp_font_is_subsetted(mp,f)))
-        goto FOUND;
-      if ( mp->ps_offset+1+strlen(mp->font_enc_name[f])>max_print_line )
-        mp_print_nl(mp, "%%+ encoding");
-      if ( firstitem ) {
-        firstitem=false;
-        mp_print_nl(mp, "%%+ encoding");
-      }
-      mp_print_char(mp, ' ');
-      mp_print(mp, mp->font_enc_name[f]);
-      ldf=f;
-    }
-  FOUND:
-    ;
-  }
-  ldf=null_font;
-  firstitem=true;
-  if ( mp->internal[prologues]==three ) {
-    for (f=null_font+1;f<=mp->last_fnum;f++) {
-      if ( mp->font_sizes[f]!=null ) {
-        for (ff=ldf;ff>= null_font;ff--) {
-          if ( mp->font_sizes[ff]!=null )
-            if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
-               goto FOUND2;
-        }
-        if ( ! mp_font_is_included(mp,f) )
-          goto FOUND2;
-        if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>max_print_line )
-          mp_print_nl(mp, "%%+ font");
-        if ( firstitem ) {
-          firstitem=false;
-          mp_print_nl(mp, "%%+ font");
-        }
-        mp_print_char(mp, ' ');
-	    if ( mp_font_is_subsetted(mp,f) ) 
-          mp_print(mp, mp_fm_font_subset_name(mp,f));
-        else
-          mp_print(mp, mp->font_ps_name[f]);
-        ldf=f;
-      }
-    FOUND2:
-      ;
-    }
-    mp_print_ln(mp);
-  }
-}
-
-@ @<Declarations@>= 
-void mp_list_needed_resources (MP mp);
-
-@ @c void mp_list_needed_resources (MP mp) {
-  font_number f; /* fonts used in a text node or as loop counters */
-  int ff; /* a loop counter */
-  font_number ldf; /* the last \.{DocumentFont} listed (otherwise |null_font|) */
-  boolean firstitem;
-  ldf=null_font;
-  firstitem=true;
-  for (f=null_font+1;f<=mp->last_fnum;f++ ) {
-    if ( mp->font_sizes[f]!=null ) {
-      for (ff=ldf;ff>=null_font;ff--) {
-        if ( mp->font_sizes[ff]!=null )
-          if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
-             goto FOUND;
-      };
-      if ((mp->internal[prologues]==three)&&(mp_font_is_included(mp,f)) )
-        goto FOUND;
-      if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>max_print_line )
-        mp_print_nl(mp, "%%+ font");
-      if ( firstitem ) {
-        firstitem=false;
-        mp_print_nl(mp, "%%DocumentNeededResources: font");
-      }
-      mp_print_char(mp, ' ');
-      mp_print(mp, mp->font_ps_name[f]);
-      ldf=f;
-    }
-  FOUND:
-    ;
-  }
-  if ( ! firstitem ) {
-    mp_print_ln(mp);
-    ldf=null_font;
-    firstitem=true;
-    for (f=null_font+1;f<= mp->last_fnum;f++) {
-      if ( mp->font_sizes[f]!=null ) {
-        for (ff=ldf;ff>=null_font;ff-- ) {
-          if ( mp->font_sizes[ff]!=null )
-            if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
-              goto FOUND2;
-        }
-        if ((mp->internal[prologues]==three)&&(mp_font_is_included(mp,f)) )
-          goto FOUND2;
-        mp_print(mp, "%%IncludeResource: font ");
-        mp_print(mp, mp->font_ps_name[f]);
-        mp_print_ln(mp);
-        ldf=f;
-      }
-    FOUND2:
-      ;
-    }
-  }
 }
 
 @

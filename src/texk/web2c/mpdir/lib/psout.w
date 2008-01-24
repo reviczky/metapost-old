@@ -356,7 +356,7 @@ void mp_font_encodings (MP mp, int lastfnum, int encodings_only) ;
   enc_entry *e;
   fm_entry *fm_cur;
   for (f=null_font+1;f<=lastfnum;f++) {
-    if (mp->font_sizes[f]!=0 && mp_has_fm_entry (mp,f)) { 
+    if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp,f)) { 
       fm_cur = mp->ps->mp_font_map[f];
       if (fm_cur != NULL && 
 	  fm_cur->ps_name != NULL &&
@@ -372,7 +372,7 @@ void mp_font_encodings (MP mp, int lastfnum, int encodings_only) {
   enc_entry *e;
   fm_entry *fm;
   for (f=null_font+1;f<=lastfnum;f++) {
-    if (mp->font_sizes[f]!=0 && mp_has_fm_entry (mp,f)) { 
+    if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp,f)) { 
       fm = mp->ps->mp_font_map[f];
       if (fm != NULL && (fm->ps_name != NULL)) {
 	if (is_reencoded (fm)) {
@@ -617,7 +617,7 @@ int avl_do_entry (MP mp, fm_entry * fp, int mode) {
                 mp_warn(mp,s);
                 goto exit;
             } else {            /* mode == FM_REPLACE / FM_DELETE */
-                if (mp->font_sizes[p->tfm_num]!=0) {
+                if (mp_has_font_size(mp,p->tfm_num)) {
                     snprintf(s,128,
                         "fontmap entry for `%s' has been used, replace/delete not allowed",
                          fp->tfm_name);
@@ -651,7 +651,7 @@ int avl_do_entry (MP mp, fm_entry * fp, int mode) {
                 mp_warn(mp,s);
                 goto exit;
             } else {            /* mode == FM_REPLACE / FM_DELETE */
-                if (mp->font_sizes[p->tfm_num]!=0) {
+                if (mp_has_font_size(mp,p->tfm_num)) {
                     /* REPLACE/DELETE not allowed */
                     snprintf(s,128,
                         "fontmap entry for `%s' has been used, replace/delete not allowed",
@@ -1169,7 +1169,7 @@ boolean used_tfm (MP mp, fm_entry * p) {
         return false;
 
     /* check whether this font has been used */
-    if (mp->font_sizes[p->tfm_num]!=0)
+    if (mp_has_font_size(mp,p->tfm_num))
         return true;
     assert (p->tfm_name != NULL);
 
@@ -3093,7 +3093,7 @@ boolean mp_font_is_subsetted (MP mp, int f);
 @ @c
 boolean mp_font_is_reencoded (MP mp, int f) {
   fm_entry *fm;
-  if (mp->font_sizes[f]!=0 && mp_has_fm_entry (mp, f)) { 
+  if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp, f)) { 
     fm = mp->ps->mp_font_map[f];
     if (fm != NULL 
 	&& (fm->ps_name != NULL)
@@ -3104,7 +3104,7 @@ boolean mp_font_is_reencoded (MP mp, int f) {
 }
 boolean mp_font_is_included (MP mp, int f) {
   fm_entry *fm;
-  if (mp->font_sizes[f]!=0 && mp_has_fm_entry (mp, f)) { 
+  if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp, f)) { 
     fm = mp->ps->mp_font_map[f];
     if (fm != NULL 
 	&& (fm->ps_name != NULL && fm->ff_name != NULL) 
@@ -3115,7 +3115,7 @@ boolean mp_font_is_included (MP mp, int f) {
 }
 boolean mp_font_is_subsetted (MP mp, int f) {
   fm_entry *fm;
-  if (mp->font_sizes[f]!=0 && mp_has_fm_entry (mp, f)) { 
+  if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp, f)) { 
     fm = mp->ps->mp_font_map[f];
     if (fm != NULL 
   	  && (fm->ps_name != NULL && fm->ff_name != NULL) 
@@ -3254,4 +3254,277 @@ boolean mp_do_ps_font (MP mp, font_number f);
     mp_print_ln(mp);
   }
   return 1;
+}
+
+@ Included subset fonts do not need and encoding vector, make
+sure we skip that case.
+
+@<Exported...@>=
+void mp_list_used_resources (MP mp, int prologues, int procset);
+
+@ @c void mp_list_used_resources (MP mp, int prologues, int procset) {
+  font_number f; /* fonts used in a text node or as loop counters */
+  int ff;  /* a loop counter */
+  font_number ldf; /* the last \.{DocumentFont} listed (otherwise |null_font|) */
+  boolean firstitem;
+  if ( procset>0 )
+    mp_print_nl(mp, "%%DocumentResources: procset mpost");
+  else
+    mp_print_nl(mp, "%%DocumentResources: procset mpost-minimal");
+  ldf=null_font;
+  firstitem=true;
+  for (f=null_font+1;f<=mp->last_fnum;f++) {
+    if ( (mp_has_font_size(mp,f))&&(mp_font_is_reencoded(mp,f)) ) {
+	  for (ff=ldf;ff>=null_font;ff--) {
+        if ( mp_has_font_size(mp,ff) )
+          if ( xstrcmp(mp->font_enc_name[f],mp->font_enc_name[ff])==0 )
+            goto FOUND;
+      }
+      if ( mp_font_is_subsetted(mp,f) )
+        goto FOUND;
+      if ( mp->ps_offset+1+strlen(mp->font_enc_name[f])>
+           max_print_line )
+        mp_print_nl(mp, "%%+ encoding");
+      if ( firstitem ) {
+        firstitem=false;
+        mp_print_nl(mp, "%%+ encoding");
+      }
+      mp_print_char(mp, ' ');
+      mp_print(mp, mp->font_enc_name[f]);
+      ldf=f;
+    }
+  FOUND:
+    ;
+  }
+  ldf=null_font;
+  firstitem=true;
+  for (f=null_font+1;f<=mp->last_fnum;f++) {
+    if ( mp_has_font_size(mp,f) ) {
+      for (ff=ldf;ff>=null_font;ff--) {
+        if ( mp_has_font_size(mp,ff) )
+          if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
+            goto FOUND2;
+      }
+      if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>
+	       max_print_line )
+        mp_print_nl(mp, "%%+ font");
+      if ( firstitem ) {
+        firstitem=false;
+        mp_print_nl(mp, "%%+ font");
+      }
+      mp_print_char(mp, ' ');
+	  if ( (prologues==3)&&
+           (mp_font_is_subsetted(mp,f)) )
+        mp_print(mp, mp_fm_font_subset_name(mp,f));
+      else
+        mp_print(mp, mp->font_ps_name[f]);
+      ldf=f;
+    }
+  FOUND2:
+    ;
+  }
+  mp_print_ln(mp);
+} 
+
+@ @<Exported...@>=
+void mp_list_supplied_resources (MP mp, int prologues, int procset);
+
+@ @c void mp_list_supplied_resources (MP mp, int prologues, int procset) {
+  font_number f; /* fonts used in a text node or as loop counters */
+  int ff; /* a loop counter */
+  font_number ldf; /* the last \.{DocumentFont} listed (otherwise |null_font|) */
+  boolean firstitem;
+  if ( procset>0 )
+    mp_print_nl(mp, "%%DocumentSuppliedResources: procset mpost");
+  else
+    mp_print_nl(mp, "%%DocumentSuppliedResources: procset mpost-minimal");
+  ldf=null_font;
+  firstitem=true;
+  for (f=null_font+1;f<=mp->last_fnum;f++) {
+    if ( (mp_has_font_size(mp,f))&&(mp_font_is_reencoded(mp,f)) )  {
+       for (ff=ldf;ff>= null_font;ff++) {
+         if ( mp_has_font_size(mp,ff) )
+           if ( xstrcmp(mp->font_enc_name[f],mp->font_enc_name[ff])==0 )
+             goto FOUND;
+        }
+      if ( (prologues==3)&&(mp_font_is_subsetted(mp,f)))
+        goto FOUND;
+      if ( mp->ps_offset+1+strlen(mp->font_enc_name[f])>max_print_line )
+        mp_print_nl(mp, "%%+ encoding");
+      if ( firstitem ) {
+        firstitem=false;
+        mp_print_nl(mp, "%%+ encoding");
+      }
+      mp_print_char(mp, ' ');
+      mp_print(mp, mp->font_enc_name[f]);
+      ldf=f;
+    }
+  FOUND:
+    ;
+  }
+  ldf=null_font;
+  firstitem=true;
+  if (prologues==3) {
+    for (f=null_font+1;f<=mp->last_fnum;f++) {
+      if ( mp_has_font_size(mp,f) ) {
+        for (ff=ldf;ff>= null_font;ff--) {
+          if ( mp_has_font_size(mp,ff) )
+            if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
+               goto FOUND2;
+        }
+        if ( ! mp_font_is_included(mp,f) )
+          goto FOUND2;
+        if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>max_print_line )
+          mp_print_nl(mp, "%%+ font");
+        if ( firstitem ) {
+          firstitem=false;
+          mp_print_nl(mp, "%%+ font");
+        }
+        mp_print_char(mp, ' ');
+	    if ( mp_font_is_subsetted(mp,f) ) 
+          mp_print(mp, mp_fm_font_subset_name(mp,f));
+        else
+          mp_print(mp, mp->font_ps_name[f]);
+        ldf=f;
+      }
+    FOUND2:
+      ;
+    }
+    mp_print_ln(mp);
+  }
+}
+
+@ @<Exported...@>=
+void mp_list_needed_resources (MP mp, int prologues);
+
+@ @c void mp_list_needed_resources (MP mp, int prologues) {
+  font_number f; /* fonts used in a text node or as loop counters */
+  int ff; /* a loop counter */
+  font_number ldf; /* the last \.{DocumentFont} listed (otherwise |null_font|) */
+  boolean firstitem;
+  ldf=null_font;
+  firstitem=true;
+  for (f=null_font+1;f<=mp->last_fnum;f++ ) {
+    if ( mp_has_font_size(mp,f)) {
+      for (ff=ldf;ff>=null_font;ff--) {
+        if ( mp_has_font_size(mp,ff) )
+          if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
+             goto FOUND;
+      };
+      if ((prologues==3)&&(mp_font_is_included(mp,f)) )
+        goto FOUND;
+      if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>max_print_line )
+        mp_print_nl(mp, "%%+ font");
+      if ( firstitem ) {
+        firstitem=false;
+        mp_print_nl(mp, "%%DocumentNeededResources: font");
+      }
+      mp_print_char(mp, ' ');
+      mp_print(mp, mp->font_ps_name[f]);
+      ldf=f;
+    }
+  FOUND:
+    ;
+  }
+  if ( ! firstitem ) {
+    mp_print_ln(mp);
+    ldf=null_font;
+    firstitem=true;
+    for (f=null_font+1;f<= mp->last_fnum;f++) {
+      if ( mp_has_font_size(mp,f) ) {
+        for (ff=ldf;ff>=null_font;ff-- ) {
+          if ( mp_has_font_size(mp,ff) )
+            if ( xstrcmp(mp->font_name[f],mp->font_name[ff])==0 )
+              goto FOUND2;
+        }
+        if ((prologues==3)&&(mp_font_is_included(mp,f)) )
+          goto FOUND2;
+        mp_print(mp, "%%IncludeResource: font ");
+        mp_print(mp, mp->font_ps_name[f]);
+        mp_print_ln(mp);
+        ldf=f;
+      }
+    FOUND2:
+      ;
+    }
+  }
+}
+
+@ @<Exported...@>=
+void mp_write_font_definition (MP mp, font_number f, int prologues);
+
+@ 
+
+@d applied_reencoding(A) ((mp_font_is_reencoded(mp,(A)))&&
+    ((! mp_font_is_subsetted(mp,(A)))||(prologues==2)))
+
+  @c void mp_write_font_definition(MP mp, font_number f, int prologues) {
+  if ( (applied_reencoding(f))||(mp_fm_font_slant(mp,f)!=0)||
+       (mp_fm_font_extend(mp,f)!=0)||
+       (xstrcmp(mp->font_name[f],"psyrgo")==0)||
+       (xstrcmp(mp->font_name[f],"zpzdr-reversed")==0) ) {
+    if ( (mp_font_is_subsetted(mp,f))&&
+	 (mp_font_is_included(mp,f))&&(prologues==3))
+      mp_ps_name_out(mp, mp_fm_font_subset_name(mp,f),true);
+    else 
+      mp_ps_name_out(mp, mp->font_ps_name[f],true);
+    mp_ps_print(mp, " fcp");
+    mp_print_ln(mp);
+    if ( applied_reencoding(f) ) {
+      mp_ps_print(mp, "/Encoding ");
+      mp_ps_print(mp, mp->font_enc_name[f]);
+      mp_ps_print(mp, " def ");
+    };
+    if ( mp_fm_font_slant(mp,f)!=0 ) {
+      mp_print_int(mp, mp_fm_font_slant(mp,f));
+      mp_ps_print(mp, " SlantFont ");
+    };
+    if ( mp_fm_font_extend(mp,f)!=0 ) {
+      mp_print_int(mp, mp_fm_font_extend(mp,f));
+      mp_ps_print(mp, " ExtendFont ");
+    };
+    if ( xstrcmp(mp->font_name[f],"psyrgo")==0 ) {
+      mp_ps_print(mp, " 890 ScaleFont ");
+      mp_ps_print(mp, " 277 SlantFont ");
+    };
+    if ( xstrcmp(mp->font_name[f],"zpzdr-reversed")==0 ) {
+      mp_ps_print(mp, " FontMatrix [-1 0 0 1 0 0] matrix concatmatrix /FontMatrix exch def ");
+      mp_ps_print(mp, "/Metrics 2 dict dup begin ");
+      mp_ps_print(mp, "/space[0 -278]def ");
+      mp_ps_print(mp, "/a12[-904 -939]def ");
+      mp_ps_print(mp, "end def ");
+    };  
+    mp_ps_print(mp, "currentdict end");
+    mp_print_ln(mp);
+    mp_ps_print_defined_name(mp,f,prologues);
+    mp_ps_print(mp, " exch definefont pop");
+    mp_print_ln(mp);
+  }
+}
+
+@ @<Exported...@>=
+void mp_ps_print_defined_name (MP mp, font_number f, int prologues);
+
+@ 
+@c  void mp_ps_print_defined_name(MP mp, font_number A, int prologues) {
+  mp_ps_print(mp, " /");
+  if ((mp_font_is_subsetted(mp,(A)))&&
+      (mp_font_is_included(mp,(A)))&&(prologues==3))
+    mp_print(mp, mp_fm_font_subset_name(mp,(A)));
+  else 
+    mp_print(mp, mp->font_ps_name[(A)]);
+  if ( xstrcmp(mp->font_name[(A)],"psyrgo")==0 )
+    mp_ps_print(mp, "-Slanted");
+  if ( xstrcmp(mp->font_name[(A)],"zpzdr-reversed")==0 ) 
+    mp_ps_print(mp, "-Reverse");
+  if ( applied_reencoding((A)) ) { 
+    mp_ps_print(mp, "-");
+    mp_ps_print(mp, mp->font_enc_name[(A)]); 
+  }
+  if ( mp_fm_font_slant(mp,(A))!=0 ) {
+    mp_ps_print(mp, "-Slant_"); mp_print_int(mp, mp_fm_font_slant(mp,(A))) ;
+  }
+  if ( mp_fm_font_extend(mp,(A))!=0 ) {
+    mp_ps_print(mp, "-Extend_"); mp_print_int(mp, mp_fm_font_extend(mp,(A))); 
+  }
 }
