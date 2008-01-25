@@ -311,11 +311,11 @@ in production versions of \MP.
 @^system dependencies@>
 
 @<Constants...@>=
-#define mem_max 30000 /* greatest index in \MP's internal |mem| array;
+#define mem_max 3000000 /* greatest index in \MP's internal |mem| array;
   must be strictly less than |max_halfword|;
   must be equal to |mem_top| in \.{INIMP}, otherwise |>=mem_top| */
 #define max_internal 300 /* maximum number of internal quantities */
-#define buf_size 500 /* maximum number of characters simultaneously present in
+#define buf_size 50000 /* maximum number of characters simultaneously present in
   current lines of open files; must not exceed |max_halfword| */
 #define error_line 79 /* width of context lines on terminal error messages */
 #define half_error_line 50 /* width of first lines of contexts in terminal
@@ -325,12 +325,12 @@ in production versions of \MP.
   /* \ps\ output lines can be this long in unusual circumstances */
 #define stack_size 300 /* maximum number of simultaneous input sources */
 #define max_read_files 30 /* maximum number of simultaneously open \&{readfrom} files */
-#define max_strings 2500 /* maximum number of strings; must not exceed |max_halfword| */
+#define max_strings 25000 /* maximum number of strings; must not exceed |max_halfword| */
 #define string_vacancies 9000 /* the minimum number of characters that should be
   available for the user's identifier names and strings,
   after \MP's own error messages are stored */
 #define strings_vacant 1000 /* the minimum number of strings that should be available */
-#define pool_size 32000 /* maximum number of characters in strings, including all
+#define pool_size 320000 /* maximum number of characters in strings, including all
   error messages and help texts, and the names of all identifiers;
   must exceed |string_vacancies| by the total
   length of \MP's own strings, which is currently about 22000 */
@@ -338,7 +338,7 @@ in production versions of \MP.
 #define font_mem_size 10000 /* number of words for \.{TFM} information for text fonts */
 #define file_name_size 255 /* file names shouldn't be longer than this */
 #define ps_tab_name "psfonts.map"  /* locates font name translation table */
-#define path_size 300 /* maximum number of knots between breakpoints of a path */
+#define path_size 30000 /* maximum number of knots between breakpoints of a path */
 #define bistack_size 1500 /* size of stack for bisection algorithms;
   should probably be left at this value */
 #define header_size 100 /* maximum number of \.{TFM} header words, times~4 */
@@ -360,7 +360,7 @@ emphasize this distinction.
 
 @d mem_min 0 /* smallest index in the |mem| array, must not be less
   than 0 */
-@d mem_top 30000 /* largest index in the |mem| array dumped by \.{INIMP};
+@d mem_top 3000000 /* largest index in the |mem| array dumped by \.{INIMP};
   must be substantially larger than |mem_min|
   and not greater than |mem_max| */
 @d hash_size 9500 /* maximum number of symbolic tokens,
