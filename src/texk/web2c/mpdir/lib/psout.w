@@ -38,7 +38,7 @@ fm_entry    **mp_font_map; /* pointer into AVL tree of font mappings */
 @ @<Exported function headers@>=
 void mp_backend_initialize (MP mp, int fontmax) ;
 
-@ 
+@
 @c void mp_backend_initialize (MP mp, int fontmax) {
   int i;
   mp->ps = malloc(sizeof(psout_data_struct));
@@ -127,8 +127,8 @@ FILE *enc_file;
 
 @c 
 boolean mp_enc_open (MP mp, char *n) {
-  mp_pack_file_name(mp,n,NULL,NULL);
-  if (mp_b_open_in(mp, &mp->ps->enc_file, mp_filetype_encoding))
+  mp->ps->enc_file=mp_open_file(mp, n, "rb", mp_filetype_encoding);
+  if (mp->ps->enc_file!=NULL)
     return true;
   else
    return false;
@@ -241,6 +241,7 @@ void mp_write_enc (MP mp, char **glyph_names, enc_entry * e) {
     } else {
         g = glyph_names;
     }
+
     mp_print(mp,"\n%%%%BeginResource: encoding ");
     mp_print(mp, e->enc_name);
     mp_print(mp, "\n/");
@@ -966,6 +967,7 @@ int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
 @ 
 @c void fm_read_info (MP mp) {
     char *n;
+    char s[256];
     if (mp->ps->tfm_tree == NULL)
         create_avl_trees (mp);
     if (mp->ps->mitem->map_line == NULL)    /* nothing to do */
@@ -976,7 +978,8 @@ int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
         n = mp->ps->mitem->map_line;
         mp->ps->fm_file = mp_open_file(mp, n, "r", mp_filetype_fontmap);
         if (!mp->ps->fm_file) {
-            mp_warn(mp,"cannot open font map file");
+            snprintf(s,256,"cannot open font map file %s",n);
+            mp_warn(mp,s);
         } else {
             int save_selector = mp->selector;
             mp_normalize_selector(mp);
@@ -2272,8 +2275,7 @@ boolean t1_open_fontfile (MP mp, fm_entry *fm_cur,const char *open_name_prefix) 
     ff_entry *ff;
     ff = check_ff_exist (mp, fm_cur);
     if (ff->ff_path != NULL) {
-        mp_pack_file_name(mp,ff->ff_path,NULL,NULL);
-        mp_b_open_in(mp,&mp->ps->t1_file, mp_filetype_font);
+        mp->ps->t1_file = mp_open_file(mp,ff->ff_path, "rb", mp_filetype_font);
     } else {
         mp_warn (mp, "cannot open Type 1 font file for reading");
         return false;
@@ -3638,7 +3640,7 @@ void mp_print_improved_prologue (MP mp, int prologues, int procset,
         mp_ps_print(mp, " def");
       } else {
 	char s[256];
-        snprintf(s,256,"Warning: font %s cannot be found in any fontmapfile!", mp->font_name[f]);
+        snprintf(s,256,"font %s cannot be found in any fontmapfile!", mp->font_name[f]);
       	mp_warn(mp,s);
         mp_ps_name_out(mp, mp->font_name[f],true);
         mp_ps_name_out(mp, mp->font_name[f],true);
