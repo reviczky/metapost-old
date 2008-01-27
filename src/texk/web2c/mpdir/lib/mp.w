@@ -1219,18 +1219,6 @@ RESTART:
   return s;
 }
 
-@ On rare occasions, we might decide after calling |make_string| that some
-characters should be removed from the end of the last string and transferred
-to the beginning of a string under construction.  This basically a matter of
-resetting |str_start[str_ptr]|.  It is not practical to ensure that the new
-value for this pointer is in range, so this procedure should be used carefully.
-
-@c 
-void mp_chop_last_string (MP mp,pool_pointer p) { 
-  mp->pool_in_use=mp->pool_in_use-(mp->str_start[mp->str_ptr]-p);
-  mp->str_start[mp->str_ptr]=p;
-}
-
 @ The most interesting string operation is string pool compaction.  The idea
 is to recover unused space in the |str_pool| array by recopying the strings
 to close the gaps created when some strings become unused.  All string
@@ -24681,6 +24669,7 @@ void mp_open_output_file (MP mp) ;
     mp->selector=new_string;
     f = 0;
     i = mp->str_start[mp->filename_template];
+    n = rts(""); /* initialize */
     while ( i<str_stop(mp->filename_template) ) {
        if ( mp->str_pool[i]=='%' ) {
       CONTINUE:
