@@ -15982,6 +15982,7 @@ can't find the file in |cur_area| or the appropriate system area.
 when an `\.{input}' command is being processed.
 
 @c void mp_start_input (MP mp) { /* \MP\ will \.{input} something */
+  char *fname = NULL;
   @<Put the desired file name in |(cur_name,cur_ext,cur_area)|@>;
   while (1) { 
     mp_begin_file_reading(mp); /* set up |cur_file| and new level of input */
@@ -15997,14 +15998,16 @@ when an `\.{input}' command is being processed.
     mp_prompt_file_name(mp, "input file name","");
   }
   name=mp_a_make_name_string(mp, cur_file);
+  fname = xstrdup(mp->name_of_file);
   if ( mp->job_name==NULL ) {
     mp->job_name=xstrdup(mp->cur_name); 
     mp_open_log_file(mp);
   } /* |open_log_file| doesn't |show_context|, so |limit|
         and |loc| needn't be set to meaningful values yet */
-  if ( mp->term_offset+length(name)>max_print_line-2 ) mp_print_ln(mp);
+  if ( mp->term_offset+strlen(fname)>max_print_line-2 ) mp_print_ln(mp);
   else if ( (mp->term_offset>0)||(mp->file_offset>0) ) mp_print_char(mp, ' ');
-  mp_print_char(mp, '('); incr(mp->open_parens); mp_print(mp, mp->cur_name); 
+  mp_print_char(mp, '('); incr(mp->open_parens); mp_print(mp, fname); 
+  xfree(fname);
   update_terminal;
   @<Flush |name| and replace it with |cur_name| if it won't be needed@>;
   @<Read the first line of the new file@>;
