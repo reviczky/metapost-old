@@ -341,10 +341,6 @@ in production versions of \MP.
 #define path_size 30000 /* maximum number of knots between breakpoints of a path */
 #define bistack_size 1500 /* size of stack for bisection algorithms;
   should probably be left at this value */
-#define lig_table_size 15000 /* maximum number of ligature/kern steps, must be
-  at least 255 and at most 32510 */
-#define max_kerns 2500 /* maximum number of distinct kern amounts */
-#define max_font_dimen 50 /* maximum number of \&{fontdimen} parameters */
 
 @ Like the preceding parameters, the following quantities can be changed
 at compile time to extend or reduce \MP's capacity. But if they are changed,
@@ -393,7 +389,6 @@ if ( max_print_line<60 ) mp->bad=2;
 if ( emergency_line_length<max_print_line ) mp->bad=3;
 if ( mem_min+1100>mem_top ) mp->bad=4;
 if ( hash_prime>hash_size ) mp->bad=5;
-if ((lig_table_size<255)||(lig_table_size>32510)) mp->bad=7;
 
 @ Labels are given symbolic names by the following definitions, so that
 occasional |goto| statements will be meaningful. We insert the label
@@ -23131,7 +23126,8 @@ its ligatures or successors) is accessible via the |char_tag| and
 is kept in additional arrays called |header_byte|, |lig_kern|,
 |kern|, |exten|, and |param|.
 
-@d undefined_label lig_table_size /* an undefined local label */
+@d max_tfm_int 32510
+@d undefined_label max_tfm_int /* an undefined local label */
 
 @<Glob...@>=
 #define TFM_ITEMS 257
@@ -23168,9 +23164,9 @@ short label_ptr; /* highest position occupied in |label_loc| */
 @ @<Allocate variables@>=
 mp->header_last = 0; mp->header_size = 128; /* just for init */
 mp->header_byte = xmalloc(mp->header_size);
-mp->lig_kern = xmalloc(sizeof(four_quarters)*(lig_table_size+1));
-mp->kern = xmalloc(sizeof(scaled)*(max_kerns+1));
-mp->param = xmalloc(sizeof(scaled)*(max_font_dimen+1));
+mp->lig_kern = NULL; /* allocated when needed */
+mp->kern = NULL; /* allocated when needed */ 
+mp->param = NULL; /* allocated when needed */
 
 @ @<Dealloc variables@>=
 xfree(mp->header_byte);
@@ -23327,6 +23323,10 @@ void mp_do_tfm_command (MP mp) ;
     };
     break;
   case lig_table_code: 
+    if (mp->lig_kern==NULL) 
+       mp->lig_kern = xmalloc(sizeof(four_quarters)*(max_tfm_int+1));
+    if (mp->kern==NULL) 
+       mp->kern = xmalloc(sizeof(scaled)*(max_tfm_int+1));
     @<Store a list of ligature/kern steps@>;
     break;
   case extensible_code: 
@@ -23350,8 +23350,13 @@ void mp_do_tfm_command (MP mp) ;
         help1("A colon should follow a headerbyte or fontinfo location.");
         mp_back_error(mp);
       }
-      if ( c==header_byte_code ) { @<Store a list of header bytes@>;}
-      else { @<Store a list of font dimensions@>;} 
+      if ( c==header_byte_code ) { 
+	@<Store a list of header bytes@>;
+      } else {     
+        if (mp->param==NULL) 
+          mp->param = xmalloc(sizeof(scaled)*(max_tfm_int+1));
+        @<Store a list of font dimensions@>;
+      }
     }
     break;
   } /* there are no other cases */
@@ -23379,7 +23384,7 @@ CONTINUE:
     op_byte(mp->nl)=qi(0); rem_byte(mp->nl)=qi(0);
     skip_byte(mp->nl)=stop_flag+1; /* this specifies an unconditional stop */
   }
-  if ( mp->nl==lig_table_size ) mp_overflow(mp, "ligtable size",lig_table_size);
+  if ( mp->nl==max_tfm_int) mp_fatal_error(mp, "ligtable too large");
 @:MetaPost capacity exceeded ligtable size}{\quad ligtable size@>
   incr(mp->nl);
   if ( mp->cur_cmd==comma ) goto CONTINUE;
@@ -23489,7 +23494,7 @@ We may need to cancel skips that span more than 127 lig/kern steps.
     k=0; 
     while ( mp->kern[k]!=mp->cur_exp ) incr(k);
     if ( k==mp->nk ) {
-      if ( mp->nk==max_kerns ) mp_overflow(mp, "kern",max_kerns);
+      if ( mp->nk==max_tfm_int ) mp_fatal_error(mp, "too many TFM kerns");
 @:MetaPost capacity exceeded kern}{\quad kern@>
       incr(mp->nk);
     }
@@ -23540,7 +23545,7 @@ do {
 
 @ @<Store a list of font dimensions@>=
 do {  
-  if ( j>max_font_dimen ) mp_overflow(mp, "fontdimen",max_font_dimen);
+  if ( j>max_tfm_int ) mp_fatal_error(mp, "too many fontdimens");
 @:MetaPost capacity exceeded fontdimen}{\quad fontdimen@>
   while ( j>mp->np ) { incr(mp->np); mp->param[mp->np]=0; };
   mp_get_x_next(mp); mp_scan_expression(mp);
@@ -24023,10 +24028,8 @@ if ( mp->tfm_changed>0 )  {
   char s[200];
   wlog_ln(" ");
   if ( mp->bch_label<undefined_label ) decr(mp->nl);
-  snprintf(s,128,"(You used %iw,%ih,%id,%ii,%il,%ik,%ie,%ip metric file positions\n"
-                 "  out of 256w,16h,16d,64i,%il,%ik,256e,%ip)",
-           mp->nw, mp->nh, mp->nd, mp->ni, mp->nl, mp->nk, mp->ne,mp->np,
-           lig_table_size,max_kerns,max_font_dimen);
+  snprintf(s,128,"(You used %iw,%ih,%id,%ii,%il,%ik,%ie,%ip metric file positions)",
+                 mp->nw, mp->nh, mp->nd, mp->ni, mp->nl, mp->nk, mp->ne,mp->np);
   wlog_ln(s);
 }
 
