@@ -994,9 +994,9 @@ xfree(mp->str_pool);
 xfree(mp->str_start);
 xfree(mp->next_str);
 
-@ Most printing is done from |char *|s, but sometimes not. Here is 
-a function that converts an internal string into a |char *| for use
-by the printing routines
+@ Most printing is done from |char *|s, but sometimes not. Here are
+functions that convert an internal string into a |char *| for use
+by the printing routines, and vice versa.
 
 @d str(A) mp_str(mp,A)
 @d rts(A) mp_rts(mp,A)
@@ -1010,8 +1010,7 @@ str_number mp_rts (MP mp, char *s);
 str_number mp_make_string (MP mp);
 
 @ The attempt to catch interrupted strings that is in |mp_rts|, is not 
-very good yet. For one thing, it creates a useless string. For another,
-it does not handle nesting over more than one level.
+very good: it does not handle nesting over more than one level.
 
 @c 
 int xstrcmp (const char *a, const char *b) {
@@ -1054,6 +1053,7 @@ str_number mp_rts (MP mp, char *s) {
       while (i<length(old)) {
         append_char((mp->str_start[old]+i));
       } 
+      mp_flush_string(mp,old);
     }
     return r;
   }
@@ -1158,18 +1158,40 @@ xfree(mp->str_ref);
 void mp_flush_string (MP mp,str_number s) ;
 
 
-@ @c
+@ We can't flush the first set of static strings at all, so there 
+is no point in trying
+
+@c
 void mp_flush_string (MP mp,str_number s) { 
-  mp->pool_in_use=mp->pool_in_use-length(s);
-  decr(mp->strs_in_use);
-  if ( mp->next_str[s]!=mp->str_ptr ) {
-   mp->str_ref[s]=0;
-  } else { 
-    mp->str_ptr=s;
-    decr(mp->strs_used_up);
+  if (length(s)>1) {
+    mp->pool_in_use=mp->pool_in_use-length(s);
+    decr(mp->strs_in_use);
+    if ( mp->next_str[s]!=mp->str_ptr ) {
+      mp->str_ref[s]=0;
+    } else { 
+      mp->str_ptr=s;
+      decr(mp->strs_used_up);
+    }
+    mp->pool_ptr=mp->str_start[mp->str_ptr];
   }
-  mp->pool_ptr=mp->str_start[mp->str_ptr];
 }
+
+@ C literals cannot be simply added, they need to be set so they can't
+be flushed.
+
+@d intern(A) mp_intern(mp,(A))
+
+@c
+str_number mp_intern (MP mp, char *s) {
+  str_number r ;
+  r = rts(s);
+  mp->str_ref[r] = max_str_ref;
+  return r;
+}
+
+@ @<Declarations@>=
+str_number mp_intern (MP mp, char *s);
+
 
 @ Once a sequence of characters has been appended to |str_pool|, it
 officially becomes a string when the function |make_string| is called.
@@ -1288,7 +1310,7 @@ while ( (mp->str_ref[t]==max_str_ref)&&(t!=mp->str_ptr) ) {
 str_use=mp->fixed_str_use
 
 @ Because of the way |flush_string| has been written, it should never be
-necessary to |goto done| here.  The extra line of code seems worthwhile to
+necessary to |break| here.  The extra line of code seems worthwhile to
 preserve the generality of |do_compaction|.
 
 @<Advance |s| and add the old |s| to the list of free string numbers;...@>=
@@ -5310,19 +5332,19 @@ for (k=2;k<=hash_end;k++)  {
 @ @<Initialize table entries...@>=
 mp->hash_used=frozen_inaccessible; /* nothing is used */
 mp->st_count=0;
-text(frozen_bad_vardef)=rts("a bad variable");
-text(frozen_etex)=rts("etex");
-text(frozen_mpx_break)=rts("mpxbreak");
-text(frozen_fi)=rts("fi");
-text(frozen_end_group)=rts("endgroup");
-text(frozen_end_def)=rts("enddef");
-text(frozen_end_for)=rts("endfor");
-text(frozen_semicolon)=rts(";");
-text(frozen_colon)=rts(":");
-text(frozen_slash)=rts("/");
-text(frozen_left_bracket)=rts("[");
-text(frozen_right_delimiter)=rts(")");
-text(frozen_inaccessible)=rts(" INACCESSIBLE");
+text(frozen_bad_vardef)=intern("a bad variable");
+text(frozen_etex)=intern("etex");
+text(frozen_mpx_break)=intern("mpxbreak");
+text(frozen_fi)=intern("fi");
+text(frozen_end_group)=intern("endgroup");
+text(frozen_end_def)=intern("enddef");
+text(frozen_end_for)=intern("endfor");
+text(frozen_semicolon)=intern(";");
+text(frozen_colon)=intern(":");
+text(frozen_slash)=intern("/");
+text(frozen_left_bracket)=intern("[");
+text(frozen_right_delimiter)=intern(")");
+text(frozen_inaccessible)=intern(" INACCESSIBLE");
 eq_type(frozen_right_delimiter)=right_delimiter;
 
 @ @<Check the ``constant'' values...@>=
@@ -5417,7 +5439,7 @@ void mp_primitive (MP mp, char *ss, halfword c, halfword o) {
   small_number j; /* index into |buffer| */
   small_number l; /* length of the string */
   str_number s;
-  s = rts(ss);
+  s = intern(ss);
   k=mp->str_start[s]; l=str_stop(s)-k;
   /* we will move |s| into the (empty) |buffer| */
   for (j=0;j<=l-1;j++) {
@@ -15247,7 +15269,7 @@ link(s)=mp->loop_ptr; mp->loop_ptr=s
 
 @ @<Initialize table...@>=
 eq_type(frozen_repeat_loop)=repeat_loop+outer_tag;
-text(frozen_repeat_loop)=rts(" ENDFOR");
+text(frozen_repeat_loop)=intern(" ENDFOR");
 
 @ The loop text is inserted into \MP's scanning apparatus by the
 |resume_iteration| routine.
@@ -18432,7 +18454,7 @@ void mp_do_nullary (MP mp,quarterword c) {
     break;
   case mp_version: 
     mp->cur_type=mp_string_type; 
-    mp->cur_exp=rts(metapost_version) ;
+    mp->cur_exp=intern(metapost_version) ;
     break;
   case read_string_op:
     @<Read a string from the terminal@>;
