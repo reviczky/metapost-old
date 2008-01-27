@@ -235,6 +235,8 @@ mp->find_file = mpost_find_file;
       @<Show help and exit@>;
     } else if (option_is("version")) {
       @<Show version and exit@>;
+    } else if (option_is("")) {
+      continue; /* ignore unknown options */
     } else {
       break;
     }
