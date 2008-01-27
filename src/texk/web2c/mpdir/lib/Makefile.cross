@@ -11,15 +11,15 @@ KPSEBUILDDIR = ../../../../../cross/texk/kpathsea/.libs
 KPSESRCDIR = ../../..
 
 RM = rm
-LD = env PATH=/usr/mingw32/mingw32/bin:$PATH gcc
-CC = env PATH=/usr/mingw32/mingw32/bin:$PATH gcc
+LD = env PATH=/usr/mingw32/mingw32/bin:$$PATH gcc
+CC = env PATH=/usr/mingw32/mingw32/bin:$$PATH gcc
 CTANGLE = ctangle
 
 CFLAGS = -Wall -W -g -I../../..
 OBJECTS = avl.o mp.o mpost.o psout.o
 
-newmpost: $(OBJECTS) avl.h $(KPSEBUILDDIR)/libkpathsea.a
-	$(LD) -o newmpost $(OBJECTS) $(KPSEBUILDDIR)/libkpathsea.a 
+newmpost.exe: $(OBJECTS) avl.h $(KPSEBUILDDIR)/libkpathsea.a
+	$(LD) -o newmpost.exe $(OBJECTS) $(KPSEBUILDDIR)/libkpathsea.a 
 
 mp.c: mp.w psout.c
 	$(CTANGLE) mp.w
@@ -34,4 +34,4 @@ $(OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) -I$(KPSESRCDIR) $< -o $@
 
 clean:
-	$(RM) *.o newmpost mp.c mpost.c psout.c mp*.h 
+	$(RM) *.o newmpost.exe mp.c mpost.c psout.c mp*.h 
