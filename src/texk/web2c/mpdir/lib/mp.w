@@ -341,7 +341,6 @@ in production versions of \MP.
 #define path_size 30000 /* maximum number of knots between breakpoints of a path */
 #define bistack_size 1500 /* size of stack for bisection algorithms;
   should probably be left at this value */
-#define header_size 100 /* maximum number of \.{TFM} header words, times~4 */
 #define lig_table_size 15000 /* maximum number of ligature/kern steps, must be
   at least 255 and at most 32510 */
 #define max_kerns 2500 /* maximum number of distinct kern amounts */
@@ -394,7 +393,6 @@ if ( max_print_line<60 ) mp->bad=2;
 if ( emergency_line_length<max_print_line ) mp->bad=3;
 if ( mem_min+1100>mem_top ) mp->bad=4;
 if ( hash_prime>hash_size ) mp->bad=5;
-if ( header_size % 4 != 0 ) mp->bad=6;
 if ((lig_table_size<255)||(lig_table_size>32510)) mp->bad=7;
 
 @ Labels are given symbolic names by the following definitions, so that
@@ -953,28 +951,12 @@ representation, and \MP\ may need to be able to print an arbitrary
 ASCII character, so the first 256 strings are used to specify exactly what
 should be printed for each of the 256 possibilities.
 
-Elements of the |str_pool| array must be ASCII codes that can actually be
-printed; i.e., they must have an |xchr| equivalent in the local
-character set. (This restriction applies only to preloaded strings,
-not to those generated dynamically by the user.)
-
-Some \PASCAL\ compilers won't pack integers into a single byte unless the
-integers lie in the range |-128..127|. To accommodate such systems
-we access the string pool via macros that can easily be redefined.
-When accessing character dimensions for the \&{infont} operator, an explicit
-offset is used to convert from |pool_ASCII_code| to |ASCII_code|.
-
-@d si(A)   (A) /* convert from |ASCII_code| to |pool_ASCII_code| */
-@d so(A)   (A) /* convert from |pool_ASCII_code| to |ASCII_code| */
-@d min_pool_ASCII 0 /* added to an |ASCII_code| to make a |pool_ASCII_code| */
-
 @<Types...@>=
 typedef int pool_pointer; /* for variables that point into |str_pool| */
 typedef int str_number; /* for variables that point into |str_start| */
-typedef unsigned char pool_ASCII_code; /* elements of |str_pool| array */
 
 @ @<Glob...@>=
-pool_ASCII_code *str_pool; /* the characters */
+ASCII_code *str_pool; /* the characters */
 pool_pointer *str_start; /* the starting pointers */
 str_number *next_str; /* for linking strings in order */
 pool_pointer pool_ptr; /* first unused position in |str_pool| */
@@ -985,7 +967,7 @@ pool_pointer max_pool_ptr; /* the maximum so far of |pool_ptr| */
 str_number max_str_ptr; /* the maximum so far of |str_ptr| */
 
 @ @<Allocate variables@>=
-mp->str_pool = xmalloc (sizeof(pool_ASCII_code)* (pool_size +1));
+mp->str_pool = xmalloc (sizeof(ASCII_code)* (pool_size +1));
 mp->str_start = xmalloc (sizeof(pool_pointer) * (max_strings+1));
 mp->next_str = xmalloc (sizeof(str_number) * (max_strings+1));
 
@@ -1099,7 +1081,7 @@ by compacting the string pool if necessary.  If this does not work,
 |do_compaction| aborts \MP\ and gives an apologetic error message.
 
 @d append_char(A)   /* put |ASCII_code| \# at the end of |str_pool| */
-{ mp->str_pool[mp->pool_ptr]=si((A)); incr(mp->pool_ptr);
+{ mp->str_pool[mp->pool_ptr]=(A); incr(mp->pool_ptr);
 }
 @d str_room(A)   /* make sure that the pool hasn't overflowed */
   { if ( mp->pool_ptr+(A) > mp->max_pool_ptr ) {
@@ -1416,7 +1398,7 @@ boolean mp_str_eq_buf (MP mp,str_number s, integer k) {
   pool_pointer j; /* running index */
   j=mp->str_start[s];
   while ( j<str_stop(s) ) { 
-    if ( so(mp->str_pool[j])!=mp->buffer[k] ) { 
+    if ( mp->str_pool[j]!=mp->buffer[k] ) { 
       return false;
     }
     incr(j); incr(k);
@@ -2284,9 +2266,9 @@ to be familiar with \MP's input stacks.
 @ @<Print the string |err_help|, possibly on several lines@>=
 j=mp->str_start[mp->err_help];
 while ( j<str_stop(mp->err_help) ) { 
-  if ( mp->str_pool[j]!=si('%') ) mp_print_str(mp, so(mp->str_pool[j]));
+  if ( mp->str_pool[j]!='%' ) mp_print_str(mp, mp->str_pool[j]);
   else if ( j+1==str_stop(mp->err_help) ) mp_print_ln(mp);
-  else if ( mp->str_pool[j+1]!=si('%') ) mp_print_ln(mp);
+  else if ( mp->str_pool[j+1]!='%' ) mp_print_ln(mp);
   else  { incr(j); mp_print_char(mp, '%'); };
   incr(j);
 }
@@ -5443,7 +5425,7 @@ void mp_primitive (MP mp, char *ss, halfword c, halfword o) {
   k=mp->str_start[s]; l=str_stop(s)-k;
   /* we will move |s| into the (empty) |buffer| */
   for (j=0;j<=l-1;j++) {
-    mp->buffer[j]=so(mp->str_pool[k+j]);
+    mp->buffer[j]=mp->str_pool[k+j];
   }
   mp->cur_sym=mp_id_lookup(mp, 0,l);
   if ( s>=256 ) { /* we don't want to have the string twice */
@@ -5837,7 +5819,7 @@ mp_print_int(mp, r); mp_print_char(mp, ')'); c=right_paren_class;
 
 @ @<Print string |r| as a symbolic token...@>=
 { 
-c=mp->char_class[so(mp->str_pool[mp->str_start[r]])];
+c=mp->char_class[mp->str_pool[mp->str_start[r]]];
 if ( c==class ) {
   switch (c) {
   case letter_class:mp_print_char(mp, '.'); break;
@@ -14519,7 +14501,7 @@ is less than |loop_text|.
   }
   j=mp->str_start[mp->cur_exp]; limit=k;
   while ( mp->first<limit ) {
-    mp->buffer[mp->first]=so(mp->str_pool[j]); incr(j); incr(mp->first);
+    mp->buffer[mp->first]=mp->str_pool[j]; incr(j); incr(mp->first);
   }
   mp->buffer[limit]='%'; mp->first=limit+1; loc=start; 
   mp_flush_cur_exp(mp, 0);
@@ -15814,7 +15796,7 @@ void mp_str_scan_file (MP mp,  str_number s) {
   mp_begin_name(mp);
   p=mp->str_start[s]; q=str_stop(s);
   while ( p<q ){ 
-    if ( ! mp_more_name(mp, so(mp->str_pool[p])) ) break;
+    if ( ! mp_more_name(mp, mp->str_pool[p]) ) break;
     incr(p);
   }
   mp_end_name(mp);
@@ -16094,21 +16076,18 @@ copies the given string into a special array for an old file name.
   for (j=mp->str_start[s];j<=str_stop(s)-1;j++) { 
     incr(k);
     if ( k<=file_name_size ) 
-      mp->old_file_name[k]=mp->xchr[so(mp->str_pool[j])];
+      mp->old_file_name[k]=mp->xchr[mp->str_pool[j]];
   }
   mp->old_file_name[++k] = 0;
-  mp->old_name_length=k;
 }
 
 @ @<Glob...@>=
 char old_file_name[file_name_size+1];  /* analogous to |name_of_file| */
-int old_name_length; /* this many relevant characters followed by blanks */
 
 @ The following simple routine starts reading the \.{MPX} file associated
 with the current input file.
 
 @c void mp_start_mpx_input (MP mp) {
-  int k;
   mp_pack_file_name(mp, in_name, in_area, ".mpx");
   @<Try to make sure |name_of_file| refers to a valid \.{MPX} file and
     |goto not_found| if there is a problem@>;
@@ -16116,7 +16095,7 @@ with the current input file.
   if ( ! mp_a_open_in(mp, &cur_file, mp_filetype_program) ) {
     mp_end_file_reading(mp);
     goto NOT_FOUND;
-  };
+  }
   name=mp_a_make_name_string(mp, cur_file);
   mp->mpx_name[index]=name; add_str_ref(name);
   @<Read the first line of the new file@>;
@@ -16164,13 +16143,9 @@ if (!(mp->run_make_mpx)(mp, mp->old_file_name, mp->name_of_file))
 @ @<Explain that the \.{MPX} file can't be read and |succumb|@>=
 if ( mp->interaction==mp_error_stop_mode ) wake_up_terminal;
 mp_print_nl(mp, ">> ");
-for (k=0;k<mp->old_name_length;k++ ) {
-  mp_print_str(mp, mp->xord[(int)mp->old_file_name[k]]);
-}
+mp_print(mp, mp->old_file_name);
 mp_print_nl(mp, ">> ");
-for (k=0;k<mp->name_length;k++) {
-  mp_print_str(mp, mp->xord[(int)mp->name_of_file[k]]);
-}
+mp_print(mp, mp->name_of_file);
 mp_print_nl(mp, "! Unable to make mpx file");
 help4("The two files given above are one of your source files")
   ("and an auxiliary file I need to read to find out what your")
@@ -18929,12 +18904,12 @@ void mp_str_to_num (MP mp,quarterword c) { /* converts a string to a number */
   boolean bad_char; /* did the string contain an invalid digit? */
   if ( c==ASCII_op ) {
     if ( length(mp->cur_exp)==0 ) n=-1;
-    else n=so(mp->str_pool[mp->str_start[mp->cur_exp]]);
+    else n=mp->str_pool[mp->str_start[mp->cur_exp]];
   } else { 
     if ( c==oct_op ) b=8; else b=16;
     n=0; bad_char=false;
     for (k=mp->str_start[mp->cur_exp];k<=str_stop(mp->cur_exp)-1;k++) {
-      m=so(mp->str_pool[k]);
+      m=mp->str_pool[k];
       if ( (m>='0')&&(m<='9') ) m=m-'0';
       else if ( (m>='A')&&(m<='F') ) m=m-'A'+10;
       else if ( (m>='a')&&(m<='f') ) m=m-'a'+10;
@@ -19591,25 +19566,16 @@ mp->rd_fname[n]=NULL;
 if ( n==mp->read_files-1 ) mp->read_files=n;
 if ( c==close_from_op ) 
   goto CLOSE_FILE;
-@<Make sure |eof_line| is initialized@>;
 mp_flush_cur_exp(mp, mp->eof_line);
 mp->cur_type=mp_string_type
 
-@ Since the |eof_line| string contains a non-printable character, it must be
-initialized at run time and stored in a global variable.
+@ The string denoting end-of-file is a one-byte string at position zero, by definition
 
 @<Glob...@>=
-str_number eof_line; /* string denoting end-of-file or 0 if uninitialized */
+str_number eof_line;
 
 @ @<Set init...@>=
 mp->eof_line=0;
-
-@ @<Make sure |eof_line| is initialized@>=
-if ( mp->eof_line==0 ) { 
-  append_char(0);
-  mp->eof_line=mp_make_string(mp);
-  mp->str_ref[mp->eof_line]=max_str_ref;
-}
 
 @ Finally, we have the operations that combine a capsule~|p|
 with the current expression.
@@ -20700,10 +20666,10 @@ void mp_cat (MP mp,pointer p) {
   pool_pointer k; /* index into |str_pool| */
   a=value(p); b=mp->cur_exp; str_room(length(a)+length(b));
   for (k=mp->str_start[a];k<=str_stop(a)-1;k++) {
-    append_char(so(mp->str_pool[k]));
+    append_char(mp->str_pool[k]);
   }
   for (k=mp->str_start[b];k<=str_stop(b)-1;k++) {
-    append_char(so(mp->str_pool[k]));
+    append_char(mp->str_pool[k]);
   }
   mp->cur_exp=mp_make_string(mp); delete_str_ref(b);
 }
@@ -20731,11 +20697,11 @@ void mp_chop_string (MP mp,pointer p) {
   str_room(b-a);
   if ( reversed ) {
     for (k=mp->str_start[s]+b-1;k>=mp->str_start[s]+a;k--)  {
-      append_char(so(mp->str_pool[k]));
+      append_char(mp->str_pool[k]);
     }
   } else  {
     for (k=mp->str_start[s]+a;k<=mp->str_start[s]+b-1;k++)  {
-      append_char(so(mp->str_pool[k]));
+      append_char(mp->str_pool[k]);
     }
   }
   mp->cur_exp=mp_make_string(mp); delete_str_ref(s);
@@ -22840,7 +22806,6 @@ void mp_do_write (MP mp) ;
 { 
   @<Find |n| where |wr_fname[n]=cur_exp| and call |open_write_file| if
     |cur_exp| must be inserted@>;
-  @<Make sure |eof_line| is initialized@>;
   if ( mp_str_vs_str(mp, t,mp->eof_line)==0 ) {
     @<Record the end of file on |wr_file[n]|@>;
   } else { 
@@ -23179,7 +23144,9 @@ scaled tfm_ital_corr[TFM_ITEMS]; /* \&{charic} values */
 boolean char_exists[TFM_ITEMS]; /* has this code been shipped out? */
 int char_tag[TFM_ITEMS]; /* |remainder| category */
 int char_remainder[TFM_ITEMS]; /* the |remainder| byte */
-int *header_byte; /* bytes of the \.{TFM} header, or $-1$ if unset */
+char *header_byte; /* bytes of the \.{TFM} header */
+int header_last; /* last initialized \.{TFM} header byte */
+int header_size; /* size of the \.{TFM} header */
 four_quarters *lig_kern; /* the ligature/kern table */
 short nl; /* the number of ligature/kern steps so far */
 scaled *kern; /* distinct kerning amounts */
@@ -23199,7 +23166,8 @@ eight_bits label_char[257]; /* characters for |label_loc| */
 short label_ptr; /* highest position occupied in |label_loc| */
 
 @ @<Allocate variables@>=
-mp->header_byte = xmalloc(sizeof(int)*(header_size+1));
+mp->header_last = 0; mp->header_size = 128; /* just for init */
+mp->header_byte = xmalloc(mp->header_size);
 mp->lig_kern = xmalloc(sizeof(four_quarters)*(lig_table_size+1));
 mp->kern = xmalloc(sizeof(scaled)*(max_kerns+1));
 mp->param = xmalloc(sizeof(scaled)*(max_font_dimen+1));
@@ -23216,7 +23184,7 @@ for (k=0;k<= 255;k++ ) {
   mp->char_exists[k]=false; mp->char_tag[k]=no_tag; mp->char_remainder[k]=0;
   mp->skip_table[k]=undefined_label;
 };
-for (k=1;k<=header_size;k++ ) { mp->header_byte[k]=-1; }
+memset(mp->header_byte,0,mp->header_size);
 mp->bc=255; mp->ec=0; mp->nl=0; mp->nk=0; mp->ne=0; mp->np=0;
 mp->internal[boundary_char]=-unity;
 mp->bch_label=undefined_label;
@@ -23298,7 +23266,7 @@ eight_bits mp_get_code (MP mp) ;
     if ( c>=0 ) if ( c<256 ) return c;
   } else if ( mp->cur_type==mp_string_type ) {
     if ( length(mp->cur_exp)==1 )  { 
-      c=so(mp->str_pool[mp->str_start[mp->cur_exp]]); 
+      c=mp->str_pool[mp->str_start[mp->cur_exp]];
       return c;
     }
   }
@@ -23553,11 +23521,21 @@ We may need to cancel skips that span more than 127 lig/kern steps.
   incr(mp->ne);
 }
 
-@ @<Store a list of header bytes@>=
+@ The header could contain ASCII zeroes, so can't use |strdup|.
+
+@<Store a list of header bytes@>=
 do {  
-  if ( j>header_size ) mp_overflow(mp, "headerbyte",header_size);
-@:MetaPost capacity exceeded headerbyte}{\quad headerbyte@>
-  mp->header_byte[j]=mp_get_code(mp); incr(j);
+  if ( j>=mp->header_size ) {
+    int l = mp->header_size + (mp->header_size >> 2);
+    char *t = xmalloc(l);
+    memset(t,0,l); 
+    memcpy(t,mp->header_byte,mp->header_size);
+    xfree (mp->header_byte);
+    mp->header_byte = t;
+    mp->header_size = l;
+  }
+  mp->header_byte[j]=mp_get_code(mp); 
+  incr(j); incr(mp->header_last);
 } while (mp->cur_cmd==comma)
 
 @ @<Store a list of font dimensions@>=
@@ -23806,12 +23784,12 @@ void mp_fix_design_size (MP mp) {
 @.illegal design size...@>
     d=040000000; mp->internal[design_size]=d;
   }
-  if ( mp->header_byte[5]<0 ) if ( mp->header_byte[6]<0 )
-    if ( mp->header_byte[7]<0 ) if ( mp->header_byte[8]<0 ) {
-     mp->header_byte[5]=d / 04000000;
-     mp->header_byte[6]=(d / 4096) % 256;
-     mp->header_byte[7]=(d / 16) % 256;
-     mp->header_byte[8]=(d % 16)*16;
+  if ( mp->header_byte[4]<0 ) if ( mp->header_byte[5]<0 )
+    if ( mp->header_byte[6]<0 ) if ( mp->header_byte[7]<0 ) {
+     mp->header_byte[4]=d / 04000000;
+     mp->header_byte[5]=(d / 4096) % 256;
+     mp->header_byte[6]=(d / 16) % 256;
+     mp->header_byte[7]=(d % 16)*16;
   };
   mp->max_tfm_dimen=16*mp->internal[design_size]-mp->internal[design_size] / 010000000;
   if ( mp->max_tfm_dimen>=fraction_half ) mp->max_tfm_dimen=fraction_half-1;
@@ -23844,15 +23822,12 @@ from the |tfm_width| data relative to the design size.
   eight_bits k; /* runs through character codes */
   eight_bits B1,B2,B3,B4; /* bytes of the check sum */
   integer x;  /* hash value used in check sum computation */
-  if ( mp->header_byte[1]<0 ) if ( mp->header_byte[2]<0 )
-  if ( mp->header_byte[3]<0 ) if ( mp->header_byte[4]<0 ) {
+  if ( mp->header_byte[0]==0 && mp->header_byte[1]==0 &&
+       mp->header_byte[2]==0 && mp->header_byte[3]==0 ) {
     @<Compute a check sum in |(b1,b2,b3,b4)|@>;
-    mp->header_byte[1]=B1; mp->header_byte[2]=B2;
-    mp->header_byte[3]=B3; mp->header_byte[4]=B4; 
+    mp->header_byte[0]=B1; mp->header_byte[1]=B2;
+    mp->header_byte[2]=B3; mp->header_byte[3]=B4; 
     return;
-  }
-  for (k=1;k<=4;k++) {
-     if ( mp->header_byte[k]<0 ) mp->header_byte[k]=0;
   }
 }
 
@@ -23914,8 +23889,7 @@ b_close(mp->tfm_file)
 this code.
 
 @<Output the subfile sizes and header bytes@>=
-k=header_size;
-while ( mp->header_byte[k]<0 ) decr(k);
+k=mp->header_last;
 LH=(k+3) / 4; /* this is the number of header words */
 if ( mp->bc>mp->ec ) mp->bc=1; /* if there are no characters, |ec=0| and |bc=1| */
 @<Compute the ligature/kern program offset and implant the
@@ -23928,8 +23902,7 @@ mp_tfm_two(mp, mp->nw); mp_tfm_two(mp, mp->nh);
 mp_tfm_two(mp, mp->nd); mp_tfm_two(mp, mp->ni); mp_tfm_two(mp, mp->nl+lk_offset); 
 mp_tfm_two(mp, mp->nk); mp_tfm_two(mp, mp->ne);
 mp_tfm_two(mp, mp->np);
-for (k=1;k<= 4*LH;k++)   { 
-  if (mp->header_byte[k]<0 ) mp->header_byte[k]=0;
+for (k=0;k< 4*LH;k++)   { 
   tfm_out(mp->header_byte[k]);
 }
 
@@ -24269,7 +24242,7 @@ values when |bc>0|, it may be necessary to reserve a few unused |font_info|
 elements.
 
 @<Use the size fields to allocate space in |font_info|@>=
-if ( mp->next_fmem<bc+min_pool_ASCII ) mp->next_fmem=bc+min_pool_ASCII;
+if ( mp->next_fmem<bc) mp->next_fmem=bc;
   /* ensure nonnegative |char_base| */
 if (
 (mp->last_fnum==font_max)||(mp->next_fmem+whd_size>=font_mem_size) ) {
@@ -24279,7 +24252,7 @@ incr(mp->last_fnum);
 n=mp->last_fnum;
 mp->font_bc[n]=bc;
 mp->font_ec[n]=ec;
-mp->char_base[n]=mp->next_fmem-bc-min_pool_ASCII;
+mp->char_base[n]=mp->next_fmem-bc;
 mp->width_base[n]=mp->next_fmem+ec-bc+1;
 mp->height_base[n]=mp->width_base[n]+nw;
 mp->depth_base[n]=mp->height_base[n]+nh;
@@ -24309,7 +24282,7 @@ tf_ignore(4*(tfm_lh-2))
 
 @ @<Read the character data and the width, height, and depth tables...@>=
 ii=mp->width_base[n];
-i=mp->char_base[n]+min_pool_ASCII+bc;
+i=mp->char_base[n]+bc;
 while ( i<ii ) { 
   tfget; mp->font_info[i].qqqq.b0=qi(tfbyte);
   tfget; h_and_d=tfbyte;
@@ -24383,7 +24356,7 @@ void mp_lost_warning (MP mp,font_number f, pool_pointer k) {
     if ( mp->selector==log_only ) incr(mp->selector);
     mp_print_nl(mp, "Missing character: There is no ");
 @.Missing character@>
-    mp_print_str(mp, so(mp->str_pool[k])); 
+    mp_print_str(mp, mp->str_pool[k]); 
     mp_print(mp, " in font ");
     mp_print(mp, mp->font_name[f]); mp_print_char(mp, '!'); 
     mp_end_diagnostic(mp, false);
@@ -24397,7 +24370,7 @@ able to find the bounding box of an item of text in an edge structure.  The
 @<Declare text measuring subroutines@>=
 void mp_set_text_box (MP mp,pointer p) {
   font_number f; /* |font_n(p)| */
-  pool_ASCII_code bc,ec; /* range of valid characters for font |f| */
+  ASCII_code bc,ec; /* range of valid characters for font |f| */
   pool_pointer k,kk; /* current character and character to stop at */
   four_quarters cc; /* the |char_info| for the current character */
   scaled h,d; /* dimensions of the current character */
@@ -24405,8 +24378,8 @@ void mp_set_text_box (MP mp,pointer p) {
   height_val(p)=-el_gordo;
   depth_val(p)=-el_gordo;
   f=font_n(p);
-  bc=si(mp->font_bc[f]);
-  ec=si(mp->font_ec[f]);
+  bc=mp->font_bc[f];
+  ec=mp->font_ec[f];
   kk=str_stop(text_p(p));
   k=mp->str_start[text_p(p)];
   while ( k<kk ) {
@@ -24710,41 +24683,41 @@ void mp_open_output_file (MP mp) ;
     f = 0;
     i = mp->str_start[mp->filename_template];
     while ( i<str_stop(mp->filename_template) ) {
-       if ( so(mp->str_pool[i])=='%' ) {
+       if ( mp->str_pool[i]=='%' ) {
       CONTINUE:
         incr(i);
         if ( i<str_stop(mp->filename_template) ) {
-          if ( so(mp->str_pool[i])=='j' ) {
+          if ( mp->str_pool[i]=='j' ) {
             mp_print(mp, mp->job_name);
-          } else if ( so(mp->str_pool[i])=='d' ) {
+          } else if ( mp->str_pool[i]=='d' ) {
              cc= mp_round_unscaled(mp, mp->internal[day]);
              print_with_leading_zeroes(cc);
-          } else if ( so(mp->str_pool[i])=='m' ) {
+          } else if ( mp->str_pool[i]=='m' ) {
              cc= mp_round_unscaled(mp, mp->internal[month]);
              print_with_leading_zeroes(cc);
-          } else if ( so(mp->str_pool[i])=='y' ) {
+          } else if ( mp->str_pool[i]=='y' ) {
              cc= mp_round_unscaled(mp, mp->internal[year]);
              print_with_leading_zeroes(cc);
-          } else if ( so(mp->str_pool[i])=='H' ) {
+          } else if ( mp->str_pool[i]=='H' ) {
              cc= mp_round_unscaled(mp, mp->internal[mp_time]) / 60;
              print_with_leading_zeroes(cc);
-          }  else if ( so(mp->str_pool[i])=='M' ) {
+          }  else if ( mp->str_pool[i]=='M' ) {
              cc= mp_round_unscaled(mp, mp->internal[mp_time]) % 60;
              print_with_leading_zeroes(cc);
-          } else if ( so(mp->str_pool[i])=='c' ) {
+          } else if ( mp->str_pool[i]=='c' ) {
             if ( c<0 ) mp_print(mp, "ps");
             else print_with_leading_zeroes(c);
-          } else if ( (so(mp->str_pool[i])>='0') && 
-                      (so(mp->str_pool[i])<='9') ) {
+          } else if ( (mp->str_pool[i]>='0') && 
+                      (mp->str_pool[i]<='9') ) {
             if ( (f<10)  )
-              f = (f*10) + so(mp->str_pool[i])-'0';
+              f = (f*10) + mp->str_pool[i]-'0';
             goto CONTINUE;
           } else {
             mp_print_str(mp, mp->str_pool[i]);
           }
         }
       } else {
-        if ( so(mp->str_pool[i])=='.' )
+        if ( mp->str_pool[i]=='.' )
           if (length(n)==0)
             n = mp_make_string(mp);
         mp_print_str(mp, mp->str_pool[i]);
@@ -25564,11 +25537,11 @@ void mp_mark_string_chars (MP mp,font_number f, str_number s) ;
 @ @c
 void mp_mark_string_chars (MP mp,font_number f, str_number s) {
   integer b; /* |char_base[f]| */
-  pool_ASCII_code bc,ec; /* only characters between these bounds are marked */
+  ASCII_code bc,ec; /* only characters between these bounds are marked */
   pool_pointer k; /* an index into string |s| */
   b=mp->char_base[f];
-  bc=si(mp->font_bc[f]);
-  ec=si(mp->font_ec[f]);
+  bc=mp->font_bc[f];
+  ec=mp->font_ec[f];
   k=str_stop(s);
   while ( k>mp->str_start[s] ){ 
     decr(k);
@@ -26210,8 +26183,8 @@ if ( x!=hash_prime ) goto OFF_BASE
 @ We do string pool compaction to avoid dumping unused strings.
 
 @d dump_four_ASCII 
-  w.b0=qi(so(mp->str_pool[k])); w.b1=qi(so(mp->str_pool[k+1]));
-  w.b2=qi(so(mp->str_pool[k+2])); w.b3=qi(so(mp->str_pool[k+3]));
+  w.b0=qi(mp->str_pool[k]); w.b1=qi(mp->str_pool[k+1]);
+  w.b2=qi(mp->str_pool[k+2]); w.b3=qi(mp->str_pool[k+3]);
   dump_qqqq(w)
 
 @<Dump the string pool@>=
@@ -26246,8 +26219,8 @@ mp_print_int(mp, mp->pool_ptr)
 
 @ @d undump_four_ASCII 
   undump_qqqq(w);
-  mp->str_pool[k]=si(qo(w.b0)); mp->str_pool[k+1]=si(qo(w.b1));
-  mp->str_pool[k+2]=si(qo(w.b2)); mp->str_pool[k+3]=si(qo(w.b3))
+  mp->str_pool[k]=qo(w.b0); mp->str_pool[k+1]=qo(w.b1);
+  mp->str_pool[k+2]=qo(w.b2); mp->str_pool[k+3]=qo(w.b3)
 
 @<Undump the string pool@>=
 undump_size(0,pool_size,"string pool size",mp->pool_ptr);
