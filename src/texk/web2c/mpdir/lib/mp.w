@@ -23385,7 +23385,6 @@ CONTINUE:
     skip_byte(mp->nl)=stop_flag+1; /* this specifies an unconditional stop */
   }
   if ( mp->nl==max_tfm_int) mp_fatal_error(mp, "ligtable too large");
-@:MetaPost capacity exceeded ligtable size}{\quad ligtable size@>
   incr(mp->nl);
   if ( mp->cur_cmd==comma ) goto CONTINUE;
   if ( skip_byte(mp->nl-1)<stop_flag ) skip_byte(mp->nl-1)=stop_flag;
@@ -23495,7 +23494,6 @@ We may need to cancel skips that span more than 127 lig/kern steps.
     while ( mp->kern[k]!=mp->cur_exp ) incr(k);
     if ( k==mp->nk ) {
       if ( mp->nk==max_tfm_int ) mp_fatal_error(mp, "too many TFM kerns");
-@:MetaPost capacity exceeded kern}{\quad kern@>
       incr(mp->nk);
     }
     op_byte(mp->nl)=kern_flag+(k / 256);
@@ -23512,8 +23510,7 @@ We may need to cancel skips that span more than 127 lig/kern steps.
 
 @<Define an extensible recipe@>=
 { 
-  if ( mp->ne==256 ) mp_overflow(mp, "extensible",256);
-@:MetaPost capacity exceeded extensible}{\quad extensible@>
+  if ( mp->ne==256 ) mp_fatal_error(mp, "too many extensible recipies");
   c=mp_get_code(mp); mp_set_tag(mp, c,ext_tag,mp->ne);
   if ( mp->cur_cmd!=colon ) missing_extensible_punctuation(":");
   ext_top(mp->ne)=qi(mp_get_code(mp));
@@ -23546,7 +23543,6 @@ do {
 @ @<Store a list of font dimensions@>=
 do {  
   if ( j>max_tfm_int ) mp_fatal_error(mp, "too many fontdimens");
-@:MetaPost capacity exceeded fontdimen}{\quad fontdimen@>
   while ( j>mp->np ) { incr(mp->np); mp->param[mp->np]=0; };
   mp_get_x_next(mp); mp_scan_expression(mp);
   if ( mp->cur_type!=mp_known ){ 
