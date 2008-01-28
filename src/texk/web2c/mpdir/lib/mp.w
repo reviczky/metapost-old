@@ -193,6 +193,7 @@ typedef struct MP_instance {
 @<Declarations@> =
 MP mp_new (void) {
   MP mp;
+  int f;
   mp = xmalloc(sizeof(MP_instance));
   @<Allocate variables@>
   mp->term_in = stdin;
@@ -1573,6 +1574,7 @@ integer trick_count; /* threshold for pseudoprinting, explained later */
 integer first_count; /* another variable for pseudoprinting */
 
 @ @<Allocate variables@>=
+memset(mp->dig,0,23);
 mp->trick_buf = xmalloc(sizeof(ASCII_code)* (error_line+1));
 
 @ @<Dealloc variables@>=
@@ -5156,7 +5158,8 @@ printing, as follows. (The parameter |s| is typically |"Path"| or
 void mp_print_diagnostic (MP mp, char *s, char *t, boolean nuline) { 
   mp_begin_diagnostic(mp);
   if ( nuline ) mp_print_nl(mp, s); else mp_print(mp, s);
-  mp_print(mp, " at line "); mp_print_int(mp, mp_true_line(mp));
+  mp_print(mp, " at line "); 
+  mp_print_int(mp, mp_true_line(mp));
   mp_print(mp, t); mp_print_char(mp, ':');
 }
 
@@ -12766,7 +12769,7 @@ integer mp_true_line (MP mp) {
             (mp->input_stack[(k-1)].name_field<=max_spec_src))) {
       decr(k);
     }
-    return mp->line_stack[k];
+    return mp->line_stack[(k-1)];
   }
   return 0; 
 }
@@ -24078,6 +24081,7 @@ eight_bits  *font_ec;  /* first and last character code */
 
 @ @<Allocate variables@>=
 mp->font_info = xmalloc (sizeof(memory_word)*(font_mem_size+1));
+memset (mp->font_info,0,sizeof(memory_word)*(font_mem_size+1));
 mp->font_enc_name = xmalloc(sizeof(char *)*(font_max+1));
 mp->font_ps_name_fixed = xmalloc(sizeof(boolean)*(font_max+1));
 mp->font_dsize = xmalloc(sizeof(scaled)*(font_max+1));
@@ -24127,7 +24131,7 @@ wasting a lot of space.
 
 @d null_font 0 /* the |font_number| for an empty font */
 
-@<Initialize table...@>=
+@<Set initial...@>=
 mp->font_dsize[null_font]=0;
 mp->font_bc[null_font]=1;
 mp->font_ec[null_font]=0;
@@ -24138,8 +24142,6 @@ mp->depth_base[null_font]=0;
 mp->next_fmem=0;
 mp->last_fnum=null_font;
 mp->last_ps_fnum=null_font;
-
-@ @<Set initial...@>=
 mp->font_name[null_font]="nullfont";
 mp->font_ps_name[null_font]="";
 
@@ -25579,6 +25581,8 @@ pointer *font_sizes;
 
 @ @<Allocate variables@>=
 mp->font_sizes = xmalloc(sizeof(pointer)*(font_max+1));
+for (f=null_font;f<=font_max;f++) 
+  mp->font_sizes[f]=null;
 
 @ @<Dealloc variables@>=
 xfree(mp->font_sizes);

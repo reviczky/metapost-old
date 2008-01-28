@@ -1361,6 +1361,9 @@ char_entry *char_ptr, *char_array;
 size_t char_limit;
 char *job_id_string;
 
+@ @<Set initial...@>=
+mp->ps->char_array = NULL;
+
 @ 
 @d SMALL_ARRAY_SIZE    256
 @d Z_NULL  0  
@@ -1506,6 +1509,9 @@ char *cur_enc_name;
 unsigned char *grid;
 char *ext_glyph_names[256];
 char print_buf[PRINTF_BUF_SIZE];
+
+@ @<Set initial ...@>=
+mp->ps->dvips_extra_charset=NULL;
 
 @ 
 @d t1_getchar()    fgetc(mp->ps->t1_file)
@@ -1666,6 +1672,11 @@ int last_hexbyte;
 FILE *t1_file;
 int hexline_length;
 
+@ 
+@d HEXLINE_WIDTH 64
+
+@<Set initial ...@>=
+mp->ps->hexline_length = HEXLINE_WIDTH;
 
 @ 
 @d t1_prefix(s)        str_prefix(mp->ps->t1_line_array, s)
@@ -1677,7 +1688,6 @@ int hexline_length;
 @d t1_end_eexec()      t1_suffix("mark currentfile closefile")
 @d t1_cleartomark()    t1_prefix("cleartomark")
 
-@d HEXLINE_WIDTH 64
 @d isdigit(A) ((A)>='0'&&(A)<='9')
 
 @c
