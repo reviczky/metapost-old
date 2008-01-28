@@ -37,6 +37,7 @@ fm_entry    **mp_font_map; /* pointer into AVL tree of font mappings */
 
 @ @<Exported function headers@>=
 void mp_backend_initialize (MP mp, int fontmax) ;
+void mp_backend_free (MP mp) ;
 
 @
 @c void mp_backend_initialize (MP mp, int fontmax) {
@@ -48,6 +49,11 @@ void mp_backend_initialize (MP mp, int fontmax) ;
     mp->ps->mp_font_map[i] = 0;
   }
   @<Set initial values@>;
+}
+void mp_backend_free (MP mp) {
+  @<Dealloc variables@>;
+  free(mp->ps);
+  mp->ps = NULL;
 }
 
 @ @<Dealloc variables@>=
@@ -2776,6 +2782,7 @@ static void t1_read_subrs (MP mp, int tex_font, fm_entry *fm_cur)
     }
 }
 
+@ @c
 static void t1_flush_cs (MP mp, boolean is_subr)
 {
     char *p;

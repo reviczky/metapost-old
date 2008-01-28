@@ -149,7 +149,6 @@ mp->get_random_seed = mpost_get_random_seed;
 @c char *mpost_find_file(char *fname, char *fmode, int ftype)  {
   char *s;
   int l ;
-  s = fname; /* when writing */
   if (fmode[0]=='r') {
     switch(ftype) {
     case mp_filetype_program: 
@@ -179,6 +178,8 @@ mp->get_random_seed = mpost_get_random_seed;
       s = kpse_find_file (fname, kpse_enc_format, 0); 
       break;
     }
+  } else {
+    s = strdup(fname); /* when writing */
   }
   return s;
 }

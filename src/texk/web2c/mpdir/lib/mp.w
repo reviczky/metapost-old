@@ -584,7 +584,7 @@ pretty stupid: it will only find files in the current directory.
 @c
 char *mp_find_file (char *fname, char *fmode, int ftype)  {
   if (fmode[0] != 'r' || access (fname,R_OK) || ftype)  
-     return fname;
+     return xstrdup(fname);
   return NULL;
 }
 
@@ -604,11 +604,13 @@ char *mp_find_file (char *fname, char *fmode, int ftype) ;
 
 @c
 FILE *mp_open_file(MP mp, char *fname, char *fmode, int ftype)  {
-    char *s = (mp->find_file)(fname,fmode,ftype);
-    if (s!=NULL) 
-      return fopen(s, fmode);
-    else 
-      return NULL;
+  char *s = (mp->find_file)(fname,fmode,ftype);
+  if (s!=NULL) {
+    FILE *f = fopen(s, fmode);
+    xfree(s);
+    return f;	
+  }
+  return NULL;
 }
 
 @ This is a legacy interface: (almost) all file names pass through |name_of_file|.
@@ -639,6 +641,7 @@ is never printed.
     if (s!=NULL) {
       *f = mp_open_file(mp,mp->name_of_file,A, ftype); 
       strncpy(mp->name_of_file,s,file_name_size);
+      xfree(s);
     } else {
       *f = NULL;
     }
@@ -26055,6 +26058,10 @@ psout_data ps;
 
 @ @<Allocate variables@>=
 mp_backend_initialize(mp,font_max);
+
+@ @<Dealloc...@>=
+mp_backend_free(mp);
+
 
 @* \[45] Dumping and undumping the tables.
 After \.{INIMP} has seen a collection of macros, it
