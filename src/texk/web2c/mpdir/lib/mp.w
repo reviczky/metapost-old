@@ -604,45 +604,61 @@ char *mp_find_file (char *fname, char *fmode, int ftype) ;
 
 @c
 FILE *mp_open_file(MP mp, char *fname, char *fmode, int ftype)  {
-	char *s = (mp->find_file)(fname,fmode,ftype);
-	if (s!=NULL) 
-	  return fopen(s, fmode);
+    char *s = (mp->find_file)(fname,fmode,ftype);
+    if (s!=NULL) 
+      return fopen(s, fmode);
     else 
       return NULL;
 }
 
-@ This is a legacy interface: all file names pass through |name_of_file|.
+@ This is a legacy interface: (almost) all file names pass through |name_of_file|.
 
 @<Glob...@>=
 char name_of_file[file_name_size+1]; /* the name of a system file */
 int name_length;/* this many characters are actually
   relevant in |name_of_file| (the rest are blank) */
+boolean print_found_names; /* configuration parameter */
+
+@ If this parameter is true, the terminal and log will report the found
+file names for input files instead of the requested ones. 
+It is off by default because it creates an extra filename lookup.
+
+@<Allocate variables@>=
+mp->print_found_names = false;
 
 @ \MP's file-opening procedures return |false| if no file identified by
 |name_of_file| could be opened.
 
+@d OPEN_FILE(A) do {
+  if (mp->print_found_names) {
+    char *s = (mp->find_file)(mp->name_of_file,A,ftype);
+    if (s!=NULL) {
+      *f = mp_open_file(mp,mp->name_of_file,A, ftype); 
+      strncpy(mp->name_of_file,s,file_name_size);
+    } else {
+      *f = NULL;
+    }
+  } else {
+    *f = mp_open_file(mp,mp->name_of_file,A, ftype); 
+  }
+} while (0)
+
 @c 
 boolean mp_a_open_in (MP mp, FILE **f, int ftype) {
   /* open a text file for input */
-  *f = mp_open_file(mp,mp->name_of_file,"r", ftype); 
+  OPEN_FILE("r");
   return (*f ? true : false);
 }
 @#
 boolean mp_a_open_out (MP mp, FILE **f, int ftype) {
   /* open a text file for output */
-  *f = mp_open_file(mp,mp->name_of_file,"w", ftype); 
-  return (*f ? true : false);
-}
-@#
-boolean mp_b_open_in (MP mp, FILE **f, int ftype) {
-  /* open a binary file for input */
-  *f = mp_open_file(mp,mp->name_of_file,"rb", ftype); 
+  OPEN_FILE("w");
   return (*f ? true : false);
 }
 @#
 boolean mp_b_open_out (MP mp, FILE **f, int ftype) {
   /* open a binary file for output */
-  *f = mp_open_file(mp,mp->name_of_file,"wb", ftype); 
+  OPEN_FILE("wb");
   return (*f ? true : false);
 }
 @#
@@ -660,7 +676,6 @@ boolean mp_w_open_out (MP mp, FILE**f) {
 
 @ @<Exported...@>=
 FILE *mp_open_file(MP mp, char *fname, char *fmode, int ftype);
-boolean mp_b_open_in (MP mp, FILE **f, int ftype);
 
 @ Files can be closed with the \ph\ routine `|close(f)|', which
 @^system dependencies@>
