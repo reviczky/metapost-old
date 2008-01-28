@@ -15336,7 +15336,6 @@ a \&{for} construction (if |m=expr_base|) or a \&{forsuffixes} construction
 
 @<Scan the values to be used in the loop@>=
 loop_type(s)=null; q=loop_list_loc(s); link(q)=null; /* |link(q)=loop_list(s)| */
-CONTINUE:
 do {  
   mp_get_x_next(mp);
   if ( m!=expr_base ) {
@@ -15352,6 +15351,8 @@ do {
   }
   link(q)=mp_get_avail(mp); q=link(q); 
   info(q)=mp->cur_exp; mp->cur_type=mp_vacuous;
+CONTINUE:
+  ;
 } while (mp->cur_cmd==comma)
 
 @ @<Prepare for step-until construction and |break|@>=
@@ -15567,6 +15568,7 @@ void mp_end_name (MP mp) {
     len = mp->ext_delimiter-s;
   }
   copy_pool_segment(mp->cur_name,s,len);
+  mp->pool_ptr=s; /* don't need this partial string */
 }
 
 @ Conversely, here is a routine that takes three strings and prints a file
@@ -15735,7 +15737,7 @@ str_number mp_make_name_string (MP mp) {
   if ( mp->str_overflowed ) {
     return (str_number)'?';
   } else { 
-   str_room(mp->name_length);
+    str_room(mp->name_length);
     for (k=0;k<mp->name_length;k++) {
       append_char(mp->xord[(int)mp->name_of_file[k]]);
     }
