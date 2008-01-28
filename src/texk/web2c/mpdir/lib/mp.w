@@ -629,6 +629,10 @@ mp->print_found_names = false;
 @ \MP's file-opening procedures return |false| if no file identified by
 |name_of_file| could be opened.
 
+The |OPEN_FILE| macro takes care of the |print_found_names| parameter.
+It is not used for opening a mem file for read, because that file name 
+is never printed.
+
 @d OPEN_FILE(A) do {
   if (mp->print_found_names) {
     char *s = (mp->find_file)(mp->name_of_file,A,ftype);
@@ -650,6 +654,12 @@ boolean mp_a_open_in (MP mp, FILE **f, int ftype) {
   return (*f ? true : false);
 }
 @#
+boolean mp_w_open_in (MP mp, FILE **f) {
+  /* open a word file for input */
+  *f = mp_open_file(mp,mp->name_of_file,"rb",mp_filetype_memfile); 
+  return (*f ? true : false);
+}
+@#
 boolean mp_a_open_out (MP mp, FILE **f, int ftype) {
   /* open a text file for output */
   OPEN_FILE("w");
@@ -662,15 +672,10 @@ boolean mp_b_open_out (MP mp, FILE **f, int ftype) {
   return (*f ? true : false);
 }
 @#
-boolean mp_w_open_in (MP mp, FILE **f) {
-  /* open a word file for input */
-  *f = mp_open_file(mp,mp->name_of_file,"rb",mp_filetype_memfile); 
-  return (*f ? true : false);
-}
-@#
 boolean mp_w_open_out (MP mp, FILE**f) {
   /* open a word file for output */
-  *f = mp_open_file(mp,mp->name_of_file,"wb",mp_filetype_memfile); 
+  int ftype = mp_filetype_memfile;
+  OPEN_FILE("wb");
   return (*f ? true : false);
 }
 
