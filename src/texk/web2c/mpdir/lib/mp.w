@@ -315,7 +315,6 @@ in production versions of \MP.
 #define mem_max 3000000 /* greatest index in \MP's internal |mem| array;
   must be strictly less than |max_halfword|;
   must be equal to |mem_top| in \.{INIMP}, otherwise |>=mem_top| */
-#define max_internal 300 /* maximum number of internal quantities */
 #define buf_size 50000 /* maximum number of characters simultaneously present in
   current lines of open files; must not exceed |max_halfword| */
 #define error_line 79 /* width of context lines on terminal error messages */
@@ -1525,7 +1524,7 @@ values:
 \hang |new_string|, appends the output to the current string in the
   string pool.
 
-\hang |write_file ..max_selector| prints on one of the files used for the \&{write}
+\hang |>=write_file| prints on one of the files used for the \&{write}
 @:write_}{\&{write} primitive@>
   command.
 
@@ -1553,7 +1552,6 @@ to the terminal, the transcript file, or the \ps\ output file, respectively.
 @d log_only 5 /* printing is destined for the transcript file only */
 @d term_and_log 6 /* normal |selector| setting */
 @d write_file 7 /* first write file selector */
-@d max_selector (write_file+mp->max_write_files) /* highest selector setting */
 
 @<Glob...@>=
 FILE * log_file; /* transcript of \MP\ session */
@@ -4933,14 +4931,16 @@ fuss with. Every such parameter has an identifying code number, defined here.
 scaled *internal;  /* the values of internal quantities */
 char **int_name;  /* their names */
 int int_ptr;  /* the maximum internal quantity defined so far */
+int max_internal; /* current maximum number of internal quantities */
 boolean troff_mode; 
 
 @ @<Allocate variables@>=
-mp->internal = xmalloc (sizeof(scaled)* (max_internal+1));
-mp->int_name = xmalloc (sizeof(char *)* (max_internal+1));
+mp->max_internal=2*max_given_internal;
+mp->internal = xmalloc (sizeof(scaled)* (mp->max_internal+1));
+mp->int_name = xmalloc (sizeof(char *)* (mp->max_internal+1));
 
 @ @<Set init...@>=
-for (k=0;k<= max_internal; k++ ) { 
+for (k=0;k<= mp->max_internal; k++ ) { 
    mp->internal[k]=0; 
    mp->int_name[k]=NULL; 
 }
@@ -5337,7 +5337,7 @@ text(frozen_inaccessible)=intern(" INACCESSIBLE");
 eq_type(frozen_right_delimiter)=right_delimiter;
 
 @ @<Check the ``constant'' values...@>=
-if ( hash_end+max_internal>max_halfword ) mp->bad=17;
+if ( hash_end+mp->max_internal>max_halfword ) mp->bad=17;
 
 @ Here is the subroutine that searches the hash table for an identifier
 that matches a given string of length~|l| appearing in |buffer[j..
@@ -21800,14 +21800,41 @@ void mp_do_let (MP mp) ;
   mp_get_x_next(mp);
 }
 
-@ @<Declare action procedures for use by |do_statement|@>=
+@ @<Declarations@>=
+void mp_grow_internals (MP mp, int l);
 void mp_do_new_internal (MP mp) ;
 
-@ @c void mp_do_new_internal (MP mp) { 
+@ @c
+void mp_grow_internals (MP mp, int l) {
+  scaled *internal;
+  char * *int_name; 
+  int k;
+  if ( hash_end+l>max_halfword ) {
+    mp_overflow(mp, "number of internals",mp->max_internal);
+  }
+  int_name = xmalloc (sizeof(char *)* (l+1));
+  internal = xmalloc (sizeof(scaled)* (l+1));
+  for (k=0;k<=l; k++ ) { 
+    if (k<=mp->max_internal) {
+      internal[k]=mp->internal[k]; 
+      int_name[k]=mp->int_name[k]; 
+    } else {
+      internal[k]=0; 
+      int_name[k]=NULL; 
+    }
+  }
+  xfree(mp->internal); xfree(mp->int_name);
+  mp->int_name = int_name;
+  mp->internal = internal;
+  mp->max_internal = l;
+}
+
+
+void mp_do_new_internal (MP mp) { 
   do {  
-    if ( mp->int_ptr==max_internal )
-      mp_overflow(mp, "number of internals",max_internal);
-@:MetaPost capacity exceeded number of int}{\quad number of internals@>
+    if ( mp->int_ptr==mp->max_internal ) {
+      mp_grow_internals(mp, (mp->max_internal + (mp->max_internal>>2)));
+    }
     mp_get_clear_symbol(mp); incr(mp->int_ptr);
     eq_type(mp->cur_sym)=internal_quantity; 
     equiv(mp->cur_sym)=mp->int_ptr;
@@ -21820,10 +21847,8 @@ void mp_do_new_internal (MP mp) ;
 }
 
 @ @<Dealloc variables@>=
-for (k=0;k<=max_internal;k++) {
-   if (mp->int_name[k]!=NULL) {
-      xfree(mp->int_name[k]);
-   }
+for (k=0;k<=mp->max_internal;k++) {
+   xfree(mp->int_name[k]);
 }
 xfree(mp->internal); 
 xfree(mp->int_name); 
@@ -26411,6 +26436,7 @@ undump_int(mp->st_count)
 to prevent them appearing again.
 
 @<Dump a few more things and the closing check word@>=
+dump_int(mp->max_internal);
 dump_int(mp->int_ptr);
 for (k=1;k<= mp->int_ptr;k++ ) { 
   dump_int(mp->internal[k]); 
@@ -26423,7 +26449,9 @@ dump_int(mp->bg_loc); dump_int(mp->eg_loc); dump_int(mp->serial_no); dump_int(69
 mp->internal[tracing_stats]=0
 
 @ @<Undump a few more things and the closing check word@>=
-undump(max_given_internal,max_internal,mp->int_ptr);
+undump_int(x);
+if (x>mp->max_internal) mp_grow_internals(mp,x);
+undump_int(mp->int_ptr);
 for (k=1;k<= mp->int_ptr;k++) { 
   undump_int(mp->internal[k]);
   undump_string(mp->int_name[k]);
@@ -26589,7 +26617,7 @@ if ( mp->log_opened ) {
   wlog_ln(s);
   snprintf(s,128," %ii, %in, %ip, %ib stack positions out of %ii, %in, %ip, %ib",
            mp->max_in_stack,mp->int_ptr,mp->max_param_stack,mp->max_buf_stack+1,
-           stack_size,max_internal,param_size,buf_size);
+           stack_size,mp->max_internal,param_size,buf_size);
   wlog_ln(s);
   snprintf(s,128," %i string compactions (moved %i characters, %i strings)",
           mp->pact_count,mp->pact_chars,mp->pact_strs);
