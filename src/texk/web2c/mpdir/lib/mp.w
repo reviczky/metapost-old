@@ -31,11 +31,6 @@
 \def\(#1){} % this is used to make section names sort themselves better
 \def\9#1{} % this is used for sort keys in the index via @@:sort key}{entry@@>
 
-\outer\def\N#1. \[#2]#3.{\MN#1.\vfil\eject % begin starred section
-  \def\rhead{PART #2:\uppercase{#3}} % define running headline
-  \message{*\modno} % progress report
-  \edef\next{\write\cont{\Z{\?#2]#3}{\modno}{\the\pageno}}}\next
-  \ifon\startsection{\bf\ignorespaces#3.\quad}\ignorespaces}
 \let\?=\relax % we want to be able to \write a \?
 
 \def\title{MetaPost}
@@ -272,40 +267,6 @@ production version, which cuts the initialization to a bare minimum.
 
 Which is which is decided at runtime.
 
-@ This \MP\ implementation conforms to the rules of the {\sl Pascal User
-@:PASCAL}{\PASCAL@>
-@^system dependencies@>
-Manual} published by Jensen and Wirth in 1975, except where system-dependent
-@^Wirth, Niklaus@>
-@^Jensen, Kathleen@>
-code is necessary to make a useful system program, and except in another
-respect where such conformity would unnecessarily obscure the meaning
-and clutter up the code: We assume that |case| statements may include a
-default case that applies if no matching label is found. Thus, we shall use
-constructions like
-$$\vbox{\halign{\ignorespaces#\hfil\cr
-|case x of|\cr
-1: $\langle\,$code for $x=1\,\rangle$;\cr
-3: $\langle\,$code for $x=3\,\rangle$;\cr
-|othercases| $\langle\,$code for |x<>1| and |x<>3|$\,\rangle$\cr
-|endcases|\cr}}$$
-since most \PASCAL\ compilers have plugged this hole in the language by
-incorporating some sort of default mechanism. For example, the \ph\
-compiler allows `|others|:' as a default label, and other \PASCAL s allow
-syntaxes like `\&{else}' or `\&{otherwise}' or `\\{otherwise}:', etc. The
-definitions of |othercases| and |endcases| should be changed to agree with
-local conventions.  Note that no semicolon appears before |endcases| in
-this program, so the definition of |endcases| should include a semicolon
-if the compiler wants one. (Of course, if no default mechanism is
-available, the |case| statements of \MP\ will have to be laboriously
-extended by listing all remaining cases. People who are stuck with such
-\PASCAL s have, in fact, done this, successfully but not happily!)
-
-@d othercases default: /* default for cases not listed explicitly */
-@d endcases    } /* follows the default case in an extended |case| statement */
-@f othercases   else
-@f endcases   }
-
 @ The following parameters can be changed at compile time to extend or
 reduce \MP's capacity. They may have different values in \.{INIMP} and
 in production versions of \MP.
@@ -316,8 +277,6 @@ in production versions of \MP.
 #define mem_max 3000000 /* greatest index in \MP's internal |mem| array;
   must be strictly less than |max_halfword|;
   must be equal to |mem_top| in \.{INIMP}, otherwise |>=mem_top| */
-#define buf_size 50000 /* maximum number of characters simultaneously present in
-  current lines of open files; must not exceed |max_halfword| */
 #define error_line 79 /* width of context lines on terminal error messages */
 #define half_error_line 50 /* width of first lines of contexts in terminal
   error messages; should be between 30 and |error_line-15| */
@@ -704,16 +663,33 @@ values, and that |first| and |last| are indices into this array
 representing the beginning and ending of a line of text.
 
 @<Glob...@>=
+size_t buf_size; /* maximum number of characters simultaneously present in
+                    current lines of open files */
 ASCII_code *buffer; /* lines of characters being read */
-halfword first; /* the first unused position in |buffer| */
-halfword last; /* end of the line just input to |buffer| */
-halfword max_buf_stack; /* largest index used in |buffer| */
+size_t first; /* the first unused position in |buffer| */
+size_t last; /* end of the line just input to |buffer| */
+size_t max_buf_stack; /* largest index used in |buffer| */
 
 @ @<Allocate or initialize ...@>=
-mp->buffer = xmalloc(sizeof(ASCII_code)*(buf_size+1));
+mp->buf_size = 200;
+mp->buffer = xmalloc(sizeof(ASCII_code)*(mp->buf_size+1));
 
 @ @<Dealloc variables@>=
 xfree(mp->buffer);
+
+@ @c
+void mp_reallocate_buffer(MP mp, size_t l) {
+  ASCII_code *buffer;
+  if (l>max_halfword) {
+    mp_overflow(mp,"buffer size", l);
+@:MetaPost capacity exceeded buffer size}{\quad buffer size@>
+  }
+  buffer = xmalloc(sizeof(ASCII_code)*(l+1));
+  memcpy(buffer,mp->buffer,mp->buf_size+1);
+  xfree(mp->buffer);
+  mp->buffer = buffer ;
+  mp->buf_size = l;
+}
 
 @ The |input_ln| function brings the next line of input from the specified
 field into available positions of the buffer array and returns the value
@@ -770,8 +746,8 @@ boolean mp_input_ln (MP mp,FILE *  f, boolean bypass_eoln) {
   while (c!=EOF && c!='\n' && c!='\r') { 
     if ( mp->last>=mp->max_buf_stack ) { 
       mp->max_buf_stack=mp->last+1;
-      if ( mp->max_buf_stack==buf_size ) {
-        @<Report overflow of the input buffer, and abort@>;
+      if ( mp->max_buf_stack==mp->buf_size ) {
+        mp_reallocate_buffer(mp,(mp->buf_size+(mp->buf_size>>2)));
       }
     }
     mp->buffer[mp->last]=mp->xord[c]; 
@@ -852,20 +828,6 @@ a command line like `\.{MP cmr10}'; in such a case, \MP\ will operate
 as if the first line of input were `\.{cmr10}', i.e., the first line will
 consist of the remainder of the command line, after the part that invoked \MP.
 
-The first line is special also because it may be read before \MP\ has
-input a mem file. In such cases, normal error messages cannot yet
-be given. The following code uses concepts that will be explained later.
-
-@<Report overflow of the input buffer, and abort@>=
-if ( mp->mem_ident==NULL ) { 
-  fprintf(mp->term_out,"Buffer size exceeded!\n"); exit(1);
-@.Buffer size exceeded@>
-} else { 
-  mp->cur_input.loc_field=mp->first; mp->cur_input.limit_field=mp->last-1;
-  mp_overflow(mp, "buffer size",buf_size);
-@:MetaPost capacity exceeded buffer size}{\quad buffer size@>
-}
-
 @ Different systems have different ways to get started. But regardless of
 what conventions are adopted, the routine that initializes the terminal
 should satisfy the following specifications:
@@ -916,9 +878,9 @@ boolean mp_init_terminal (MP mp) { /* gets the terminal input started */
       return false;
     }
     loc=mp->first;
-    while ( (loc<mp->last)&&(mp->buffer[loc]==' ') ) 
+    while ( (loc<(int)mp->last)&&(mp->buffer[loc]==' ') ) 
       incr(loc);
-    if ( loc<mp->last ) { 
+    if ( loc<(int)mp->last ) { 
       return true; /* return unless the line was all blank */
     };
     fprintf(mp->term_out,"Please type the name of your input file.\n");
@@ -1865,7 +1827,7 @@ This procedure is never called when |interaction<mp_scroll_mode|.
 
 @c 
 void mp_term_input (MP mp) { /* gets a line from the terminal */
-  int k; /* index into |buffer| */
+  size_t k; /* index into |buffer| */
   update_terminal; /* Now the user sees the prompt for sure */
   if (!mp_input_ln(mp, mp->term_in,true)) 
     mp_fatal_error(mp, "End of file on the terminal!");
@@ -3747,7 +3709,6 @@ if ( max_halfword<65535 ) mp->bad=10;
 if ( max_quarterword>max_halfword ) mp->bad=11;
 if ( (mem_min<0)||(mem_max>=max_halfword) ) mp->bad=12;
 if ( max_strings>max_halfword ) mp->bad=13;
-if ( buf_size>max_halfword ) mp->bad=14;
 
 @ The macros |qi| and |qo| are used for input to and output 
 from quarterwords. These are legacy macros.
@@ -13130,9 +13091,8 @@ or |limit| or |line|.
   if ( mp->in_open==mp_max_in_open ) 
     mp_overflow(mp, "text input levels",mp_max_in_open);
 @:MetaPost capacity exceeded text input levels}{\quad text input levels@>
-  if ( mp->first==buf_size ) 
-    mp_overflow(mp, "buffer size",buf_size);
-@:MetaPost capacity exceeded buffer size}{\quad buffer size@>
+  if ( mp->first==mp->buf_size ) 
+    mp_reallocate_buffer(mp,(mp->buf_size+(mp->buf_size>>2)));
   incr(mp->in_open); push_input; index=mp->in_open;
   mp->mpx_name[index]=absent;
   start=mp->first;
@@ -13175,8 +13135,8 @@ work.
   } else { 
     if ( mp->mpx_name[mp->in_open]<=absent ) mp_confusion(mp, "mpx");
 @:this can't happen mpx}{\quad mpx@>
-    if ( mp->first==buf_size ) mp_overflow(mp, "buffer size",buf_size);
-@:MetaPost capacity exceeded buffer size}{\quad buffer size@>
+    if ( mp->first==mp->buf_size ) 
+      mp_reallocate_buffer(mp,(mp->buf_size+(mp->buf_size>>2)));
     push_input; index=mp->in_open;
     start=mp->first;
     name=mp->mpx_name[mp->in_open]; add_str_ref(name);
@@ -13777,12 +13737,12 @@ line is accepted as it stands; otherwise the line typed is
 used instead of the line in the file.
 
 @c void mp_firm_up_the_line (MP mp) {
-  int k; /* an index into |buffer| */
+  size_t k; /* an index into |buffer| */
   limit=mp->last;
   if ( mp->internal[pausing]>0 ) if ( mp->interaction>mp_nonstop_mode ) {
     wake_up_terminal; mp_print_ln(mp);
     if ( start<limit ) {
-      for (k=start;k<=limit-1;k++) {
+      for (k=(size_t)start;k<=(size_t)(limit-1);k++) {
         mp_print_str(mp, mp->buffer[k]);
       } 
     }
@@ -14348,7 +14308,7 @@ when it has to do exotic expansion commands.
 
 @c void mp_expand (MP mp) {
   pointer p; /* for list manipulation */
-  integer k; /* something that we hope is |<=buf_size| */
+  size_t k; /* something that we hope is |<=buf_size| */
   pool_pointer j; /* index into |str_pool| */
   if ( mp->internal[tracing_commands]>unity ) 
     if ( mp->cur_cmd!=defined_macro )
@@ -14502,15 +14462,13 @@ is less than |loop_text|.
 { mp_begin_file_reading(mp); name=is_scantok;
   k=mp->first+length(mp->cur_exp);
   if ( k>=mp->max_buf_stack ) {
-    if ( k>=buf_size ) {
-      mp->max_buf_stack=buf_size;
-      mp_overflow(mp, "buffer size",buf_size);
-@:MetaPost capacity exceeded buffer size}{\quad buffer size@>
+    if ( k>=mp->buf_size ) {
+      mp_reallocate_buffer(mp,(mp->buf_size+(mp->buf_size>>2)));
     }
     mp->max_buf_stack=k+1;
   }
   j=mp->str_start[mp->cur_exp]; limit=k;
-  while ( mp->first<limit ) {
+  while ( mp->first<(size_t)limit ) {
     mp->buffer[mp->first]=mp->str_pool[j]; incr(j); incr(mp->first);
   }
   mp->buffer[limit]='%'; mp->first=limit+1; loc=start; 
@@ -15875,7 +15833,7 @@ ready for another attempt at file opening.
 void mp_prompt_file_name (MP mp,char * s, char * e) ;
 
 @ @c void mp_prompt_file_name (MP mp,char * s, char * e) {
-  int k; /* index into |buffer| */
+  size_t k; /* index into |buffer| */
   char * saved_cur_name;
   if ( mp->interaction==mp_scroll_mode ) 
 	wake_up_terminal;
@@ -18475,8 +18433,8 @@ void mp_do_nullary (MP mp,quarterword c) {
 
 @ @<Declare nullary action procedure@>=
 void mp_finish_read (MP mp) { /* copy |buffer| line to |cur_exp| */
-  pool_pointer k;
-  str_room(mp->last-start);
+  size_t k;
+  str_room((int)mp->last-start);
   for (k=start;k<=mp->last-1;k++) {
    append_char(mp->buffer[k]);
   }
@@ -26492,7 +26450,7 @@ if ( mp->log_opened ) {
   snprintf(s,128," %ii, %in, %ip, %ib stack positions out of %ii, %in, %ip, %ib",
            (int)mp->max_in_stack,(int)mp->int_ptr,
            (int)mp->max_param_stack,(int)mp->max_buf_stack+1,
-           (int)stack_size,(int)mp->max_internal,(int)param_size,(int)buf_size);
+           (int)stack_size,(int)mp->max_internal,(int)param_size,(int)mp->buf_size);
   wlog_ln(s);
   snprintf(s,128," %i string compactions (moved %i characters, %i strings)",
           (int)mp->pact_count,(int)mp->pact_chars,(int)mp->pact_strs);
