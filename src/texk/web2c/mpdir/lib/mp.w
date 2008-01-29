@@ -24201,20 +24201,25 @@ xfree(mp->font_sizes);
 @c 
 void mp_reallocate_fonts (MP mp, font_number l) {
   font_number f;
-  XREALLOC(mp->font_enc_name,      sizeof(char *)*(l+1));
-  XREALLOC(mp->font_ps_name_fixed, sizeof(boolean)*(l+1));
-  XREALLOC(mp->font_dsize,         sizeof(scaled)*(l+1));
-  XREALLOC(mp->font_name,          sizeof(char *)*(l+1));
-  XREALLOC(mp->font_ps_name,       sizeof(char *)*(l+1));
+  XREALLOC(mp->font_enc_name,      sizeof(char *)    *(l+1));
+  XREALLOC(mp->font_ps_name_fixed, sizeof(boolean)   *(l+1));
+  XREALLOC(mp->font_dsize,         sizeof(scaled)    *(l+1));
+  XREALLOC(mp->font_name,          sizeof(char *)    *(l+1));
+  XREALLOC(mp->font_ps_name,       sizeof(char *)    *(l+1));
   XREALLOC(mp->font_bc,            sizeof(eight_bits)*(l+1));
   XREALLOC(mp->font_ec,            sizeof(eight_bits)*(l+1));
-  XREALLOC(mp->char_base,          sizeof(int)*(l+1));
-  XREALLOC(mp->width_base,         sizeof(int)*(l+1));
-  XREALLOC(mp->height_base,        sizeof(int)*(l+1));
-  XREALLOC(mp->depth_base,         sizeof(int)*(l+1));
-  XREALLOC(mp->font_sizes,         sizeof(pointer)*(l+1));
-  for (f=mp->last_fnum;f<=l;f++) 
+  XREALLOC(mp->char_base,          sizeof(int)       *(l+1));
+  XREALLOC(mp->width_base,         sizeof(int)       *(l+1));
+  XREALLOC(mp->height_base,        sizeof(int)       *(l+1));
+  XREALLOC(mp->depth_base,         sizeof(int)       *(l+1));
+  XREALLOC(mp->font_sizes,         sizeof(pointer)   *(l+1));
+  for (f=(mp->last_fnum+1);f<=l;f++) {
+    mp->font_enc_name[f]=NULL;
+    mp->font_ps_name_fixed[f] = false;
+    mp->font_name[f]=NULL;
+    mp->font_ps_name[f]=NULL;
     mp->font_sizes[f]=null;
+  }
   mp->font_max = l;
 }
 
@@ -24360,9 +24365,14 @@ elements.
 if ( mp->next_fmem<bc) mp->next_fmem=bc;  /* ensure nonnegative |char_base| */
 if (mp->last_fnum==mp->font_max)
   mp_reallocate_fonts(mp,(mp->font_max+(mp->font_max>>2)));
-if (mp->next_fmem+whd_size>=mp->font_mem_size) {
+while (mp->next_fmem+whd_size>=mp->font_mem_size) {
   size_t l = mp->font_mem_size+(mp->font_mem_size>>2);
-  mp->font_info = xrealloc (mp->font_info,sizeof(memory_word)*(l+1));
+  memory_word *font_info;
+  font_info = xmalloc (sizeof(memory_word)*(l+1));
+  memset (font_info,0,sizeof(memory_word)*(l+1));
+  memcpy (font_info,mp->font_info,sizeof(memory_word)*(mp->font_mem_size+1));
+  xfree(mp->font_info);
+  mp->font_info = font_info;
   mp->font_mem_size = l;
 }
 incr(mp->last_fnum);
@@ -24582,13 +24592,6 @@ mp->one_hundred_inch = 473628672;
 mp->ten_pow[0] = 1;
 for (i = 1;i<= 9; i++ ) {
   mp->ten_pow[i] = 10*mp->ten_pow[i - 1];
-}
-{
-  font_number ii;
-  for (ii = null_font;ii<= mp->font_max;ii++ ) {
-    mp->font_enc_name[ii] = NULL;
-    mp->font_ps_name_fixed[ii] = false;
-  }
 }
 
 @ The following function divides |s| by |m|. |dd| is number of decimal digits.
@@ -26616,8 +26619,6 @@ dialog with the \PASCAL\ debugger), or a positive number |m| followed by
 an argument |n|. The meaning of |m| and |n| will be clear from the
 program below. (If |m=13|, there is an additional argument, |l|.)
 @.debug \#@>
-
-@d breakpoint 888 /* place where a breakpoint is desirable */
 
 @<Last-minute...@>=
 void mp_debug_help (MP mp) { /* routine to display various things */

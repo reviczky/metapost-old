@@ -1189,7 +1189,6 @@ fm_entry * mp_fm_lookup (MP mp, font_number f) {
         fm_read_info (mp);        /* only to read default map file */
     tfm = mp->font_name[f];
     assert (strcmp (tfm, nontfm));
-
     /* Look up for full <tfmname>[+-]<expand> */
     tmp.tfm_name = tfm;
     fm = (fm_entry *) avl_find (mp->ps->tfm_tree, &tmp);
