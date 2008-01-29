@@ -325,7 +325,6 @@ in production versions of \MP.
 #define emergency_line_length 255
   /* \ps\ output lines can be this long in unusual circumstances */
 #define stack_size 300 /* maximum number of simultaneous input sources */
-#define max_read_files 30 /* maximum number of simultaneously open \&{readfrom} files */
 #define max_strings 25000 /* maximum number of strings; must not exceed |max_halfword| */
 #define string_vacancies 9000 /* the minimum number of characters that should be
   available for the user's identifier names and strings,
@@ -368,8 +367,6 @@ emphasize this distinction.
 @<Types...@>=
 #define mp_max_in_open 25 /* maximum number of input files and error insertions that
   can be going on simultaneously */
-#define mp_max_write_files 10 /* maximum number of simultaneously open \&{write} 
-  files */
 
 @ In case somebody has inadvertently made bad settings of the ``constants,''
 \MP\ checks them using a global variable called |bad|.
@@ -1528,7 +1525,7 @@ values:
 \hang |new_string|, appends the output to the current string in the
   string pool.
 
-\hang |0..max_write_files-1| prints on one of the files used for the \&{write}
+\hang |write_file ..max_selector| prints on one of the files used for the \&{write}
 @:write_}{\&{write} primitive@>
   command.
 
@@ -1548,14 +1545,15 @@ the length of (possibly very long) stretches of printing; |term_offset|,
 characters have appeared so far on the current line that has been output
 to the terminal, the transcript file, or the \ps\ output file, respectively.
 
-@d new_string mp_max_write_files /* printing is deflected to the string pool */
-@d ps_file_only (new_string+1) /* printing goes to the \ps\ output file */
-@d pseudo (new_string+2) /* special |selector| setting for |show_context| */
-@d no_print (new_string+3) /* |selector| setting that makes data disappear */
-@d term_only (new_string+4) /* printing is destined for the terminal only */
-@d log_only (new_string+5) /* printing is destined for the transcript file only */
-@d term_and_log (new_string+6) /* normal |selector| setting */
-@d max_selector term_and_log /* highest selector setting */
+@d new_string 0 /* printing is deflected to the string pool */
+@d ps_file_only 1 /* printing goes to the \ps\ output file */
+@d pseudo 2 /* special |selector| setting for |show_context| */
+@d no_print 3 /* |selector| setting that makes data disappear */
+@d term_only 4 /* printing is destined for the terminal only */
+@d log_only 5 /* printing is destined for the transcript file only */
+@d term_and_log 6 /* normal |selector| setting */
+@d write_file 7 /* first write file selector */
+@d max_selector (write_file+mp->max_write_files) /* highest selector setting */
 
 @<Glob...@>=
 FILE * log_file; /* transcript of \MP\ session */
@@ -1636,7 +1634,7 @@ void mp_print_ln (MP mp) { /* prints an end-of-line */
   case new_string: 
     break;
   default: 
-    fprintf(mp->wr_file[mp->selector],"\n");
+    fprintf(mp->wr_file[(mp->selector-write_file)],"\n");
   }
 } /* note that |tally| is not affected */
 
@@ -1696,7 +1694,7 @@ void mp_print_visible_char (MP mp, ASCII_code s) { /* prints a single character 
     append_char(s);
     break;
   default:
-    fprintf(mp->wr_file[mp->selector],"%c",mp->xchr[s]);
+    fprintf(mp->wr_file[(mp->selector-write_file)],"%c",mp->xchr[s]);
   }
 DONE:
   incr(mp->tally);
@@ -1719,7 +1717,7 @@ check their arguments themselves before calling |print_char| or |print|.)
 @<Basic printing...@>=
 void mp_print_char (MP mp, ASCII_code k) { /* prints a single character */
   int l; /* small index or counter */
-  if ( mp->selector<pseudo ) {
+  if ( mp->selector<pseudo || mp->selector>=write_file) {
     mp_print_visible_char(mp, k);
   } else if ( @<Character |k| cannot be printed@> ) { 
     mp_print_visible_char(mp, '^'); 
@@ -13689,7 +13687,7 @@ if ( name>max_spec_src ) {
      /* text was inserted during error recovery or by \&{scantokens} */
     mp_end_file_reading(mp); goto RESTART; /* resume previous level */
   }
-  if ( mp->selector<log_only ) mp_open_log_file(mp);
+  if ( mp->selector<log_only || mp->selector>=write_file) mp_open_log_file(mp);
   if ( mp->interaction>mp_nonstop_mode ) {
     if ( limit==start ) /* previous line was empty */
       mp_print_nl(mp, "(Please type a command or say `end')");
@@ -16177,23 +16175,34 @@ typedef unsigned int readf_index; /* 0..max_read_files */
 typedef unsigned int write_index;  /* 0..max_write_files */
 
 @ @<Glob...@>=
-FILE * rd_file[(max_read_files+1)]; /* \&{readfrom} files */
-char *rd_fname[(max_read_files+1)]; /* corresponding file name or 0 if file not open */
+readf_index max_read_files; /* maximum number of simultaneously open \&{readfrom} files */
+FILE ** rd_file; /* \&{readfrom} files */
+char ** rd_fname; /* corresponding file name or 0 if file not open */
 readf_index read_files; /* number of valid entries in the above arrays */
-FILE * wr_file[(mp_max_write_files+1)]; /* \&{write} files */
-char *wr_fname[(mp_max_write_files+1)]; /* corresponding file name or 0 if file not open */
+write_index max_write_files; /* maximum number of simultaneously open \&{write} */
+FILE ** wr_file; /* \&{write} files */
+char ** wr_fname; /* corresponding file name or 0 if file not open */
 write_index write_files; /* number of valid entries in the above arrays */
 
-@ @<Set init...@>=
+@ @<Allocate variables@>=
+mp->max_read_files=8;
+mp->rd_file = xmalloc(sizeof(FILE *)*(mp->max_read_files+1));
+mp->rd_fname = xmalloc(sizeof(char *)*(mp->max_read_files+1));
+memset(mp->rd_fname, 0, sizeof(char *)*(mp->max_read_files+1));
 mp->read_files=0;
+mp->max_write_files=8;
+mp->wr_file = xmalloc(sizeof(FILE *)*(mp->max_write_files+1));
+mp->wr_fname = xmalloc(sizeof(char *)*(mp->max_write_files+1));
+memset(mp->wr_fname, 0, sizeof(char *)*(mp->max_write_files+1));
 mp->write_files=0;
+
 
 @ This routine starts reading the file named by string~|s| without setting
 |loc|, |limit|, or |name|.  It returns |false| if the file is empty or cannot
 be opened.  Otherwise it updates |rd_file[n]| and |rd_fname[n]|.
 
-@c boolean mp_start_read_input (MP mp,str_number s, readf_index  n) {
-  mp_str_scan_file(mp, s);
+@c boolean mp_start_read_input (MP mp,char *s, readf_index  n) {
+  mp_ptr_scan_file(mp, s);
   pack_cur_name;
   mp_begin_file_reading(mp);
   if ( ! mp_a_open_in(mp, &mp->rd_file[n], mp_filetype_text) ) 
@@ -16212,10 +16221,10 @@ NOT_FOUND:
 @ Open |wr_file[n]| using file name~|s| and update |wr_fname[n]|.
 
 @<Declarations@>=
-void mp_open_write_file (MP mp,str_number s, readf_index  n) ;
+void mp_open_write_file (MP mp, char *s, readf_index  n) ;
 
-@ @c void mp_open_write_file (MP mp,str_number s, readf_index  n) {
-  mp_str_scan_file(mp, s);
+@ @c void mp_open_write_file (MP mp,char *s, readf_index  n) {
+  mp_ptr_scan_file(mp, s);
   pack_cur_name;
   while ( ! mp_a_open_out(mp, &mp->wr_file[n], mp_filetype_text) )
     mp_prompt_file_name(mp, "file name for write output","");
@@ -19538,40 +19547,58 @@ FOUND:
   mp_finish_read(mp);
 }
 
-@ Free slots in the |rd_file| and |rd_fname| arrays are marked with 0's in
+@ Free slots in the |rd_file| and |rd_fname| arrays are marked with NULL's in
 |rd_fname|.
 
 @<Find the |n| where |rd_fname[n]=cur_exp|...@>=
-n=mp->read_files;
-n0=mp->read_files;
-do { 
-CONTINUE:
-  if ( n>0 ) decr(n);
-  else if ( c==close_from_op ) goto CLOSE_FILE;
-  else {
-   @<Insert |cur_exp| at index |n0|, then call |start_read_input| and
-      |goto found| or |not_found|@>;
+{   
+  char *fn;
+  n=mp->read_files;
+  n0=mp->read_files;
+  fn = str(mp->cur_exp);
+  while (xstrcmp(fn,mp->rd_fname[n])!=0) { 
+    if ( n>0 ) {
+      decr(n);
+    } else if ( c==close_from_op ) {
+      goto CLOSE_FILE;
+    } else {
+      if ( n0==mp->read_files ) {
+        if ( mp->read_files<mp->max_read_files ) {
+          incr(mp->read_files);
+        } else {
+          FILE **rd_file;
+          char **rd_fname;
+	      readf_index l,k;
+          l = mp->max_read_files + (mp->max_read_files>>2);
+          rd_file = xmalloc(sizeof(FILE *)*(l+1));
+          rd_fname = xmalloc(sizeof(char *)*(l+1));
+	      for (k=0;k<=l;k++) {
+            if (k<=mp->max_read_files) {
+   	          rd_file[k]=mp->rd_file[k]; 
+              rd_fname[k]=mp->rd_fname[k];
+            } else {
+   	          rd_file[k]=0; 
+              rd_fname[k]=NULL;
+            }
+          }
+	      xfree(mp->rd_file); xfree(mp->rd_fname);
+          mp->max_read_files = l;
+          mp->rd_file = rd_file;
+          mp->rd_fname = rd_fname;
+        }
+      }
+      n=n0;
+      if ( mp_start_read_input(mp,fn,n) ) 
+        goto FOUND;
+      else 
+        goto NOT_FOUND;
+    }
+    if ( mp->rd_fname[n]==NULL ) { n0=n; }
+  } 
+  if ( c==close_from_op ) { 
+    a_close(mp->rd_file[n]); 
+    goto NOT_FOUND; 
   }
-  if ( mp->rd_fname[n]==0 ) { 
-    n0=n; goto CONTINUE; 
-  };
-} while (xstrcmp(str(mp->cur_exp),mp->rd_fname[n])!=0);
-if ( c==close_from_op ) { 
-  a_close(mp->rd_file[n]); 
-  goto NOT_FOUND; 
-}
-
-@ @<Insert |cur_exp| at index |n0|, then call |start_read_input| and...@>=
-{ 
-  if ( n0==mp->read_files ) {
-    if ( mp->read_files<max_read_files ) incr(mp->read_files);
-    else mp_overflow(mp, "readfrom files",max_read_files);
-  }
-  n=n0;
-  if ( mp_start_read_input(mp, mp->cur_exp,n) ) 
-    goto FOUND;
-  else 
-    goto NOT_FOUND;
 }
 
 @ @<Record the end of file and set |cur_exp| to a dummy value@>=
@@ -21588,7 +21615,7 @@ void mp_do_random_seed (MP mp) ;
 @ @<Initialize the random seed to |cur_exp|@>=
 { 
   mp_init_randoms(mp, mp->cur_exp);
-  if ( mp->selector>=log_only ) {
+  if ( mp->selector>=log_only && mp->selector<write_file) {
     mp->old_setting=mp->selector; mp->selector=log_only;
     mp_print_nl(mp, "{randomseed:="); 
     mp_print_scaled(mp, mp->cur_exp); 
@@ -22824,33 +22851,51 @@ void mp_do_write (MP mp) ;
     @<Record the end of file on |wr_file[n]|@>;
   } else { 
     old_setting=mp->selector;
-    mp->selector=n;
+    mp->selector=n+write_file;
     mp_print_str(mp, t); mp_print_ln(mp);
     mp->selector = old_setting;
   }
 }
 
 @ @<Find |n| where |wr_fname[n]=cur_exp| and call |open_write_file| if...@>=
-n=mp->write_files;
-n0=mp->write_files;
-do { 
-CONTINUE: 
-  if ( n==0 ) {
-    @<Insert |cur_exp| at index |n0| and call |open_write_file|@>;
-  } else { 
-    decr(n);
-    if ( mp->wr_fname[n]==0 ) { n0=n; goto CONTINUE; }
+{
+  char *fn = str(mp->cur_exp);
+  n=mp->write_files;
+  n0=mp->write_files;
+  while (xstrcmp(fn,mp->wr_fname[n])!=0) { 
+    if ( n==0 ) { /* bottom reached */
+	  if ( n0==mp->write_files ) {
+        if ( mp->write_files<mp->max_write_files ) {
+          incr(mp->write_files);
+        } else {
+          FILE **wr_file;
+          char **wr_fname;
+	      write_index l,k;
+          l = mp->max_write_files + (mp->max_write_files>>2);
+          wr_file = xmalloc(sizeof(FILE *)*(l+1));
+          wr_fname = xmalloc(sizeof(char *)*(l+1));
+	      for (k=0;k<=l;k++) {
+            if (k<=mp->max_write_files) {
+   	          wr_file[k]=mp->wr_file[k]; 
+              wr_fname[k]=mp->wr_fname[k];
+            } else {
+   	          wr_file[k]=0; 
+              wr_fname[k]=NULL;
+            }
+          }
+	      xfree(mp->wr_file); xfree(mp->wr_fname);
+          mp->max_write_files = l;
+          mp->wr_file = wr_file;
+          mp->wr_fname = wr_fname;
+        }
+      }
+      n=n0;
+      mp_open_write_file(mp, fn ,n);
+    } else { 
+      decr(n);
+	  if ( mp->wr_fname[n]==NULL )  n0=n; 
+    }
   }
-} while (xstrcmp(str(mp->cur_exp),mp->wr_fname[n])!=0)
-
-@ @<Insert |cur_exp| at index |n0| and call |open_write_file|@>=
-{ 
-  if ( n0==mp->write_files ) {
-    if ( mp->write_files<mp_max_write_files ) incr(mp->write_files);
-    else mp_overflow(mp, "write files",mp_max_write_files);
-  }
-  n=n0;
-  mp_open_write_file(mp, mp->cur_exp,n);
 }
 
 @ @<Record the end of file on |wr_file[n]|@>=
@@ -26490,10 +26535,10 @@ void mp_close_files_and_terminate (MP mp) ;
 
 @ @<Close all open files in the |rd_file| and |wr_file| arrays@>=
 for (k=0;k<=(int)mp->read_files-1;k++ ) {
-  if ( mp->rd_fname[k]!=0 ) a_close(mp->rd_file[k]);
+  if ( mp->rd_fname[k]!=NULL ) a_close(mp->rd_file[k]);
 }
 for (k=0;k<=(int)mp->write_files-1;k++) {
-  if ( mp->wr_fname[k]!=0 ) a_close(mp->wr_file[k]);
+  if ( mp->wr_fname[k]!=NULL ) a_close(mp->wr_file[k]);
 }
 
 @ We want to produce a \.{TFM} file if and only if |fontmaking| is positive.
