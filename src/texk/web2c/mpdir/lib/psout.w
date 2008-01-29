@@ -1,3 +1,46 @@
+% $Id: mp.web,v 1.8 2005/08/24 10:54:02 taco Exp $
+% MetaPost, by John Hobby.  Public domain.
+
+% Much of this program was copied with permission from MF.web Version 1.9
+% It interprets a language very similar to D.E. Knuth's METAFONT, but with
+% changes designed to make it more suitable for PostScript output.
+
+% TeX is a trademark of the American Mathematical Society.
+% METAFONT is a trademark of Addison-Wesley Publishing Company.
+% PostScript is a trademark of Adobe Systems Incorporated.
+
+% Here is TeX material that gets inserted after \input webmac
+\def\hang{\hangindent 3em\noindent\ignorespaces}
+\def\textindent#1{\hangindent2.5em\noindent\hbox to2.5em{\hss#1 }\ignorespaces}
+\def\PASCAL{Pascal}
+\def\ps{PostScript}
+\def\ph{\hbox{Pascal-H}}
+\def\psqrt#1{\sqrt{\mathstrut#1}}
+\def\k{_{k+1}}
+\def\pct!{{\char`\%}} % percent sign in ordinary text
+\font\tenlogo=logo10 % font used for the METAFONT logo
+\font\logos=logosl10
+\def\MF{{\tenlogo META}\-{\tenlogo FONT}}
+\def\MP{{\tenlogo META}\-{\tenlogo POST}}
+\def\<#1>{$\langle#1\rangle$}
+\def\section{\mathhexbox278}
+\let\swap=\leftrightarrow
+\def\round{\mathop{\rm round}\nolimits}
+\mathchardef\vb="026A % synonym for `\|'
+\def\[#1]{} % from pascal web
+\def\(#1){} % this is used to make section names sort themselves better
+\def\9#1{} % this is used for sort keys in the index via @@:sort key}{entry@@>
+
+\let\?=\relax % we want to be able to \write a \?
+
+\def\title{MetaPost \ps\ output}
+\def\topofcontents{\hsize 5.5in
+  \vglue -30pt plus 1fil minus 1.5in
+  \def\?##1]{\hbox to 1in{\hfil##1.\ }}
+  }
+\def\botofcontents{\vskip 0pt plus 1fil minus 1.5in}
+\pdfoutput=1
+\pageno=3
 
 @ 
 @d true 1
@@ -47,7 +90,7 @@ void mp_backend_free (MP mp) {
 }
 
 
-@* \[1] Traditional psfonts.map loading.
+@* Traditional {psfonts.map} loading.
 
 TODO: It is likely that this code can be removed after a few minor tweaks.
 
@@ -341,8 +384,8 @@ void mp_read_enc (MP mp, enc_entry * e) {
     e->loaded = true;
 }
 
-@ write_enc is used to write either external encoding (given in map file) or
- internal encoding (read from the font file); when glyph_names is NULL
+@ |write_enc| is used to write either external encoding (given in map file) or
+ internal encoding (read from the font file); when |glyph_names| is NULL
  the 2nd argument is a pointer to the encoding entry; otherwise the 3rd is 
  the object number of the Encoding object
  
@@ -524,7 +567,7 @@ enum _mode { FM_DUPIGNORE, FM_REPLACE, FM_DELETE };
 enum _ltype { MAPFILE, MAPLINE };
 enum _tfmavail { TFM_UNCHECKED, TFM_FOUND, TFM_NOTFOUND };
 typedef struct mitem {
-    int mode;                   /* FM_DUPIGNORE or FM_REPLACE or FM_DELETE */
+    int mode;                   /* |FM_DUPIGNORE| or |FM_REPLACE| or |FM_DELETE| */
     int type;                   /* map file or map line */
     char *map_line;              /* pointer to map file name or map line */
     int lineno;                 /* line number in map file */
@@ -652,7 +695,7 @@ mp->ps->tfm_tree = NULL;
 mp->ps->ps_tree = NULL;
 mp->ps->ff_tree = NULL;
 
-@ AVL sort fm_entry into tfm_tree by tfm_name 
+@ AVL sort |fm_entry| into |tfm_tree| by |tfm_name |
 
 @c
 int comp_fm_entry_tfm (const void *pa, const void *pb, void *p) {
@@ -661,7 +704,7 @@ int comp_fm_entry_tfm (const void *pa, const void *pb, void *p) {
                    ((const fm_entry *) pb)->tfm_name);
 }
 
-@ AVL sort fm_entry into ps_tree by ps_name, slant, and extend 
+@ AVL sort |fm_entry| into |ps_tree| by |ps_name|, |slant|, and |extend|
 
 @c int comp_fm_entry_ps (const void *pa, const void *pb, void *p) {
     assert(p==NULL);
@@ -678,7 +721,7 @@ int comp_fm_entry_tfm (const void *pa, const void *pb, void *p) {
     return 0;
 }
 
-@ AVL sort ff_entry into ff_tree by ff_name 
+@ AVL sort |ff_entry| into |ff_tree| by |ff_name|
 
 @c int comp_ff_entry (const void *pa, const void *pb, void *p) {
     assert(p==NULL);
@@ -701,9 +744,9 @@ int comp_fm_entry_tfm (const void *pa, const void *pb, void *p) {
     }
 }
 
-@ The function avl_do_entry() is not completely symmetrical with regards
-to tfm_name and ps_name handling, e. g. a duplicate tfm_name gives a
-"goto exit", and no ps_name link is tried. This is to keep it compatible
+@ The function |avl_do_entry| is not completely symmetrical with regards
+to |tfm_name| and |ps_name handling|, e. g. a duplicate |tfm_name| gives a
+|goto exit|, and no |ps_name| link is tried. This is to keep it compatible
 with the original version.
 
 @d LINK_TFM            0x01
@@ -722,7 +765,7 @@ int avl_do_entry (MP mp, fm_entry * fp, int mode) {
     void **aa;
     char s[128];
 
-    /* handle tfm_name link */
+    /* handle |tfm_name| link */
 
     if (strcmp (fp->tfm_name, nontfm)) {
         p = (fm_entry *) avl_find (mp->ps->tfm_tree, fp);
@@ -732,7 +775,7 @@ int avl_do_entry (MP mp, fm_entry * fp, int mode) {
                      fp->tfm_name);
                 mp_warn(mp,s);
                 goto exit;
-            } else {            /* mode == FM_REPLACE / FM_DELETE */
+            } else {            /* mode == |FM_REPLACE| / |FM_DELETE| */
                 if (mp_has_font_size(mp,p->tfm_num)) {
                     snprintf(s,128,
                         "fontmap entry for `%s' has been used, replace/delete not allowed",
@@ -754,7 +797,7 @@ int avl_do_entry (MP mp, fm_entry * fp, int mode) {
         }
     }
 
-    /* handle ps_name link */
+    /* handle |ps_name| link */
 
     if (fp->ps_name != NULL) {
         assert (fp->tfm_name != NULL);
@@ -766,7 +809,7 @@ int avl_do_entry (MP mp, fm_entry * fp, int mode) {
                      fp->ps_name);
                 mp_warn(mp,s);
                 goto exit;
-            } else {            /* mode == FM_REPLACE / FM_DELETE */
+            } else {            /* mode == |FM_REPLACE| / |FM_DELETE| */
                 if (mp_has_font_size(mp,p->tfm_num)) {
                     /* REPLACE/DELETE not allowed */
                     snprintf(s,128,
@@ -789,8 +832,8 @@ int avl_do_entry (MP mp, fm_entry * fp, int mode) {
         }
     }
   exit:
-    if (!has_tfmlink (fp) && !has_pslink (fp))  /* e. g. after FM_DELETE */
-        return 1;               /* deallocation of fm_entry structure required */
+    if (!has_tfmlink (fp) && !has_pslink (fp))  /* e. g. after |FM_DELETE| */
+        return 1;               /* deallocation of |fm_entry| structure required */
     else
         return 0;
 }
@@ -815,7 +858,7 @@ int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
             }
         } else {                /* not a base font */
             /* if no font file given, drop this entry */
-            /* if (!is_fontfile (fm)) {
+            /* |if (!is_fontfile (fm)) {
 	         if (warn) {
                    snprintf(s,128, 
                         "invalid entry for `%s': font file missing",
@@ -823,7 +866,7 @@ int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
                     mp_warn(mp,s);
                  }
                 a += 2;
-            }
+            }|
 	    */
         }
     }
@@ -950,7 +993,7 @@ int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
         r = fm_line;
         break;
     case MAPLINE:
-        r = mp->ps->mitem->map_line; /* work on string from makecstring() */
+        r = mp->ps->mitem->map_line;
         break;
     default:
         assert (0);
@@ -984,7 +1027,7 @@ int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
                 if (sscanf (r, "%f %n", &d, &j) > 0) {
                     s = r + j;  /* jump behind number, eat also blanks, if any */
                     if (*(s - 1) == 'E' || *(s - 1) == 'e')
-                        s--;    /* e. g. 0.5ExtendFont: %f = 0.5E */
+                        s--;    /* e. g. 0.5ExtendFont: \%f = 0.5E */
                     if (str_prefix (s, "SlantFont")) {
                         d *= 1000.0;    /* correct rounding also for neg. numbers */
                         fm->slant = (integer) (d > 0 ? d + 0.5 : d - 0.5);
@@ -1070,7 +1113,7 @@ int check_fm_entry (MP mp, fm_entry * fm, boolean warn) {
         goto bad_line;
     /*
        Until here the map line has been completely scanned without errors;
-       fm points to a valid, freshly filled-out fm_entry structure.
+       fm points to a valid, freshly filled-out |fm_entry| structure.
        Now follows the actual work of registering/deleting.
      */
     if (avl_do_entry (mp, fm, mp->ps->mitem->mode) == 0)    /* if success */
@@ -1204,7 +1247,7 @@ fm_entry * mp_fm_lookup (MP mp, font_number f) {
     fm = (fm_entry *) avl_find (mp->ps->tfm_tree, &tmp);
     if (fm != NULL) {           /* found an entry with the base tfm name, e.g. cmr10 */
         return (fm_entry *) fm; /* font expansion uses the base font */
-        /* the following code would be obsolete, as would be mk_ex_fm() */
+        /* the following code would be obsolete, as would be |mk_ex_fm| */
         if (!is_t1fontfile (fm) || !is_included (fm)) {
             char s[128];
             snprintf(s,128,
@@ -1223,13 +1266,13 @@ fm_entry * mp_fm_lookup (MP mp, font_number f) {
 
 @  Early check whether a font file exists. Used e. g. for replacing fonts
    of embedded PDF files: Without font file, the font within the embedded
-   PDF-file is used. Search tree ff_tree is used in 1st instance, as it
-   may be faster than the kpse_find_file(), and kpse_find_file() is called
+   PDF-file is used. Search tree |ff_tree| is used in 1st instance, as it
+   may be faster than the |kpse_find_file()|, and |kpse_find_file()| is called
    only once per font file name + expansion parameter. This might help
    keeping speed, if many PDF pages with same fonts are to be embedded.
 
-   The ff_tree contains only font files, which are actually needed,
-   so this tree typically is much smaller than the tfm_tree or ps_tree.
+   The |ff_tree| contains only font files, which are actually needed,
+   so this tree typically is much smaller than the |tfm_tree| or |ps_tree|.
 
 @c 
 ff_entry *check_ff_exist (MP mp, fm_entry * fm) {
@@ -1580,8 +1623,8 @@ void make_subset_tag (MP mp, fm_entry * fm_cur, char **glyph_names, int tex_font
     crc = crc32 (crc, (Bytef *) mp->ps->char_array, strlen (mp->ps->char_array));
     /* we need to fit a 32-bit number into a string of 6 uppercase chars long;
      * there are 26 uppercase chars ==> each char represents a number in range
-     * 0..25. The maximal number that can be represented by the tag is
-     * 26^6 - 1, which is a number between 2^28 and 2^29. Thus the bits 29..31
+     * |0..25|. The maximal number that can be represented by the tag is
+     * $26^6 - 1$, which is a number between $2^28$ and $2^29$. Thus the bits |29..31|
      * of the CRC must be dropped out.
      */
     for (i = 0; i < 6; i++) {
@@ -1948,7 +1991,7 @@ static void t1_getline (MP mp) {
     int c, l, eexec_scan;
     char *p;
     static const char eexec_str[] = "currentfile eexec";
-    static int eexec_len = 17;  /* strlen(eexec_str) */
+    static int eexec_len = 17;  /* |strlen(eexec_str)| */
   RESTART:
     if (t1_eof ())
         mp_fatal_error (mp,"unexpected end of file");
@@ -1980,21 +2023,21 @@ static void t1_getline (MP mp) {
                 p--;
             mp->ps->t1_cslen = l = t1_scan_num (mp, p + 1, 0);
             mp->ps->cs_start = mp->ps->t1_line_ptr - mp->ps->t1_line_array;     
-                  /* mp->ps->cs_start is an index now */
+                  /* |mp->ps->cs_start| is an index now */
             alloc_array (t1_line, l, T1_BUF_SIZE);
             while (l-- > 0)
                 *mp->ps->t1_line_ptr++ = edecrypt (mp,t1_getbyte (mp));
         }
         c = t1_getbyte (mp);
     }
-    alloc_array (t1_line, 2, T1_BUF_SIZE);      /* append_eol can append 2 chars */
+    alloc_array (t1_line, 2, T1_BUF_SIZE);      /* |append_eol| can append 2 chars */
     append_eol (mp->ps->t1_line_ptr, mp->ps->t1_line_array, mp->ps->t1_line_limit);
     if (mp->ps->t1_line_ptr - mp->ps->t1_line_array < 2)
         goto RESTART;
     if (eexec_scan == eexec_len)
         mp->ps->t1_in_eexec = 1;
   EXIT:
-    /* ensure that mp->ps->t1_buf_array has as much room as t1_line_array */
+    /* ensure that |mp->ps->t1_buf_array| has as much room as |t1_line_array| */
     mp->ps->t1_buf_ptr = mp->ps->t1_buf_array;
     alloc_array (t1_buf, mp->ps->t1_line_limit, mp->ps->t1_line_limit);
 }
@@ -2208,8 +2251,8 @@ void t1_scan_keys (MP mp, int tex_font,fm_entry *fm_cur) {
 	    strncpy (r+7, mp->ps->fontname_buf, strlen(mp->ps->fontname_buf)+1);
 	    mp->ps->t1_line_ptr = eol (r);
 	  } else {
-	    /* for (q = p; *q != ' ' && *q != 10; *q++);*/
-	    /**q = 0;*/
+	    /* |for (q = p; *q != ' ' && *q != 10; *q++);|*/
+	    /*|*q = 0;|*/
 	    mp->ps->t1_line_ptr = eol (r);
 	  }
 	}
@@ -2251,7 +2294,7 @@ void t1_builtin_enc (MP mp) {
     int i, a, b, c, counter = 0;
     char *r, *p;
     /*
-     * At this moment "/Encoding" is the prefix of mp->ps->t1_line_array
+     * At this moment "/Encoding" is the prefix of |mp->ps->t1_line_array|
      */
     if (t1_suffix ("def")) {    /* predefined encoding */
         sscanf (mp->ps->t1_line_array + strlen ("/Encoding"), "%256s", mp->ps->t1_buf_array);
@@ -2273,7 +2316,7 @@ void t1_builtin_enc (MP mp) {
     } else
         mp->ps->t1_encoding = ENC_BUILTIN;
     /*
-     * At this moment "/Encoding" is the prefix of mp->ps->t1_line_array, and the encoding is
+     * At this moment "/Encoding" is the prefix of |mp->ps->t1_line_array|, and the encoding is
      * not a predefined encoding
      *
      * We have two possible forms of Encoding vector. The first case is
@@ -2492,10 +2535,10 @@ void cs_store (MP mp, boolean is_subr) {
         else
             ptr->glyph_name = xstrdup (mp->ps->t1_buf_array + 1);
     }
-    /* copy " RD " + cs data to mp->ps->t1_buf_array */
+    /* copy " RD " + cs data to |mp->ps->t1_buf_array| */
     memcpy (mp->ps->t1_buf_array, mp->ps->t1_line_array + mp->ps->cs_start - 4,
             (unsigned) (mp->ps->t1_cslen + 4));
-    /* copy the end of cs data to mp->ps->t1_buf_array */
+    /* copy the end of cs data to |mp->ps->t1_buf_array| */
     for (p = mp->ps->t1_line_array + mp->ps->cs_start + mp->ps->t1_cslen, mp->ps->t1_buf_ptr =
          mp->ps->t1_buf_array + mp->ps->t1_cslen + 4; *p != 10; *mp->ps->t1_buf_ptr++ = *p++);
     *mp->ps->t1_buf_ptr++ = 10;
@@ -2531,20 +2574,6 @@ static boolean is_cc_init = false;
     goto cs_error;                    \
 }
 
-/*
-integer cc_get(MP mp, integer index) {
-    if (index <  0) {
-        if (stack_ptr + index < cc_stack )
-            stack_error(stack_ptr - cc_stack + index);
-        return *(stack_ptr + index);
-    }
-    else {
-        if (cc_stack  + index >= stack_ptr)
-            stack_error(index);
-        return cc_stack[index];
-    }
-}
-*/
 
 #define cc_get(N)   ((N) < 0 ? *(stack_ptr + (N)) : *(cc_stack + (N)))
 
@@ -2574,7 +2603,7 @@ void cc_init (void) {
     set_cc (CS_CALLSUBR, false, 1, false);
     set_cc (CS_RETURN, false, 0, false);
     /*
-       set_cc(CS_ESCAPE,          false,  0, false);
+       |set_cc(CS_ESCAPE,          false,  0, false);|
      */
     set_cc (CS_HSBW, true, 2, true);
     set_cc (CS_ENDCHAR, false, 0, true);
@@ -2770,10 +2799,10 @@ static void t1_subset_ascii_part (MP mp, int tex_font, fm_entry *fm_cur)
     else
         mp->ps->t1_glyph_names = mp->ps->t1_builtin_glyph_names;
 	/* 
-    if (is_included (fm_cur) && is_subsetted (fm_cur)) {
+    |if (is_included (fm_cur) && is_subsetted (fm_cur)) {
 	    make_subset_tag (fm_cur, t1_glyph_names, tex_font);
         update_subset_tag ();
-    }
+    }|
     */
     if ((!is_subsetted (fm_cur)) && mp->ps->t1_encoding == ENC_STANDARD)
         t1_puts (mp,"/Encoding StandardEncoding def\n");
@@ -2843,14 +2872,14 @@ static void t1_read_subrs (MP mp, int tex_font, fm_entry *fm_cur)
     if (!t1_subrs ())
         return;
     mp->ps->subr_size_pos = strlen ("/Subrs") + 1;
-    /* subr_size_pos points to the number indicating dict size after "/Subrs" */
+    /* |subr_size_pos| points to the number indicating dict size after "/Subrs" */
     mp->ps->subr_size = t1_scan_num (mp,mp->ps->t1_line_array + mp->ps->subr_size_pos, 0);
     if (mp->ps->subr_size == 0) {
         while (!t1_charstrings ())
             t1_getline (mp);
         return;
     }
-	//    subr_tab = xtalloc (subr_size, cs_entry);
+	/*    |subr_tab = xtalloc (subr_size, cs_entry);| */
 	mp->ps->subr_tab = (cs_entry *)xmalloc (mp->ps->subr_size*sizeof (cs_entry));
     for (ptr = mp->ps->subr_tab; ptr - mp->ps->subr_tab < mp->ps->subr_size; ptr++)
         init_cs_entry (ptr);
@@ -2864,9 +2893,9 @@ static void t1_read_subrs (MP mp, int tex_font, fm_entry *fm_cur)
     for (i = 0; i < mp->ps->subr_size && i < 4; i++)
         mp->ps->subr_tab[i].is_used = true;
     /* the end of the Subrs array might have more than one line so we need to
-       concatnate them to subr_array_end. Unfortunately some fonts don't have
+       concatnate them to |subr_array_end|. Unfortunately some fonts don't have
        the Subrs array followed by the CharStrings dict immediately (synthetic
-       fonts). If we cannot find CharStrings in next POST_SUBRS_SCAN lines then
+       fonts). If we cannot find CharStrings in next |POST_SUBRS_SCAN| lines then
        we will treat the font as synthetic and ignore everything until next
        Subrs is found
      */
@@ -2907,7 +2936,7 @@ static void t1_flush_cs (MP mp, boolean is_subr)
     cs_entry *tab, *end_tab, *ptr;
     char *start_line, *line_end;
     int count, size_pos;
-    unsigned short cr, cs_len = 0;      /* to avoid warning about uninitialized use of cs_len */
+    unsigned short cr, cs_len = 0; /* to avoid warning about uninitialized use of |cs_len| */
     if (is_subr) {
         start_line = mp->ps->subr_array_start;
         line_end =  mp->ps->subr_array_end;
@@ -2933,7 +2962,7 @@ static void t1_flush_cs (MP mp, boolean is_subr)
     mp->ps->t1_line_ptr = eol (mp->ps->t1_line_array);
     t1_putline (mp);
 
-    /* create return_cs to replace unsused subr's */
+    /* create |return_cs| to replace unsused subr's */
     if (is_subr) {
         cr = 4330;
         cs_len = 0;
@@ -2960,7 +2989,7 @@ static void t1_flush_cs (MP mp, boolean is_subr)
             mp->ps->t1_line_ptr = p + ptr->len;
             t1_putline (mp);
         } else {
-            /* replace unsused subr's by return_cs */
+            /* replace unsused subr's by |return_cs| */
             if (is_subr) {
                 sprintf (mp->ps->t1_line_array, "dup %i %u%s ", (int) (ptr - tab),
                          cs_len,  mp->ps->cs_token_pair[0]);
@@ -3042,7 +3071,7 @@ static void t1_subset_charstrings (MP mp, int tex_font)
     mp->ps->cs_size_pos =
         strstr (mp->ps->t1_line_array, charstringname) + strlen (charstringname)
         - mp->ps->t1_line_array + 1;
-    /* cs_size_pos points to the number indicating
+    /* |cs_size_pos| points to the number indicating
        dict size after "/CharStrings" */
     mp->ps->cs_size = t1_scan_num (mp,mp->ps->t1_line_array + mp->ps->cs_size_pos, 0);
     mp->ps->cs_ptr = mp->ps->cs_tab = xmalloc (mp->ps->cs_size* sizeof(cs_entry));
@@ -3174,7 +3203,7 @@ typedef struct {
     integer fd_objnum;          /* FontDescriptor object number */
     char *charset;              /* string containing used glyphs */
     boolean all_glyphs;         /* embed all glyphs? */
-    unsigned short links;       /* link flags from tfm_tree and ps_tree */
+    unsigned short links;       /* link flags from |tfm_tree| and |ps_tree| */
     short tfm_avail;            /* flags whether a tfm is available */
     short pid;                  /* Pid for truetype fonts */
     short eid;                  /* Eid for truetype fonts */
@@ -3278,7 +3307,7 @@ char * mp_fm_font_name (MP mp, int f) {
   if (mp_has_fm_entry (mp, f,&fm)) { 
     if (fm != NULL && (fm->ps_name != NULL)) {
       if (mp_font_is_included(mp, f) && !mp->font_ps_name_fixed[f]) {
-	/* find the real fontname, and update ps_name and subset_tag if needed */
+	/* find the real fontname, and update |ps_name| and |subset_tag| if needed */
         if (t1_updatefm(mp,f,fm)) {
 	  mp->font_ps_name_fixed[f] = true;
 	} else {
