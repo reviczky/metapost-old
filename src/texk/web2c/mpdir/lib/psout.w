@@ -31,23 +31,13 @@ typedef struct psout_data_struct * psout_data;
 @ @(mppsout.h@>=
 @<Exported function headers@>
 
-@ 
-@<Globals@>=
-fm_entry    **mp_font_map; /* pointer into AVL tree of font mappings */
-
 @ @<Exported function headers@>=
-void mp_backend_initialize (MP mp, int fontmax) ;
+void mp_backend_initialize (MP mp) ;
 void mp_backend_free (MP mp) ;
 
 @
-@c void mp_backend_initialize (MP mp, int fontmax) {
-  int i;
+@c void mp_backend_initialize (MP mp) {
   mp->ps = malloc(sizeof(psout_data_struct));
-  mp->ps->job_id_string = NULL;
-  mp->ps->mp_font_map=xmalloc(sizeof(fm_entry *)*(fontmax+1));
-  for (i = 0;i<= fontmax;i++ ) {
-    mp->ps->mp_font_map[i] = 0;
-  }
   @<Set initial values@>;
 }
 void mp_backend_free (MP mp) {
@@ -56,8 +46,131 @@ void mp_backend_free (MP mp) {
   mp->ps = NULL;
 }
 
-@ @<Dealloc variables@>=
-xfree(mp->ps->mp_font_map);
+
+@* \[1] Traditional psfonts.map loading.
+
+TODO: It is likely that this code can be removed after a few minor tweaks.
+
+@ The file |ps_tab_file| gives a table of \TeX\ font names and corresponding
+PostScript names for fonts that do not have to be downloaded, i.e., fonts that
+can be used when |internal[prologues]>0|.  Each line consists of a \TeX\ name,
+one or more spaces, a PostScript name, and possibly a space and some other junk.
+This routine reads the table, updates |font_ps_name| entries starting after
+|last_ps_fnum|, and sets |last_ps_fnum:=last_fnum|.  If the file |ps_tab_file|
+is missing, we assume that the existing font names are OK and nothing needs to
+be done.
+
+@d ps_tab_name "psfonts.map"  /* locates font name translation table */
+
+@<Exported ...@>=
+void mp_read_psname_table (MP mp) ;
+
+@ @c void mp_read_psname_table (MP mp) {
+  font_number k; /* font for possible name match */
+  unsigned int lmax; /* upper limit on length of name to match */
+  unsigned int j; /* characters left to read before string gets too long */
+  char *s; /* possible font name to match */
+  text_char c=0; /* character being read from |ps_tab_file| */
+  if ( (mp->ps->ps_tab_file = mp_open_file(mp, ps_tab_name, "r", mp_filetype_fontmap)) ) {
+    @<Set |lmax| to the maximum |font_name| length for fonts
+      |last_ps_fnum+1| through |last_fnum|@>;
+    while (! feof(mp->ps->ps_tab_file) ) {
+      @<Read at most |lmax| characters from |ps_tab_file| into string |s|
+        but |goto common_ending| if there is trouble@>;
+      for (k=mp->last_ps_fnum+1;k<=mp->last_fnum;k++) {
+        if ( xstrcmp(s,mp->font_name[k])==0 ) {
+          @<|flush_string(s)|, read in |font_ps_name[k]|, and
+            |goto common_ending|@>;
+        }
+      }
+      xfree(s);
+    COMMON_ENDING:
+      c = fgetc(mp->ps->ps_tab_file);
+	  if (c=='\r') {
+        c = fgetc(mp->ps->ps_tab_file);
+        if (c!='\n') 
+          ungetc(c,mp->ps->ps_tab_file);
+      }
+    }
+    mp->last_ps_fnum=mp->last_fnum;
+    fclose(mp->ps->ps_tab_file);
+  }
+}
+
+@ @<Glob...@>=
+FILE * ps_tab_file; /* file for font name translation table */
+
+@ @<Set |lmax| to the maximum |font_name| length for fonts...@>=
+lmax=0;
+for (k=mp->last_ps_fnum+1;k<=mp->last_fnum;k++) {
+  if (strlen(mp->font_name[k])>lmax ) 
+    lmax=strlen(mp->font_name[k]);
+}
+
+@ If we encounter the end of line before we have started reading
+characters from |ps_tab_file|, we have found an entirely blank 
+line and we skip over it.  Otherwise, we abort if the line ends 
+prematurely.  If we encounter a comment character, we also skip 
+over the line, since recent versions of \.{dvips} allow comments
+in the font map file.
+
+TODO: this is probably not safe in the case of a really 
+broken font map file.
+
+@<Read at most |lmax| characters from |ps_tab_file| into string |s|...@>=
+s=xmalloc(lmax+1);
+j=0;
+while (1) { 
+  if (c == '\n' || c == '\r' ) {
+    if (j==0) {
+      xfree(s); s=NULL; goto COMMON_ENDING;
+    } else {
+      mp_fatal_error(mp, "The psfont map file is bad!");
+    }
+  }
+  c = fgetc(mp->ps->ps_tab_file);
+  if (c=='%' || c=='*' || c==';' || c=='#' ) {
+    xfree(s); s=NULL; goto COMMON_ENDING;
+  }
+  if (c==' ' || c=='\t') break;
+  if (j<lmax) {
+   s[j++] = mp->xord[c];
+  } else { 
+    xfree(s); s=NULL; goto COMMON_ENDING;
+  }
+}
+s[j]=0
+
+@ PostScript font names should be at most 28 characters long but we allow 32
+just to be safe.
+
+@<|flush_string(s)|, read in |font_ps_name[k]|, and...@>=
+{ 
+  char *ps_name =NULL;
+  xfree(s);
+  do {  
+    if (c=='\n' || c == '\r') 
+      mp_fatal_error(mp, "The psfont map file is bad!");
+    c = fgetc(mp->ps->ps_tab_file);
+  } while (c==' ' || c=='\t');
+  ps_name = xmalloc(33);
+  j=0;
+  do {  
+    if (j>31) {
+      mp_fatal_error(mp, "The psfont map file is bad!");
+    }
+    ps_name[j++] = mp->xord[c];
+    if (c=='\n' || c == '\r')
+      c=' ';  
+    else 
+      c = fgetc(mp->ps->ps_tab_file);
+  } while (c != ' ' && c != '\t');
+  ps_name[j]= 0;
+  xfree(mp->font_ps_name[k]);
+  mp->font_ps_name[k]=ps_name;
+  goto COMMON_ENDING;
+}
+
 
 
 @* \[44a] Dealing with font encodings.
@@ -271,6 +384,7 @@ void mp_write_enc (MP mp, char **glyph_names, enc_entry * e) {
     mp_print(mp,"%%%%EndResource");
 }
 
+
 @ All encoding entries go into AVL tree for fast search by name.
 
 @<Glob...@>=
@@ -363,8 +477,7 @@ void mp_font_encodings (MP mp, int lastfnum, int encodings_only) ;
   enc_entry *e;
   fm_entry *fm_cur;
   for (f=null_font+1;f<=lastfnum;f++) {
-    if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp,f)) { 
-      fm_cur = mp->ps->mp_font_map[f];
+    if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp,f,&fm_cur)) { 
       if (fm_cur != NULL && 
 	  fm_cur->ps_name != NULL &&
 	  is_reencoded (fm_cur)) {
@@ -379,8 +492,7 @@ void mp_font_encodings (MP mp, int lastfnum, int encodings_only) {
   enc_entry *e;
   fm_entry *fm;
   for (f=null_font+1;f<=lastfnum;f++) {
-    if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp,f)) { 
-      fm = mp->ps->mp_font_map[f];
+    if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp,f, &fm)) { 
       if (fm != NULL && (fm->ps_name != NULL)) {
 	if (is_reencoded (fm)) {
 	  if (encodings_only || (!is_subsetted (fm))) {
@@ -503,11 +615,6 @@ static void delete_ff_entry (ff_entry * ff) {
     free (ff);
 }
 
-static fm_entry *dummy_fm_entry () {
-    static const fm_entry const_fm_entry;
-    return (fm_entry *) & const_fm_entry;
-}
-
 char *mk_base_tfm (MP mp, char *tfmname, int *i) {
     static char buf[SMALL_BUF_SIZE];
     char *p = tfmname, *r = strend (p) - 1, *q = r;
@@ -523,14 +630,16 @@ char *mk_base_tfm (MP mp, char *tfmname, int *i) {
 }
 
 @ @<Exported function headers@>=
-boolean mp_has_fm_entry (MP mp,font_number f);
+boolean mp_has_fm_entry (MP mp,font_number f, fm_entry **fm);
 
 @ @c
-boolean mp_has_fm_entry (MP mp,font_number f) {
-    
-    if (mp->ps->mp_font_map[f] == NULL)
-        mp->ps->mp_font_map[f] = mp_fm_lookup (mp, f);
-    return mp->ps->mp_font_map[f] != (fm_entry *) dummy_fm_entry ();
+boolean mp_has_fm_entry (MP mp,font_number f, fm_entry **fm) {
+    fm_entry *res = NULL;
+    res = mp_fm_lookup (mp, f);
+    if (fm != NULL) {
+       *fm =res;
+    }
+    return (res != NULL);
 }
 
 @ @<Glob...@>=
@@ -1090,7 +1199,7 @@ fm_entry * mp_fm_lookup (MP mp, font_number f) {
     }
     tfm = mk_base_tfm (mp, mp->font_name[f], &e);
     if (tfm == NULL)            /* not an expanded font, nothing to do */
-        return (fm_entry *) dummy_fm_entry ();
+        return NULL;
 
     tmp.tfm_name = tfm;
     fm = (fm_entry *) avl_find (mp->ps->tfm_tree, &tmp);
@@ -1102,7 +1211,7 @@ fm_entry * mp_fm_lookup (MP mp, font_number f) {
             snprintf(s,128,
                 "font %s cannot be expanded (not an included Type1 font)", tfm);
             mp_warn(mp,s);
-            return (fm_entry *) dummy_fm_entry ();
+            return NULL;
         }
         exfm = mk_ex_fm (mp, f, fm, e);     /* copies all fields from fm except tfm name */
         init_fm (exfm, f);
@@ -1110,7 +1219,7 @@ fm_entry * mp_fm_lookup (MP mp, font_number f) {
         assert (ai == 0);
         return (fm_entry *) exfm;
     }
-    return (fm_entry *) dummy_fm_entry ();
+    return NULL;
 }
 
 @  Early check whether a font file exists. Used e. g. for replacing fonts
@@ -1188,8 +1297,6 @@ boolean used_tfm (MP mp, fm_entry * p) {
         char *s = p->tfm_name;
         if ((f = mp_tfm_lookup (mp, s, 0)) != null_font ) {
             mp->ps->loaded_tfm_found = p;
-            if (mp->ps->mp_font_map[f] == NULL)
-                mp->ps->mp_font_map[f] = (fm_entry *) p;
             if (p->tfm_num == null_font)
                 p->tfm_num = f;
             assert (p->tfm_num == f);
@@ -1363,6 +1470,7 @@ char *job_id_string;
 
 @ @<Set initial...@>=
 mp->ps->char_array = NULL;
+mp->ps->job_id_string = NULL;
 
 @ 
 @d SMALL_ARRAY_SIZE    256
@@ -3112,8 +3220,7 @@ boolean mp_font_is_subsetted (MP mp, int f);
 @ @c
 boolean mp_font_is_reencoded (MP mp, int f) {
   fm_entry *fm;
-  if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp, f)) { 
-    fm = mp->ps->mp_font_map[f];
+  if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp, f, &fm)) { 
     if (fm != NULL 
 	&& (fm->ps_name != NULL)
 	&& is_reencoded (fm))
@@ -3123,8 +3230,7 @@ boolean mp_font_is_reencoded (MP mp, int f) {
 }
 boolean mp_font_is_included (MP mp, int f) {
   fm_entry *fm;
-  if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp, f)) { 
-    fm = mp->ps->mp_font_map[f];
+  if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp, f, &fm)) { 
     if (fm != NULL 
 	&& (fm->ps_name != NULL && fm->ff_name != NULL) 
 	&& is_included (fm))
@@ -3134,8 +3240,7 @@ boolean mp_font_is_included (MP mp, int f) {
 }
 boolean mp_font_is_subsetted (MP mp, int f) {
   fm_entry *fm;
-  if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp, f)) { 
-    fm = mp->ps->mp_font_map[f];
+  if (mp_has_font_size(mp,f) && mp_has_fm_entry (mp, f,&fm)) { 
     if (fm != NULL 
   	  && (fm->ps_name != NULL && fm->ff_name != NULL) 
 	  && is_included (fm) && is_subsetted (fm))
@@ -3153,8 +3258,7 @@ char * mp_fm_font_subset_name (MP mp, int f);
 @c char * mp_fm_encoding_name (MP mp, int f) {
   enc_entry *e;
   fm_entry *fm;
-  if (mp_has_fm_entry (mp, f)) { 
-    fm = mp->ps->mp_font_map[f];
+  if (mp_has_fm_entry (mp, f, &fm)) { 
     if (fm != NULL && (fm->ps_name != NULL)) {
       if (is_reencoded (fm)) {
    	e = fm->encoding;
@@ -3172,8 +3276,7 @@ char * mp_fm_font_subset_name (MP mp, int f);
 }
 char * mp_fm_font_name (MP mp, int f) {
   fm_entry *fm;
-  if (mp_has_fm_entry (mp, f)) { 
-    fm = mp->ps->mp_font_map[f];
+  if (mp_has_fm_entry (mp, f,&fm)) { 
     if (fm != NULL && (fm->ps_name != NULL)) {
       if (mp_font_is_included(mp, f) && !mp->font_ps_name_fixed[f]) {
 	/* find the real fontname, and update ps_name and subset_tag if needed */
@@ -3196,8 +3299,7 @@ char * mp_fm_font_name (MP mp, int f) {
 
 char * mp_fm_font_subset_name (MP mp, int f) {
   fm_entry *fm;
-  if (mp_has_fm_entry (mp, f)) { 
-    fm = mp->ps->mp_font_map[f];
+  if (mp_has_fm_entry (mp, f, &fm)) { 
     if (fm != NULL && (fm->ps_name != NULL)) {
       if (is_subsetted(fm)) {
   	    char *s = xmalloc(strlen(fm->ps_name)+8);
@@ -3221,8 +3323,7 @@ integer mp_fm_font_extend (MP mp, int f);
 @ 
 @c integer mp_fm_font_slant (MP mp, int f) {
   fm_entry *fm;
-  if (mp_has_fm_entry (mp, f)) { 
-    fm = mp->ps->mp_font_map[f];
+  if (mp_has_fm_entry (mp, f, &fm)) { 
     if (fm != NULL && (fm->ps_name != NULL)) {
       return fm->slant;
     }
@@ -3231,8 +3332,7 @@ integer mp_fm_font_extend (MP mp, int f);
 }
 integer mp_fm_font_extend (MP mp, int f) {
   fm_entry *fm;
-  if (mp_has_fm_entry (mp, f)) { 
-    fm = mp->ps->mp_font_map[f];
+  if (mp_has_fm_entry (mp, f, &fm)) { 
     if (fm != NULL && (fm->ps_name != NULL)) {
       return fm->extend;
     }
@@ -3245,15 +3345,7 @@ boolean mp_do_ps_font (MP mp, font_number f);
 
 @ @c boolean mp_do_ps_font (MP mp, font_number f) {
   fm_entry *fm_cur;
-  if (mp->ps->mp_font_map[f] == NULL) {
-      print_err ("pdffontmap not initialized for font ");
-      mp_print(mp, mp->font_name[f]);
-      mp_error(mp);
-  }
-  if (mp_has_fm_entry (mp, f))
-    fm_cur = mp->ps->mp_font_map[f];
-  else
-    fm_cur = NULL;
+  (void)mp_has_fm_entry (mp, f, &fm_cur); /* for side effects */
   if (fm_cur == NULL)
     return 1;
   if (is_truetype(fm_cur) ||
@@ -3562,7 +3654,7 @@ do {
     if ( cur_fsize[f]!=null ) {
       if (prologues==3 ) {
         if ( ! mp_do_ps_font(mp,f) ) {
-	      if ( mp_has_fm_entry(mp,f) ) {
+	      if ( mp_has_fm_entry(mp,f, NULL) ) {
             print_err("Font embedding failed");
             mp_error(mp);
           }
@@ -3615,9 +3707,11 @@ void mp_print_improved_prologue (MP mp, int prologues, int procset,
 void mp_print_improved_prologue (MP mp, int prologues, int procset, 
                                  int groffmode, int null, pointer h) {
   quarterword next_size; /* the size index for fonts being listed */
-  pointer cur_fsize[font_max+1]; /* current positions in |font_sizes| */
+  pointer *cur_fsize; /* current positions in |font_sizes| */
   boolean done_fonts; /* have we finished listing the fonts in the header? */
   font_number f; /* a font number for loops */
+   
+  cur_fsize = xmalloc(sizeof(pointer)*(mp->font_max+1));
 
   mp_list_used_resources(mp, prologues, procset);
   mp_list_supplied_resources(mp, prologues, procset);
@@ -3650,7 +3744,7 @@ void mp_print_improved_prologue (MP mp, int prologues, int procset,
   mp_print_ln(mp);
   for (f=null_font+1;f<=mp->last_fnum;f++) {
     if ( mp_has_font_size(mp,f) ) {
-      if ( mp_has_fm_entry(mp,f) ) {
+      if ( mp_has_fm_entry(mp,f,NULL) ) {
         mp_write_font_definition(mp,f,(mp->internal[prologues]>>16));
         mp_ps_name_out(mp, mp->font_name[f],true);
         mp_ps_print_defined_name(mp,f,(mp->internal[prologues]>>16));
@@ -3669,6 +3763,7 @@ void mp_print_improved_prologue (MP mp, int prologues, int procset,
   mp_print_nl(mp, "%%EndSetup");
   mp_print_nl(mp, "%%Page: 1 1");
   mp_print_ln(mp);
+  xfree(cur_fsize);
 }
 
 @ @<Exported...@>=
@@ -3679,12 +3774,13 @@ font_number mp_print_font_comments (MP mp , int prologues, int null, pointer h);
 @c 
 font_number mp_print_font_comments (MP mp , int prologues, int null, pointer h) {
   quarterword next_size; /* the size index for fonts being listed */
-  pointer cur_fsize[font_max+1]; /* current positions in |font_sizes| */
+  pointer *cur_fsize; /* current positions in |font_sizes| */
   int ff; /* a loop counter */
   boolean done_fonts; /* have we finished listing the fonts in the header? */
   font_number f; /* a font number for loops */
   scaled ds; /* design size and scale factor for a text node */
   font_number ldf=0; /* the last \.{DocumentFont} listed (otherwise |null_font|) */
+  cur_fsize = xmalloc(sizeof(pointer)*(mp->font_max+1));
   if ( prologues>0 ) {
     @<Give a \.{DocumentFonts} comment listing all fonts with non-null
       |font_sizes| and eliminate duplicates@>;
@@ -3704,6 +3800,7 @@ font_number mp_print_font_comments (MP mp , int prologues, int null, pointer h) 
       }
     } while (! done_fonts);
   }
+  xfree(cur_fsize);
   return ldf;
 }
 
@@ -3752,7 +3849,11 @@ start scanning next time.
 @<Declarations@>=
 halfword mp_ps_marks_out (MP mp,font_number f, eight_bits c);
 
-@ @c
+@ 
+@d emergency_line_length 255
+  /* \ps\ output lines can be this long in unusual circumstances */
+
+@c
 halfword mp_ps_marks_out (MP mp,font_number f, eight_bits c) {
   eight_bits bc,ec; /* only encode characters between these bounds */
   integer lim; /* the maximum number of marks to encode before truncating */
@@ -3912,3 +4013,5 @@ void mp_print_prologue (MP mp, int prologues, int procset, int ldf) {
   }
   mp_print(mp, "%%EndProlog");
 }
+
+

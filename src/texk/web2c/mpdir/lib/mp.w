@@ -191,11 +191,12 @@ typedef struct MP_instance {
 @ Here are the functions that set up the \MP\ instance.
 
 @<Declarations@> =
+@<Declare |mp_reallocate_fonts|@>;
 MP mp_new (void) {
   MP mp;
-  int f;
   mp = xmalloc(sizeof(MP_instance));
-  @<Allocate variables@>
+  @<Allocate or initialize variables@>
+  mp_reallocate_fonts(mp,8);
   mp->term_in = stdin;
   mp->term_out = stdout;
   return mp;
@@ -214,7 +215,7 @@ boolean mp_initialize (MP mp) { /* this procedure gets things started properly *
   @<Check the ``constant'' values...@>;
   if ( mp->bad>0 ) {
     fprintf(stdout,"Ouch---my internal constants have been clobbered!\n"
-                   "---case %i",mp->bad);
+                   "---case %i",(int)mp->bad);
 @.Ouch...clobbered@>
     return false;
   }
@@ -321,8 +322,6 @@ in production versions of \MP.
 #define half_error_line 50 /* width of first lines of contexts in terminal
   error messages; should be between 30 and |error_line-15| */
 #define max_print_line 79 /* width of longest text lines output; should be at least 60 */
-#define emergency_line_length 255
-  /* \ps\ output lines can be this long in unusual circumstances */
 #define stack_size 300 /* maximum number of simultaneous input sources */
 #define max_strings 25000 /* maximum number of strings; must not exceed |max_halfword| */
 #define string_vacancies 9000 /* the minimum number of characters that should be
@@ -333,10 +332,7 @@ in production versions of \MP.
   error messages and help texts, and the names of all identifiers;
   must exceed |string_vacancies| by the total
   length of \MP's own strings, which is currently about 22000 */
-#define font_max 50 /* maximum font number for included text fonts */
-#define font_mem_size 10000 /* number of words for \.{TFM} information for text fonts */
 #define file_name_size 255 /* file names shouldn't be longer than this */
-#define ps_tab_name "psfonts.map"  /* locates font name translation table */
 #define path_size 30000 /* maximum number of knots between breakpoints of a path */
 #define bistack_size 1500 /* size of stack for bisection algorithms;
   should probably be left at this value */
@@ -383,7 +379,6 @@ or something similar. (We can't do that until |max_halfword| has been defined.)
 mp->bad=0;
 if ( (half_error_line<30)||(half_error_line>error_line-15) ) mp->bad=1;
 if ( max_print_line<60 ) mp->bad=2;
-if ( emergency_line_length<max_print_line ) mp->bad=3;
 if ( mem_min+1100>mem_top ) mp->bad=4;
 if ( hash_prime>hash_size ) mp->bad=5;
 
@@ -588,7 +583,7 @@ char *mp_find_file (char *fname, char *fmode, int ftype)  {
 @ This has to be done very early on, so it is best to put it in with
 the |mp_new| allocations
 
-@<Allocate variables@>=
+@<Allocate or initialize ...@>=
 mp->find_file = mp_find_file;
 
 @ Because |mp_find_file| is used so early, it has to be in the helpers
@@ -622,7 +617,7 @@ boolean print_found_names; /* configuration parameter */
 file names for input files instead of the requested ones. 
 It is off by default because it creates an extra filename lookup.
 
-@<Allocate variables@>=
+@<Allocate or initialize ...@>=
 mp->print_found_names = false;
 
 @ \MP's file-opening procedures return |false| if no file identified by
@@ -714,7 +709,7 @@ halfword first; /* the first unused position in |buffer| */
 halfword last; /* end of the line just input to |buffer| */
 halfword max_buf_stack; /* largest index used in |buffer| */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->buffer = xmalloc(sizeof(ASCII_code)*(buf_size+1));
 
 @ @<Dealloc variables@>=
@@ -981,7 +976,7 @@ str_number init_str_use; /* the initial number of strings in use */
 pool_pointer max_pool_ptr; /* the maximum so far of |pool_ptr| */
 str_number max_str_ptr; /* the maximum so far of |str_ptr| */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->str_pool = xmalloc (sizeof(ASCII_code)* (pool_size +1));
 mp->str_start = xmalloc (sizeof(pool_pointer) * (max_strings+1));
 mp->next_str = xmalloc (sizeof(str_number) * (max_strings+1));
@@ -1136,7 +1131,7 @@ put it in this category. Hence a single byte suffices to store each |str_ref|.
 @<Glob...@>=
 int *str_ref;
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->str_ref = xmalloc (sizeof(int) * (max_strings+1));
 
 @ @<Dealloc variables@>=
@@ -1569,7 +1564,7 @@ ASCII_code *trick_buf; /* circular buffer for pseudoprinting */
 integer trick_count; /* threshold for pseudoprinting, explained later */
 integer first_count; /* another variable for pseudoprinting */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 memset(mp->dig,0,23);
 mp->trick_buf = xmalloc(sizeof(ASCII_code)* (error_line+1));
 
@@ -1926,7 +1921,7 @@ enum {
 int interaction; /* current level of interaction */
 
 @ Set it here so it can be overwritten by the commandline
-@<Allocate variables@>=
+@<Allocate or initialize ...@>=
 mp->interaction=mp_unspecified_mode; 
 
 @ 
@@ -2120,7 +2115,7 @@ typedef void (*run_editor_command)(MP, char *, int);
 @ @<Glob...@>=
 run_editor_command run_editor;
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->run_editor = mp_run_editor;
 
 @ @<Exported function headers@>=
@@ -3624,7 +3619,7 @@ typedef scaled (*get_random_seed_command)(MP mp);
 @ @<Glob...@>=
 get_random_seed_command get_random_seed;
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->get_random_seed = mp_get_random_seed;
 
 @ @<Exported function headers@>=
@@ -3753,7 +3748,6 @@ if ( max_quarterword>max_halfword ) mp->bad=11;
 if ( (mem_min<0)||(mem_max>=max_halfword) ) mp->bad=12;
 if ( max_strings>max_halfword ) mp->bad=13;
 if ( buf_size>max_halfword ) mp->bad=14;
-if ( font_max>max_halfword ) mp->bad=15;
 
 @ The macros |qi| and |qo| are used for input to and output 
 from quarterwords. These are legacy macros.
@@ -3867,6 +3861,7 @@ pointer hi_mem_min; /* the smallest location of one-word memory in use */
 
 @ @<Declare helpers@>=
 void  xfree (void *x);
+void *xrealloc (void *p, size_t s) ;
 void *xmalloc (size_t s) ;
 char *xstrdup(const char *s);
 
@@ -3874,6 +3869,14 @@ char *xstrdup(const char *s);
 @c
 void xfree (void *x) {
   if (x!=NULL) free(x);
+}
+void  *xrealloc (void *p, size_t s) {
+  void *w = realloc (p,s);
+  if (w==NULL) {
+    fprintf(stderr,"Out of memory!\n");
+    exit(1);
+  }
+  return w;
 }
 void  *xmalloc (size_t s) {
   void *w = malloc (s);
@@ -3894,7 +3897,7 @@ char *xstrdup(const char *s) {
 
 
 @ 
-@<Allocate variables@>=
+@<Allocate or initialize ...@>=
 mp->mem = xmalloc (sizeof (memory_word) * (mem_max+1));
 
 @ @<Dealloc variables@>=
@@ -4254,7 +4257,7 @@ pointer was_mem_end; pointer was_lo_max; pointer was_hi_min;
   /* previous |mem_end|, |lo_mem_max|,and |hi_mem_min| */
 boolean panicking; /* do we want to check memory constantly? */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->free = xmalloc (sizeof (boolean) * (mem_max+1));
 mp->was_free = xmalloc (sizeof (boolean) * (mem_max+1));
 
@@ -4934,7 +4937,7 @@ int int_ptr;  /* the maximum internal quantity defined so far */
 int max_internal; /* current maximum number of internal quantities */
 boolean troff_mode; 
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->max_internal=2*max_given_internal;
 mp->internal = xmalloc (sizeof(scaled)* (mp->max_internal+1));
 mp->int_name = xmalloc (sizeof(char *)* (mp->max_internal+1));
@@ -5304,7 +5307,7 @@ since they are used in error recovery.
 two_halves *hash; /* the hash table */
 two_halves *eqtb; /* the equivalents */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->hash = xmalloc(sizeof(two_halves)*(hash_end+1));
 mp->eqtb = xmalloc(sizeof(two_halves)*(hash_end+1));
 
@@ -7278,7 +7281,7 @@ scaled *delta_y;
 scaled *delta; /* knot differences */
 angle  *psi; /* turning angles */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->delta_x = xmalloc (sizeof (scaled)*(path_size+1));
 mp->delta_y = xmalloc (sizeof (scaled)*(path_size+1));
 mp->delta = xmalloc (sizeof (scaled)*(path_size+1));
@@ -7388,7 +7391,7 @@ fraction *uu; /* values of $u_k$ */
 angle *vv; /* values of $v_k$ */
 fraction *ww; /* values of $w_k$ */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->theta = xmalloc (sizeof (angle)*(path_size+1));
 mp->uu = xmalloc (sizeof (fraction)*(path_size+1));
 mp->vv = xmalloc (sizeof (angle)*(path_size+1));
@@ -11407,7 +11410,7 @@ the quantities needed for bisection-intersection.
 integer *bisect_stack;
 unsigned int bisect_ptr;
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->bisect_stack = xmalloc(sizeof(integer)*(bistack_size+1));
 
 @ @<Dealloc variables@>=
@@ -12551,7 +12554,7 @@ integer input_ptr; /* first unused location of |input_stack| */
 integer max_in_stack; /* largest value of |input_ptr| when pushing */
 in_state_record cur_input; /* the ``top'' input state */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->input_stack = xmalloc(sizeof(in_state_record)*(stack_size+1));
 
 @ @<Dealloc variables@>=
@@ -12742,7 +12745,7 @@ pointer *param_stack;  /* token list pointers for parameters */
 integer param_ptr; /* first unused entry in |param_stack| */
 integer max_param_stack;  /* largest value of |param_ptr| */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->param_stack = xmalloc(sizeof(pointer)*(param_size+1));
 
 @ @<Dealloc variables@>=
@@ -15653,7 +15656,7 @@ and extensions related to mem files.
 char *MP_mem_default;
 char *mem_name; /* for commandline */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->MP_mem_default = xstrdup("plain.mem");
 mp->mem_name = NULL;
 @.plain@>
@@ -16130,7 +16133,7 @@ typedef boolean (*run_make_mpx_command)(MP mp, char *origname, char *mtxname);
 @ @<Glob...@>=
 run_make_mpx_command run_make_mpx;
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->run_make_mpx = mp_run_make_mpx;
 
 @ @<Exported function headers@>=
@@ -16184,7 +16187,7 @@ FILE ** wr_file; /* \&{write} files */
 char ** wr_fname; /* corresponding file name or 0 if file not open */
 write_index write_files; /* number of valid entries in the above arrays */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->max_read_files=8;
 mp->rd_file = xmalloc(sizeof(FILE *)*(mp->max_read_files+1));
 mp->rd_fname = xmalloc(sizeof(char *)*(mp->max_read_files+1));
@@ -23250,7 +23253,7 @@ short label_loc[257]; /* lig/kern starting addresses */
 eight_bits label_char[257]; /* characters for |label_loc| */
 short label_ptr; /* highest position occupied in |label_loc| */
 
-@ @<Allocate variables@>=
+@ @<Allocate or initialize ...@>=
 mp->header_last = 0; mp->header_size = 128; /* just for init */
 mp->header_byte = xmalloc(mp->header_size);
 mp->lig_kern = NULL; /* allocated when needed */
@@ -24136,7 +24139,13 @@ set to |max_str_ref|.
 @<Types...@>=
 typedef unsigned int font_number; /* 0..font_max */
 
-@ @<Glob...@>=
+@ The |font_info| array is indexed via a group directory arrays.
+For example, the |char_info| data for character~|c| in font~|f| will be
+in |font_info[char_base[f]+c].qqqq|.
+
+@<Glob...@>=
+font_number font_max; /* maximum font number for included text fonts */
+size_t      font_mem_size; /* number of words for \.{TFM} information for text fonts */
 memory_word *font_info; /* height, width, and depth data */
 char        **font_enc_name; /* encoding names, if any */
 boolean     *font_ps_name_fixed; /* are the postscript names fixed already?  */
@@ -24148,18 +24157,29 @@ char        **font_ps_name;  /* PostScript name for use when |internal[prologues
 font_number last_ps_fnum; /* last valid |font_ps_name| index */
 eight_bits  *font_bc;
 eight_bits  *font_ec;  /* first and last character code */
+int         *char_base;  /* base address for |char_info| */
+int         *width_base; /* index for zeroth character width */
+int         *height_base; /* index for zeroth character height */
+int         *depth_base; /* index for zeroth character depth */
+pointer     *font_sizes;
 
-@ @<Allocate variables@>=
-mp->font_info = xmalloc (sizeof(memory_word)*(font_mem_size+1));
-memset (mp->font_info,0,sizeof(memory_word)*(font_mem_size+1));
-mp->font_enc_name = xmalloc(sizeof(char *)*(font_max+1));
-mp->font_ps_name_fixed = xmalloc(sizeof(boolean)*(font_max+1));
-mp->font_dsize = xmalloc(sizeof(scaled)*(font_max+1));
-mp->font_name = xmalloc(sizeof(char *)*(font_max+1));
-mp->font_ps_name = xmalloc(sizeof(char *)*(font_max+1));
-mp->font_bc = xmalloc(sizeof(eight_bits)*(font_max+1));
-mp->font_ec = xmalloc(sizeof(eight_bits)*(font_max+1));
+@ @<Allocate or initialize ...@>=
+mp->font_mem_size = 10000; 
+mp->font_info = xmalloc (sizeof(memory_word)*(mp->font_mem_size+1));
+memset (mp->font_info,0,sizeof(memory_word)*(mp->font_mem_size+1));
+mp->font_enc_name = NULL;
+mp->font_ps_name_fixed = NULL;
+mp->font_dsize = NULL;
+mp->font_name = NULL;
+mp->font_ps_name = NULL;
+mp->font_bc = NULL;
+mp->font_ec = NULL;
 mp->last_fnum = null_font;
+mp->char_base = NULL;
+mp->width_base = NULL;
+mp->height_base = NULL;
+mp->depth_base = NULL;
+mp->font_sizes = NULL;
 
 @ @<Dealloc variables@>=
 xfree(mp->font_info);
@@ -24170,29 +24190,37 @@ xfree(mp->font_name);
 xfree(mp->font_ps_name);
 xfree(mp->font_bc);
 xfree(mp->font_ec);
-
-
-@ The |font_info| array is indexed via a group directory arrays.
-For example, the |char_info| data for character~|c| in font~|f| will be
-in |font_info[char_base[f]+c].qqqq|.
-
-@<Glob...@>=
-int *char_base;  /* base address for |char_info| */
-int *width_base; /* index for zeroth character width */
-int *height_base; /* index for zeroth character height */
-int *depth_base; /* index for zeroth character depth */
-
-@ @<Allocate variables@>=
-mp->char_base = xmalloc(sizeof(int)*(font_max+1));
-mp->width_base = xmalloc(sizeof(int)*(font_max+1));
-mp->height_base = xmalloc(sizeof(int)*(font_max+1));
-mp->depth_base = xmalloc(sizeof(int)*(font_max+1));
-
-@ @<Dealloc variables@>=
 xfree(mp->char_base);
 xfree(mp->width_base);
 xfree(mp->height_base);
 xfree(mp->depth_base);
+xfree(mp->font_sizes);
+
+@ 
+@d XREALLOC(a,b) a = xrealloc(a,b);
+@c 
+void mp_reallocate_fonts (MP mp, font_number l) {
+  font_number f;
+  XREALLOC(mp->font_enc_name,      sizeof(char *)*(l+1));
+  XREALLOC(mp->font_ps_name_fixed, sizeof(boolean)*(l+1));
+  XREALLOC(mp->font_dsize,         sizeof(scaled)*(l+1));
+  XREALLOC(mp->font_name,          sizeof(char *)*(l+1));
+  XREALLOC(mp->font_ps_name,       sizeof(char *)*(l+1));
+  XREALLOC(mp->font_bc,            sizeof(eight_bits)*(l+1));
+  XREALLOC(mp->font_ec,            sizeof(eight_bits)*(l+1));
+  XREALLOC(mp->char_base,          sizeof(int)*(l+1));
+  XREALLOC(mp->width_base,         sizeof(int)*(l+1));
+  XREALLOC(mp->height_base,        sizeof(int)*(l+1));
+  XREALLOC(mp->depth_base,         sizeof(int)*(l+1));
+  XREALLOC(mp->font_sizes,         sizeof(pointer)*(l+1));
+  for (f=mp->last_fnum;f<=l;f++) 
+    mp->font_sizes[f]=null;
+  mp->font_max = l;
+}
+
+@ @<Declare |mp_reallocate_fonts|@>=
+void mp_reallocate_fonts (MP mp, font_number l);
+
 
 @ A |null_font| containing no characters is useful for error recovery.  Its
 |font_name| entry starts out empty but is reset each time an erroneous font is
@@ -24247,7 +24275,7 @@ font_number mp_read_font_info (MP mp, char*fname) {
   boolean file_opened; /* has |tfm_infile| been opened? */
   font_number n; /* the number to return */
   halfword lf,tfm_lh,bc,ec,nw,nh,nd; /* subfile size parameters */
-  integer whd_size; /* words needed for heights, widths, and depths */
+  size_t whd_size; /* words needed for heights, widths, and depths */
   int i,ii; /* |font_info| indices */
   int jj; /* counts bytes to be ignored */
   scaled z; /* used to compute the design size */
@@ -24319,7 +24347,7 @@ tfget; read_two(nw);
 tfget; read_two(nh);
 tfget; read_two(nd);
 whd_size=(ec+1-bc)+nw+nh+nd;
-if ( lf<6+tfm_lh+whd_size ) goto BAD_TFM;
+if ( lf<(int)(6+tfm_lh+whd_size) ) goto BAD_TFM;
 tf_ignore(10)
 
 @ Offsets are added to |char_base[n]| and |width_base[n]| so that is not
@@ -24329,11 +24357,13 @@ values when |bc>0|, it may be necessary to reserve a few unused |font_info|
 elements.
 
 @<Use the size fields to allocate space in |font_info|@>=
-if ( mp->next_fmem<bc) mp->next_fmem=bc;
-  /* ensure nonnegative |char_base| */
-if (
-(mp->last_fnum==font_max)||(mp->next_fmem+whd_size>=font_mem_size) ) {
-  @<Explain that there isn't enough space and |goto done|@>;
+if ( mp->next_fmem<bc) mp->next_fmem=bc;  /* ensure nonnegative |char_base| */
+if (mp->last_fnum==mp->font_max)
+  mp_reallocate_fonts(mp,(mp->font_max+(mp->font_max>>2)));
+if (mp->next_fmem+whd_size>=mp->font_mem_size) {
+  size_t l = mp->font_mem_size+(mp->font_mem_size>>2);
+  mp->font_info = xrealloc (mp->font_info,sizeof(memory_word)*(l+1));
+  mp->font_mem_size = l;
 }
 incr(mp->last_fnum);
 n=mp->last_fnum;
@@ -24345,17 +24375,6 @@ mp->height_base[n]=mp->width_base[n]+nw;
 mp->depth_base[n]=mp->height_base[n]+nh;
 mp->next_fmem=mp->next_fmem+whd_size;
 
-@ @<Explain that there isn't enough space and |goto done|@>=
-{ 
-print_err("Font ");
-mp_print(mp, fname);
-mp_print(mp, " not usable: Not enough space");
-help3("This `infont' operation won't produce anything because I")
-  ("don't have enough room to store the character-size data for")
-  ("the font. You may have to ask a wizard to enlarge me.");
-mp_error(mp);
-goto DONE;
-}
 
 @ @<Read the \.{TFM} header@>=
 if ( tfm_lh<2 ) goto BAD_TFM;
@@ -24533,23 +24552,6 @@ void mp_do_mapline (MP mp) {
   mp_put_get_error(mp);
 }
 
-@ the C code needs to know how to get at the null font, how remove
-a string from memory, etc.
-
-@d is_valid_char(A) ((mp->font_bc[f] <= (A)) && ((A) <= mp->font_ec[f]) &&
-                      ichar_exists(char_info(f)((A))))
-
-@c 
-scaled mp_get_charwidth (MP mp,font_number f, eight_bits  c) {
-  if ( is_valid_char(c) )
-    return (char_width(f)(char_info(f)(c)));
-  else
-    return 0;
-}
-font_number mp_new_dummy_font (MP mp) {
-   return mp_read_font_info(mp, "dummy");
-}
-
 @
 @<Declare the \ps\ output procedures@>=
 void mp_ps_print_cmd (MP mp, char *l, char *s) {
@@ -24561,16 +24563,10 @@ void mp_print_cmd (MP mp,char *l, char *s) {
   else mp_print(mp, l);
 }
 
-@ The fontmap entries need a typedef
-
-@<Types...@>=
-typedef unsigned int nonnegative_integer; /* 0..017777777777*/ /* $0\L x<2^{31}$ */
-
 @ To print |scaled| value to PDF output we need some subroutines to ensure
 accurary.
 
 @d max_integer   0x7FFFFFFF /* $2^{31}-1$ */
-@d call_func(A)   { if ( (A) != 0 ) do_nothing }
 
 @<Glob...@>=
 scaled one_bp; /* scaled value corresponds to 1bp */
@@ -24587,9 +24583,12 @@ mp->ten_pow[0] = 1;
 for (i = 1;i<= 9; i++ ) {
   mp->ten_pow[i] = 10*mp->ten_pow[i - 1];
 }
-for (i = null_font;i<= font_max;i++ ) {
-  mp->font_enc_name[i] = NULL;
-  mp->font_ps_name_fixed[i] = false;
+{
+  font_number ii;
+  for (ii = null_font;ii<= mp->font_max;ii++ ) {
+    mp->font_enc_name[ii] = NULL;
+    mp->font_ps_name_fixed[ii] = false;
+  }
 }
 
 @ The following function divides |s| by |m|. |dd| is number of decimal digits.
@@ -24613,124 +24612,6 @@ for (i = null_font;i<= font_max;i++ ) {
   if ( 2*r >= m ) { incr(q); r = r - m; }
   mp->scaled_out = sign*(s - (r / mp->ten_pow[dd]));
   return (sign*q);
-}
-
-@ The file |ps_tab_file| gives a table of \TeX\ font names and corresponding
-PostScript names for fonts that do not have to be downloaded, i.e., fonts that
-can be used when |internal[prologues]>0|.  Each line consists of a \TeX\ name,
-one or more spaces, a PostScript name, and possibly a space and some other junk.
-This routine reads the table, updates |font_ps_name| entries starting after
-|last_ps_fnum|, and sets |last_ps_fnum:=last_fnum|.  If the file |ps_tab_file|
-is missing, we assume that the existing font names are OK and nothing needs to
-be done.
-
-@<Declare the \ps\ output procedures@>=
-void mp_read_psname_table (MP mp) ;
-
-@ @c void mp_read_psname_table (MP mp) {
-  font_number k; /* font for possible name match */
-  unsigned int lmax; /* upper limit on length of name to match */
-  unsigned int j; /* characters left to read before string gets too long */
-  char *s; /* possible font name to match */
-  text_char c=0; /* character being read from |ps_tab_file| */
-  if ( (mp->ps_tab_file = mp_open_file(mp, ps_tab_name, "r", mp_filetype_fontmap)) ) {
-    @<Set |lmax| to the maximum |font_name| length for fonts
-      |last_ps_fnum+1| through |last_fnum|@>;
-    while (! feof(mp->ps_tab_file) ) {
-      @<Read at most |lmax| characters from |ps_tab_file| into string |s|
-        but |goto common_ending| if there is trouble@>;
-      for (k=mp->last_ps_fnum+1;k<=mp->last_fnum;k++) {
-        if ( xstrcmp(s,mp->font_name[k])==0 ) {
-          @<|flush_string(s)|, read in |font_ps_name[k]|, and
-            |goto common_ending|@>;
-        }
-      }
-      xfree(s);
-    COMMON_ENDING:
-      c = fgetc(mp->ps_tab_file);
-	  if (c=='\r') {
-        c = fgetc(mp->ps_tab_file);
-        if (c!='\n') 
-          ungetc(c,mp->ps_tab_file);
-      }
-    }
-    mp->last_ps_fnum=mp->last_fnum;
-    a_close(mp->ps_tab_file);
-  }
-}
-
-@ @<Glob...@>=
-FILE * ps_tab_file; /* file for font name translation table */
-
-@ @<Set |lmax| to the maximum |font_name| length for fonts...@>=
-lmax=0;
-for (k=mp->last_ps_fnum+1;k<=mp->last_fnum;k++) {
-  if (strlen(mp->font_name[k])>lmax ) 
-    lmax=strlen(mp->font_name[k]);
-}
-
-@ If we encounter the end of line before we have started reading
-characters from |ps_tab_file|, we have found an entirely blank 
-line and we skip over it.  Otherwise, we abort if the line ends 
-prematurely.  If we encounter a comment character, we also skip 
-over the line, since recent versions of \.{dvips} allow comments
-in the font map file.
-
-TODO: this is probably not safe in the case of a really 
-broken font map file.
-
-@<Read at most |lmax| characters from |ps_tab_file| into string |s|...@>=
-s=xmalloc(lmax+1);
-j=0;
-while (1) { 
-  if (c == '\n' || c == '\r' ) {
-    if (j==0) {
-      xfree(s); s=NULL; goto COMMON_ENDING;
-    } else {
-      mp_fatal_error(mp, "The psfont map file is bad!");
-    }
-  }
-  c = fgetc(mp->ps_tab_file);
-  if (c=='%' || c=='*' || c==';' || c=='#' ) {
-    xfree(s); s=NULL; goto COMMON_ENDING;
-  }
-  if (c==' ' || c=='\t') break;
-  if (j<lmax) {
-   s[j++] = mp->xord[c];
-  } else { 
-    xfree(s); s=NULL; goto COMMON_ENDING;
-  }
-}
-s[j]=0
-
-@ PostScript font names should be at most 28 characters long but we allow 32
-just to be safe.
-
-@<|flush_string(s)|, read in |font_ps_name[k]|, and...@>=
-{ 
-  char *ps_name =NULL;
-  xfree(s);
-  do {  
-    if (c=='\n' || c == '\r') 
-      mp_fatal_error(mp, "The psfont map file is bad!");
-    c = fgetc(mp->ps_tab_file);
-  } while (c==' ' || c=='\t');
-  ps_name = xmalloc(33);
-  j=0;
-  do {  
-    if (j>31) {
-      mp_fatal_error(mp, "The psfont map file is bad!");
-    }
-    ps_name[j++] = mp->xord[c];
-    if (c=='\n' || c == '\r')
-      c=' ';  
-    else 
-      c = fgetc(mp->ps_tab_file);
-  } while (c != ' ' && c != '\t');
-  ps_name[j]= 0;
-  xfree(mp->font_ps_name[k]);
-  mp->font_ps_name[k]=ps_name;
-  goto COMMON_ENDING;
 }
 
 @* \[44] Shipping pictures out.
@@ -24835,7 +24716,7 @@ extreme cases so it may have to be shortened on some systems.
 @<Use |c| to compute the file extension |s|@>=
 { 
   s = xmalloc(7);
-  snprintf(s,7,".%i",c);
+  snprintf(s,7,".%i",(int)c);
 }
 
 @ The user won't want to see all the output file names so we only save the
@@ -25646,17 +25527,6 @@ position in the size list for its font.
 @d sc_factor(A) mp->mem[(A)+1].sc /* the scale factor stored in a font size node */
 @d font_size_size 2 /* size of a font size node */
 
-@<Glob...@>=
-pointer *font_sizes;
-
-@ @<Allocate variables@>=
-mp->font_sizes = xmalloc(sizeof(pointer)*(font_max+1));
-for (f=null_font;f<=font_max;f++) 
-  mp->font_sizes[f]=null;
-
-@ @<Dealloc variables@>=
-xfree(mp->font_sizes);
-
 @ @<Exported...@>=
 boolean mp_has_font_size(MP mp, font_number f );
 
@@ -25920,7 +25790,7 @@ for (f=null_font+1;f<=mp->last_fnum;f++) {
       if ( font_n(p)!=null_font ) {
         mp->font_sizes[font_n(p)] = diov;
         mp_mark_string_chars(mp, font_n(p),text_p(p));
-	    if ( mp_has_fm_entry(mp,font_n(p)) )
+	    if ( mp_has_fm_entry(mp,font_n(p),NULL) )
           mp->font_ps_name[font_n(p)] = mp_fm_font_name(mp,font_n(p));
       }
     }
@@ -25934,7 +25804,7 @@ for (f=null_font+1;f<=mp->last_fnum;f++) {
   while ( p!=null ) {
     if ( type(p)==text_code )
       if ( font_n(p)!=null_font )
-	    if ( mp_has_fm_entry(mp,font_n(p)) )
+	    if ( mp_has_fm_entry(mp,font_n(p),NULL) )
           if ( mp->font_enc_name[font_n(p)]==NULL )
             mp->font_enc_name[font_n(p)] = mp_fm_encoding_name(mp,font_n(p));
     p=link(p);
@@ -26130,8 +26000,8 @@ by which a user can send things to the \.{GF} file.
 @ @<Glob...@>=
 psout_data ps;
 
-@ @<Allocate variables@>=
-mp_backend_initialize(mp,font_max);
+@ @<Allocate or initialize ...@>=
+mp_backend_initialize(mp);
 
 @ @<Dealloc...@>=
 mp_backend_free(mp);
@@ -26475,9 +26345,9 @@ if ( (x!=69073)|| feof(mp->mem_file) ) goto OFF_BASE
   mp->mem_ident = xmalloc(256);
   snprintf(mp->mem_ident,256," (mem=%s %i.%i.%i)", 
            mp->job_name,
-           (mp_round_unscaled(mp, mp->internal[year]) % 100),
-           mp_round_unscaled(mp, mp->internal[month]),
-           mp_round_unscaled(mp, mp->internal[day]));
+           (int)(mp_round_unscaled(mp, mp->internal[year]) % 100),
+           (int)mp_round_unscaled(mp, mp->internal[month]),
+           (int)mp_round_unscaled(mp, mp->internal[day]));
   mp_pack_job_name(mp, mem_extension);
   while (! mp_w_open_out(mp, &mp->mem_file) )
     mp_prompt_file_name(mp, "mem file name", mem_extension);
@@ -26602,25 +26472,27 @@ if ( mp->log_opened ) {
   wlog_ln(" ");
   wlog_ln("Here is how much of MetaPost's memory you used:");
 @.Here is how much...@>
-  snprintf(s,128," %i string%s out of %i",mp->max_strs_used-mp->init_str_use,
+  snprintf(s,128," %i string%s out of %i",(int)mp->max_strs_used-mp->init_str_use,
           (mp->max_strs_used!=mp->init_str_use+1 ? "s" : ""),
-          (max_strings-1-mp->init_str_use));
+          (int)(max_strings-1-mp->init_str_use));
   wlog_ln(s);
   snprintf(s,128," %i string characters out of %i",
-           mp->max_pl_used-mp->init_pool_ptr,pool_size-mp->init_pool_ptr);
+           (int)mp->max_pl_used-mp->init_pool_ptr,
+           (int)pool_size-mp->init_pool_ptr);
   wlog_ln(s);
   snprintf(s,128," %i words of memory out of %i",
-           mp->lo_mem_max-mem_min+mp->mem_end-mp->hi_mem_min+2,
-           mp->mem_end+1-mem_min);
+           (int)mp->lo_mem_max-mem_min+mp->mem_end-mp->hi_mem_min+2,
+           (int)mp->mem_end+1-mem_min);
   wlog_ln(s);
-  snprintf(s,128," %i symbolic tokens out of %i", mp->st_count, hash_size);
+  snprintf(s,128," %i symbolic tokens out of %i", (int)mp->st_count, (int)hash_size);
   wlog_ln(s);
   snprintf(s,128," %ii, %in, %ip, %ib stack positions out of %ii, %in, %ip, %ib",
-           mp->max_in_stack,mp->int_ptr,mp->max_param_stack,mp->max_buf_stack+1,
-           stack_size,mp->max_internal,param_size,buf_size);
+           (int)mp->max_in_stack,(int)mp->int_ptr,
+           (int)mp->max_param_stack,(int)mp->max_buf_stack+1,
+           (int)stack_size,(int)mp->max_internal,(int)param_size,(int)buf_size);
   wlog_ln(s);
   snprintf(s,128," %i string compactions (moved %i characters, %i strings)",
-          mp->pact_count,mp->pact_chars,mp->pact_strs);
+          (int)mp->pact_count,(int)mp->pact_chars,(int)mp->pact_strs);
   wlog_ln(s);
 }
 
@@ -26749,7 +26621,8 @@ program below. (If |m=13|, there is an additional argument, |l|.)
 
 @<Last-minute...@>=
 void mp_debug_help (MP mp) { /* routine to display various things */
-  integer k,l,m,n;
+  integer k;
+  int l,m,n;
   while (1) { 
     wake_up_terminal;
     mp_print_nl(mp, "debug # (-1 to exit):"); update_terminal;
