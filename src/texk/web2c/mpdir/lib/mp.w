@@ -269,9 +269,6 @@ in production versions of \MP.
 @^system dependencies@>
 
 @<Constants...@>=
-#define mem_max 3000000 /* greatest index in \MP's internal |mem| array;
-  must be strictly less than |max_halfword|;
-  must be equal to |mem_top| in \.{INIMP}, otherwise |>=mem_top| */
 #define error_line 79 /* width of context lines on terminal error messages */
 #define half_error_line 50 /* width of first lines of contexts in terminal
   error messages; should be between 30 and |error_line-15| */
@@ -296,18 +293,14 @@ it is necessary to rerun the initialization program \.{INIMP}
 to generate new tables for the production \MP\ program.
 One can't simply make helter-skelter changes to the following constants,
 since certain rather complex initialization
-numbers are computed from them. They are defined here using
-\.{WEB} macros, instead of being put into \PASCAL's |const| list, in order to
-emphasize this distinction.
-
-@d mem_min 0 /* smallest index in the |mem| array, must not be less
-  than 0 */
-@d mem_top 3000000 /* largest index in the |mem| array dumped by \.{INIMP};
-  must be substantially larger than |mem_min|
-  and not greater than |mem_max| */
-@^system dependencies@>
+numbers are computed from them. 
 
 @ @<Glob...@>=
+int mem_max; /* greatest index in \MP's internal |mem| array;
+  must be strictly less than |max_halfword|;
+  must be equal to |mem_top| in \.{INIMP}, otherwise |>=mem_top| */
+int mem_top; /* largest index in the |mem| array dumped by \.{INIMP};
+  must not be greater than |mem_max| */
 int hash_size; /* maximum number of symbolic tokens,
   must be less than |max_halfword-3*param_size| */
 int hash_prime; /* a prime number equal to about 85\pct! of |hash_size| */
@@ -317,6 +310,8 @@ int max_in_open; /* maximum number of input files and error insertions that
   can be going on simultaneously */
 
 @ @<Allocate or ...@>=
+mp->mem_max=5000;
+mp->mem_top=5000;
 mp->hash_size=9500;
 mp->hash_prime=7919;
 mp->param_size=150; 
@@ -338,7 +333,7 @@ or something similar. (We can't do that until |max_halfword| has been defined.)
 mp->bad=0;
 if ( (half_error_line<30)||(half_error_line>error_line-15) ) mp->bad=1;
 if ( max_print_line<60 ) mp->bad=2;
-if ( mem_min+1100>mem_top ) mp->bad=4;
+if ( mp->mem_top<=1100 ) mp->bad=4;
 if (mp->hash_prime>mp->hash_size ) mp->bad=5;
 
 @ Labels are given symbolic names by the following definitions, so that
@@ -684,7 +679,7 @@ void mp_reallocate_buffer(MP mp, size_t l) {
     mp_confusion(mp,"buffer size"); /* can't happen (I hope) */
   }
   buffer = xmalloc(sizeof(ASCII_code)*(l+1));
-  memcpy(buffer,mp->buffer,mp->buf_size+1);
+  memcpy(buffer,mp->buffer,(mp->buf_size+1));
   xfree(mp->buffer);
   mp->buffer = buffer ;
   mp->buf_size = l;
@@ -3702,12 +3697,15 @@ assumptions about the relative positions of the fields within a word.
 must satisfy (or rather, the inequalities that they mustn't satisfy):
 
 @<Check the ``constant''...@>=
-if ( mem_max!=mem_top ) mp->bad=8;
-if ( mem_max<mem_top ) mp->bad=8;
+if (mp->ini_version) {
+  if ( mp->mem_max!=mp->mem_top ) mp->bad=8;
+} else {
+  if ( mp->mem_max<mp->mem_top ) mp->bad=8;
+}
 if ( max_quarterword<255 ) mp->bad=9;
 if ( max_halfword<65535 ) mp->bad=10;
 if ( max_quarterword>max_halfword ) mp->bad=11;
-if ( (mem_min<0)||(mem_max>=max_halfword) ) mp->bad=12;
+if ( mp->mem_max>=max_halfword ) mp->bad=12;
 if ( max_strings>max_halfword ) mp->bad=13;
 
 @ The macros |qi| and |qo| are used for input to and output 
@@ -3787,7 +3785,7 @@ also be a special flag that lies outside the bounds of |mem|, so we
 allow pointers to assume any |halfword| value. The minimum memory
 index represents a null pointer.
 
-@d null mem_min /* the null pointer */
+@d null 0 /* the null pointer */
 
 @<Types...@>=
 typedef halfword pointer; /* a flag or a location in |mem| or |eqtb| */
@@ -3804,7 +3802,7 @@ relevant size when a node is freed. Locations greater than or equal to
 |hi_mem_min| are used for storing one-word records; a conventional
 \.{AVAIL} stack is used for allocation in this region.
 
-Locations of |mem| between |mem_min| and |mem_top| may be dumped as part
+Locations of |mem| between |0| and |mem_top| may be dumped as part
 of preloaded format files, by the \.{INIMP} preprocessor.
 @.INIMP@>
 Production versions of \MP\ may extend the memory at the top end in order to
@@ -3812,7 +3810,7 @@ provide more space; these locations, between |mem_top| and |mem_max|,
 are always used for single-word nodes.
 
 The key pointers that govern |mem| allocation have a prescribed order:
-$$\hbox{|null=mem_min<lo_mem_max<hi_mem_min<mem_top<=mem_end<=mem_max|.}$$
+$$\hbox{|null=0<lo_mem_max<hi_mem_min<mem_top<=mem_end<=mem_max|.}$$
 
 @<Glob...@>=
 memory_word *mem; /* the big dynamic storage area */
@@ -3862,7 +3860,7 @@ char *xstrdup(const char *s) {
 
 @ 
 @<Allocate or initialize ...@>=
-mp->mem = xmalloc (sizeof (memory_word) * (mem_max+1));
+mp->mem = xmalloc (sizeof (memory_word) * (mp->mem_max+1));
 
 @ @<Dealloc variables@>=
 xfree(mp->mem);
@@ -3911,13 +3909,13 @@ pointer mp_get_avail (MP mp) { /* single-word node allocation */
   p=mp->avail; /* get top location in the |avail| stack */
   if ( p!=null ) {
     mp->avail=link(mp->avail); /* and pop it off */
-  } else if ( mp->mem_end<mem_max ) { /* or go into virgin territory */
+  } else if ( mp->mem_end<mp->mem_max ) { /* or go into virgin territory */
     incr(mp->mem_end); p=mp->mem_end;
   } else { 
     decr(mp->hi_mem_min); p=mp->hi_mem_min;
     if ( mp->hi_mem_min<=mp->lo_mem_max ) { 
       mp_runaway(mp); /* if memory is exhausted, display possible runaway text */
-      mp_overflow(mp, "main memory size",mem_max+1-mem_min);
+      mp_overflow(mp, "main memory size",mp->mem_max+1);
       /* quit; all one-word nodes are busy */
 @:MetaPost capacity exceeded main memory size}{\quad main memory size@>
     }
@@ -3997,11 +3995,11 @@ pointer mp_get_node (MP mp,integer s) { /* variable-size node allocation */
     return max_halfword;
   };
   if ( mp->lo_mem_max+2<mp->hi_mem_min ) {
-    if ( mp->lo_mem_max+2<=mem_min+max_halfword ) {
+    if ( mp->lo_mem_max+2<=max_halfword ) {
       @<Grow more variable-size memory and |goto restart|@>;
     }
   }
-  mp_overflow(mp, "main memory size",mem_max+1-mem_min);
+  mp_overflow(mp, "main memory size",mp->mem_max+1);
   /* sorry, nothing satisfactory is left */
 @:MetaPost capacity exceeded main memory size}{\quad main memory size@>
 FOUND: 
@@ -4025,7 +4023,7 @@ implemented on ``virtual memory'' systems.
     t=mp->lo_mem_max+1+(mp->hi_mem_min-mp->lo_mem_max) / 2; 
     /* |lo_mem_max+2<=t<hi_mem_min| */
   }
-  if ( t>mem_min+max_halfword ) t=mem_min+max_halfword;
+  if ( t>max_halfword ) t=max_halfword;
   p=llink(mp->rover); q=mp->lo_mem_max; rlink(p)=q; llink(mp->rover)=q;
   rlink(q)=mp->rover; llink(q)=p; link(q)=empty_flag; node_size(q)=t-mp->lo_mem_max;
   mp->lo_mem_max=t; link(mp->lo_mem_max)=null; info(mp->lo_mem_max)=null;
@@ -4126,14 +4124,14 @@ if ( p<mp->rover ) {
 @* \[11] Memory layout.
 Some areas of |mem| are dedicated to fixed usage, since static allocation is
 more efficient than dynamic allocation when we can get away with it. For
-example, locations |mem_min| to |mem_min+1| are always used to store a
+example, locations |0| to |1| are always used to store a
 two-word dummy token whose second word is zero.
 The following macro definitions accomplish the static allocation by giving
 symbolic names to the fixed positions. Static variable-size nodes appear
-in locations |mem_min| through |lo_mem_stat_max|, and static single-word nodes
+in locations |0| through |lo_mem_stat_max|, and static single-word nodes
 appear in locations |hi_mem_stat_min| through |mem_top|, inclusive.
 
-@d null_dash (mem_min+2) /* the first two words are reserved for a null value */
+@d null_dash (2) /* the first two words are reserved for a null value */
 @d dep_head (null_dash+3) /* we will define |dash_node_size=3| */
 @d zero_val (dep_head+2) /* two words for a permanently zero value */
 @d temp_val (zero_val+2) /* two words for a temporary value node */
@@ -4145,11 +4143,11 @@ appear in locations |hi_mem_stat_min| through |mem_top|, inclusive.
 @d lo_mem_stat_max (bad_vardef+1)  /* largest statically
   allocated word in the variable-size |mem| */
 @#
-@d sentinel mem_top /* end of sorted lists */
-@d temp_head (mem_top-1) /* head of a temporary list of some kind */
-@d hold_head (mem_top-2) /* head of a temporary list of another kind */
-@d spec_head (mem_top-3) /* head of a list of unprocessed \&{special} items */
-@d hi_mem_stat_min (mem_top-3) /* smallest statically allocated word in
+@d sentinel mp->mem_top /* end of sorted lists */
+@d temp_head (mp->mem_top-1) /* head of a temporary list of some kind */
+@d hold_head (mp->mem_top-2) /* head of a temporary list of another kind */
+@d spec_head (mp->mem_top-3) /* head of a list of unprocessed \&{special} items */
+@d hi_mem_stat_min (mp->mem_top-3) /* smallest statically allocated word in
   the one-word |mem| */
 
 @ The following code gets the dynamic part of |mem| off to a good start,
@@ -4162,13 +4160,13 @@ link(mp->rover)=empty_flag;
 node_size(mp->rover)=1000; /* which is a 1000-word available node */
 llink(mp->rover)=mp->rover; rlink(mp->rover)=mp->rover;
 mp->lo_mem_max=mp->rover+1000; link(mp->lo_mem_max)=null; info(mp->lo_mem_max)=null;
-for (k=hi_mem_stat_min;k<=mem_top;k++) {
+for (k=hi_mem_stat_min;k<=mp->mem_top;k++) {
   mp->mem[k]=mp->mem[mp->lo_mem_max]; /* clear list heads */
 }
-mp->avail=null; mp->mem_end=mem_top;
+mp->avail=null; mp->mem_end=mp->mem_top;
 mp->hi_mem_min=hi_mem_stat_min; /* initialize the one-word memory */
-mp->var_used=lo_mem_stat_max+1-mem_min; mp->dyn_used=mem_top+1-(hi_mem_stat_min);
-  /* initialize statistics */
+mp->var_used=lo_mem_stat_max+1; 
+mp->dyn_used=mp->mem_top+1-(hi_mem_stat_min);  /* initialize statistics */
 @<Initialize a pen at |test_pen| so that it fits in nine words@>;
 
 @ The procedure |flush_list(p)| frees an entire linked list of one-word
@@ -4214,25 +4212,43 @@ been included. (You may want to decrease the size of |mem| while you
 @^debugging@>
 are debugging.)
 
+Because |boolean|s are typedef-d as ints, it is better to use
+unsigned chars here.
+
 @<Glob...@>=
-boolean *free; /* free cells */
-boolean *was_free; /* previously free cells */
+unsigned char *free; /* free cells */
+unsigned char *was_free; /* previously free cells */
 pointer was_mem_end; pointer was_lo_max; pointer was_hi_min;
   /* previous |mem_end|, |lo_mem_max|,and |hi_mem_min| */
 boolean panicking; /* do we want to check memory constantly? */
 
 @ @<Allocate or initialize ...@>=
-mp->free = xmalloc (sizeof (boolean) * (mem_max+1));
-mp->was_free = xmalloc (sizeof (boolean) * (mem_max+1));
+mp->free = xmalloc (sizeof (unsigned char) * (mp->mem_max+1));
+mp->was_free = xmalloc (sizeof (unsigned char) * (mp->mem_max+1));
 
 @ @<Dealloc variables@>=
 xfree(mp->free);
 xfree(mp->was_free);
 
 @ @<Set initial...@>=
-mp->was_mem_end=mem_min; /* indicate that everything was previously free */
-mp->was_lo_max=mem_min; mp->was_hi_min=mem_max;
+mp->was_mem_end=0; /* indicate that everything was previously free */
+mp->was_lo_max=0; mp->was_hi_min=mp->mem_max;
 mp->panicking=false;
+
+@ @<Exported ...@>=
+void mp_reallocate_memory(MP mp, int l) ;
+
+@ @c
+void mp_reallocate_memory(MP mp, int l) {
+   XREALLOC(mp->free,     sizeof (unsigned char) * (l+1));
+   XREALLOC(mp->was_free, sizeof (unsigned char) * (l+1));
+   XREALLOC(mp->mem,      sizeof (memory_word)   * (l+1));
+   mp->mem_max = l;
+   if (mp->ini_version) 
+     mp->mem_top = l;
+}
+
+
 
 @ Procedure |check_mem| makes sure that the available space lists of
 |mem| are well formed, and it optionally prints out all locations
@@ -4242,7 +4258,7 @@ that are reserved now but were free the last time this procedure was called.
 void mp_check_mem (MP mp,boolean print_locs ) {
   pointer p,q,r; /* current locations of interest in |mem| */
   boolean clobbered; /* is something amiss? */
-  for (p=mem_min;p<=mp->lo_mem_max;p++) {
+  for (p=0;p<=mp->lo_mem_max;p++) {
     mp->free[p]=false; /* you can probably do this faster */
   }
   for (p=mp->hi_mem_min;p<= mp->mem_end;p++) {
@@ -4255,7 +4271,7 @@ void mp_check_mem (MP mp,boolean print_locs ) {
   if ( print_locs ) {
     @<Print newly busy locations@>;
   }
-  for (p=mem_min;p<=mp->lo_mem_max;p++) {
+  for (p=0;p<=mp->lo_mem_max;p++) {
     mp->was_free[p]=mp->free[p];
   }
   for (p=mp->hi_mem_min;p<=mp->mem_end;p++) {
@@ -4283,8 +4299,8 @@ while ( p!=null ) {
 @ @<Check variable-size...@>=
 p=mp->rover; q=null; clobbered=false;
 do {  
-  if ( (p>=mp->lo_mem_max)||(p<mem_min) ) clobbered=true;
-  else if ( (rlink(p)>=mp->lo_mem_max)||(rlink(p)<mem_min) ) clobbered=true;
+  if ( (p>=mp->lo_mem_max)||(p<0) ) clobbered=true;
+  else if ( (rlink(p)>=mp->lo_mem_max)||(rlink(p)<0) ) clobbered=true;
   else if (  !(is_empty(p))||(node_size(p)<2)||
    (p+node_size(p)>mp->lo_mem_max)|| (llink(rlink(p))!=p) ) clobbered=true;
   if ( clobbered ) { 
@@ -4305,7 +4321,7 @@ do {
 
 
 @ @<Check flags...@>=
-p=mem_min;
+p=0;
 while ( p<=mp->lo_mem_max ) { /* node |p| should not be empty */
   if ( is_empty(p) ) {
     mp_print_nl(mp, "Bad flag at "); mp_print_int(mp, p);
@@ -4320,7 +4336,7 @@ while ( p<=mp->lo_mem_max ) { /* node |p| should not be empty */
   @<Do intialization required before printing new busy locations@>;
   mp_print_nl(mp, "New busy locs:");
 @.New busy locs@>
-  for (p=mem_min;p<= mp->lo_mem_max;p++ ) {
+  for (p=0;p<= mp->lo_mem_max;p++ ) {
     if ( ! mp->free[p] && ((p>mp->was_lo_max) || mp->was_free[p]) ) {
       @<Indicate that |p| is a new busy location@>;
     }
@@ -4351,7 +4367,7 @@ blocks compactly.  During this operation |q| is the last new busy location and
 }
 
 @ @<Do intialization required before printing new busy locations@>=
-q=mem_max; r=mem_max
+q=mp->mem_max; r=mp->mem_max
 
 @ @<Finish printing new busy locations@>=
 if ( q>r ) { 
@@ -4370,7 +4386,7 @@ drops are tolerable.
 @c
 void mp_search_mem (MP mp, pointer p) { /* look for pointers to |p| */
   integer q; /* current position being searched */
-  for (q=mem_min;q<=mp->lo_mem_max;q++) { 
+  for (q=0;q<=mp->lo_mem_max;q++) { 
     if ( link(q)==p ){ 
       mp_print_nl(mp, "LINK("); mp_print_int(mp, q); mp_print_char(mp, ')');
     }
@@ -5702,7 +5718,7 @@ void mp_show_token_list (MP mp, integer p, integer q, integer l,
 
 @ @<Display token |p| and set |c| to its class...@>=
 c=letter_class; /* the default */
-if ( (p<mem_min)||(p>mp->mem_end) ) { 
+if ( (p<0)||(p>mp->mem_end) ) { 
   mp_print(mp, " CLOBBERED"); return;
 @.CLOBBERED@>
 }
@@ -14511,7 +14527,7 @@ is less than |loop_text|.
 { mp_begin_file_reading(mp); name=is_scantok;
   k=mp->first+length(mp->cur_exp);
   if ( k>=mp->max_buf_stack ) {
-    if ( k>=mp->buf_size ) {
+    while ( k>=mp->buf_size ) {
       mp_reallocate_buffer(mp,(mp->buf_size+(mp->buf_size>>2)));
     }
     mp->max_buf_stack=k+1;
@@ -24173,7 +24189,7 @@ mp->char_base = NULL;
 mp->width_base = NULL;
 mp->height_base = NULL;
 mp->depth_base = NULL;
-mp->font_sizes = NULL;
+mp->font_sizes = null;
 
 @ @<Dealloc variables@>=
 xfree(mp->font_info);
@@ -26122,8 +26138,7 @@ read an integer value |x| that is supposed to be in the range |a<=x<=b|.
 dump/undump macros.
 
 @<Dump constants for consistency check@>=
-dump_int(mem_min);
-dump_int(mem_top);
+dump_int(mp->mem_top);
 dump_int(mp->hash_size);
 dump_int(mp->hash_prime)
 dump_int(mp->param_size);
@@ -26136,10 +26151,8 @@ the same strings. (And it is, of course, a good thing that they do.)
 @^string pool@>
 
 @<Undump constants for consistency check@>=
-undump_int(x);
-if ( x!=mem_min ) goto OFF_BASE;
-undump_int(x);
-if ( x!=mem_top ) goto OFF_BASE;
+undump_int(x); 
+mp->mem_top = x;
 undump_int(x);
 if ( x!=mp->hash_size ) goto OFF_BASE;
 undump_int(x);
@@ -26231,7 +26244,7 @@ information even when it has not been gathering statistics.
 @<Dump the dynamic memory@>=
 mp_sort_avail(mp); mp->var_used=0;
 dump_int(mp->lo_mem_max); dump_int(mp->rover);
-p=mem_min; q=mp->rover; x=0;
+p=0; q=mp->rover; x=0;
 do {  
   for (k=p;k<= q+1;k++) 
     dump_wd(mp->mem[k]);
@@ -26259,7 +26272,7 @@ mp_print_int(mp, mp->var_used); mp_print_char(mp, '&'); mp_print_int(mp, mp->dyn
 @ @<Undump the dynamic memory@>=
 undump(lo_mem_stat_max+1000,hi_mem_stat_min-1,mp->lo_mem_max);
 undump(lo_mem_stat_max+1,mp->lo_mem_max,mp->rover);
-p=mem_min; q=mp->rover;
+p=0; q=mp->rover;
 do {  
   for (k=p;k<= q+1; k++) 
     undump_wd(mp->mem[k]);
@@ -26271,7 +26284,7 @@ do {
 for (k=p;k<=mp->lo_mem_max;k++ ) 
   undump_wd(mp->mem[k]);
 undump(mp->lo_mem_max+1,hi_mem_stat_min,mp->hi_mem_min);
-undump(null,mem_top,mp->avail); mp->mem_end=mem_top;
+undump(null,mp->mem_top,mp->avail); mp->mem_end=mp->mem_top;
 for (k=mp->hi_mem_min;k<= mp->mem_end;k++) 
   undump_wd(mp->mem[k]);
 undump_int(mp->var_used); undump_int(mp->dyn_used)
@@ -26486,8 +26499,8 @@ if ( mp->log_opened ) {
            (int)pool_size-mp->init_pool_ptr);
   wlog_ln(s);
   snprintf(s,128," %i words of memory out of %i",
-           (int)mp->lo_mem_max-mem_min+mp->mem_end-mp->hi_mem_min+2,
-           (int)mp->mem_end+1-mem_min);
+           (int)mp->lo_mem_max+mp->mem_end-mp->hi_mem_min+2,
+           (int)mp->mem_end+1);
   wlog_ln(s);
   snprintf(s,128," %i symbolic tokens out of %i", (int)mp->st_count, (int)mp->hash_size);
   wlog_ln(s);

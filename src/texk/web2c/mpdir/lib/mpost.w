@@ -347,6 +347,7 @@ int main (int argc, char **argv) { /* |start_here| */
   mp->ini_version = false;
   mp->print_found_names = true;
   @<Read and set commmand line options@>;
+  mp_reallocate_memory(mp,50000); 
   kpse_set_program_name(argv[0],user_progname);
   @<Copy the rest of the command line@>;
   @<Register the callback routines@>;
