@@ -1913,7 +1913,7 @@ int interaction; /* current level of interaction */
 
 @<Allocate or initialize ...@>=
 mp->interaction=opt.interaction;
-if (mp->interaction>mp_error_stop_mode) 
+if (mp->interaction==mp_unspecified_mode || mp->interaction>mp_error_stop_mode) 
   mp->interaction=mp_error_stop_mode;
 if (mp->interaction<mp_unspecified_mode) 
   mp->interaction=mp_batch_mode;
@@ -3216,7 +3216,7 @@ a bit more calculation, which the author claims to have done correctly:
 2^{-k}+{1\over2}2^{-2k}+{1\over3}2^{-3k}+\cdots\,$, rounded to the
 nearest integer.
 
-@d two_to_the(A) (2^(A))
+@d two_to_the(A) (1<<(A))
 
 @<Constants ...@>=
 static const integer spec_log[29] = { 0, /* special logarithms */
