@@ -3380,7 +3380,7 @@ void mp_list_used_resources (MP mp, int prologues, int procset);
       if ( mp_font_is_subsetted(mp,f) )
         goto FOUND;
       if ( mp->ps_offset+1+strlen(mp->font_enc_name[f])>
-           max_print_line )
+           (unsigned)mp->max_print_line )
         mp_print_nl(mp, "%%+ encoding");
       if ( firstitem ) {
         firstitem=false;
@@ -3403,7 +3403,7 @@ void mp_list_used_resources (MP mp, int prologues, int procset);
             goto FOUND2;
       }
       if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>
-	       max_print_line )
+	       (unsigned)mp->max_print_line )
         mp_print_nl(mp, "%%+ font");
       if ( firstitem ) {
         firstitem=false;
@@ -3446,7 +3446,7 @@ void mp_list_supplied_resources (MP mp, int prologues, int procset);
         }
       if ( (prologues==3)&&(mp_font_is_subsetted(mp,f)))
         goto FOUND;
-      if ( mp->ps_offset+1+strlen(mp->font_enc_name[f])>max_print_line )
+      if ( mp->ps_offset+1+strlen(mp->font_enc_name[f])>(unsigned)mp->max_print_line )
         mp_print_nl(mp, "%%+ encoding");
       if ( firstitem ) {
         firstitem=false;
@@ -3471,7 +3471,7 @@ void mp_list_supplied_resources (MP mp, int prologues, int procset);
         }
         if ( ! mp_font_is_included(mp,f) )
           goto FOUND2;
-        if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>max_print_line )
+        if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>(unsigned)mp->max_print_line )
           mp_print_nl(mp, "%%+ font");
         if ( firstitem ) {
           firstitem=false;
@@ -3510,7 +3510,7 @@ void mp_list_needed_resources (MP mp, int prologues);
       };
       if ((prologues==3)&&(mp_font_is_included(mp,f)) )
         goto FOUND;
-      if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>max_print_line )
+      if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>(unsigned)mp->max_print_line )
         mp_print_nl(mp, "%%+ font");
       if ( firstitem ) {
         firstitem=false;
@@ -3810,7 +3810,7 @@ search.
           if ( mp_xstrcmp(mp->font_ps_name[f],mp->font_ps_name[ff])==0 )
             goto FOUND;
       }
-      if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>max_print_line )
+      if ( mp->ps_offset+1+strlen(mp->font_ps_name[f])>(unsigned)mp->max_print_line )
         mp_print_nl(mp, "%%+");
       mp_print_char(mp, ' ');
       mp_print(mp, mp->font_ps_name[f]);
