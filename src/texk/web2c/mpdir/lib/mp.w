@@ -180,11 +180,12 @@ typedef struct MP_instance {
 @ Here are the functions that set up the \MP\ instance.
 
 @<Declarations@> =
-@<Declare |mp_reallocate_fonts|@>;
+@<Declare |mp_reallocate| functions@>;
 MP mp_new (void) {
   MP mp;
   mp = xmalloc(sizeof(MP_instance));
   @<Allocate or initialize variables@>
+  mp_reallocate_paths(mp,1000);
   mp_reallocate_fonts(mp,8);
   mp->term_in = stdin;
   mp->term_out = stdout;
@@ -285,7 +286,6 @@ in production versions of \MP.
   must exceed |string_vacancies| by the total
   length of \MP's own strings, which is currently about 22000 */
 #define file_name_size 255 /* file names shouldn't be longer than this */
-#define path_size 30000 /* maximum number of knots between breakpoints of a path */
 #define bistack_size 1500 /* size of stack for bisection algorithms;
   should probably be left at this value */
 
@@ -3817,7 +3817,10 @@ pointer lo_mem_max; /* the largest location of variable-size memory in use */
 pointer hi_mem_min; /* the smallest location of one-word memory in use */
 
 
-@ @<Declare helpers@>=
+@ 
+@d XREALLOC(a,b) a = xrealloc(a,b);
+
+@<Declare helpers@>=
 void  xfree (void *x);
 void *xrealloc (void *p, size_t s) ;
 void *xmalloc (size_t s) ;
@@ -7234,16 +7237,17 @@ coordinates of $z\k-z_k$, and the magnitude of this vector will be
 and $z\k-z_k$ will be stored in |psi[k]|.
 
 @<Glob...@>=
+int path_size; /* maximum number of knots between breakpoints of a path */
 scaled *delta_x;
 scaled *delta_y;
 scaled *delta; /* knot differences */
 angle  *psi; /* turning angles */
 
 @ @<Allocate or initialize ...@>=
-mp->delta_x = xmalloc (sizeof (scaled)*(path_size+1));
-mp->delta_y = xmalloc (sizeof (scaled)*(path_size+1));
-mp->delta = xmalloc (sizeof (scaled)*(path_size+1));
-mp->psi = xmalloc (sizeof (angle)*(path_size+1));
+mp->delta_x = NULL;
+mp->delta_y = NULL;
+mp->delta = NULL;
+mp->psi = NULL;
 
 @ @<Dealloc variables@>=
 xfree(mp->delta_x);
@@ -7259,26 +7263,29 @@ xfree(mp->psi);
 
 @ @<Calculate the turning angles...@>=
 {
-k=0; s=p; n=path_size;
-do {  
-  t=link(s);
-  mp->delta_x[k]=x_coord(t)-x_coord(s);
-  mp->delta_y[k]=y_coord(t)-y_coord(s);
-  mp->delta[k]=mp_pyth_add(mp, mp->delta_x[k],mp->delta_y[k]);
-  if ( k>0 ) { 
-    sine=mp_make_fraction(mp, mp->delta_y[k-1],mp->delta[k-1]);
-    cosine=mp_make_fraction(mp, mp->delta_x[k-1],mp->delta[k-1]);
-    mp->psi[k]=mp_n_arg(mp, mp_take_fraction(mp, mp->delta_x[k],cosine)+
-      mp_take_fraction(mp, mp->delta_y[k],sine),
-    mp_take_fraction(mp, mp->delta_y[k],cosine)-
-      mp_take_fraction(mp, mp->delta_x[k],sine));
-  }
-@:MetaPost capacity exceeded path size}{\quad path size@>
-  incr(k); s=t;
-  if ( k==path_size ) mp_overflow(mp, "path size",path_size);
-  if ( s==q ) n=k;
-} while (! (k>=n)&&(left_type(s)!=end_cycle));
-if ( k==n ) mp->psi[n]=0; else mp->psi[k]=mp->psi[1];
+RESTART:
+  k=0; s=p; n=mp->path_size;
+  do {  
+    t=link(s);
+    mp->delta_x[k]=x_coord(t)-x_coord(s);
+    mp->delta_y[k]=y_coord(t)-y_coord(s);
+    mp->delta[k]=mp_pyth_add(mp, mp->delta_x[k],mp->delta_y[k]);
+    if ( k>0 ) { 
+      sine=mp_make_fraction(mp, mp->delta_y[k-1],mp->delta[k-1]);
+      cosine=mp_make_fraction(mp, mp->delta_x[k-1],mp->delta[k-1]);
+      mp->psi[k]=mp_n_arg(mp, mp_take_fraction(mp, mp->delta_x[k],cosine)+
+        mp_take_fraction(mp, mp->delta_y[k],sine),
+        mp_take_fraction(mp, mp->delta_y[k],cosine)-
+          mp_take_fraction(mp, mp->delta_x[k],sine));
+    }
+    incr(k); s=t;
+    if ( k==mp->path_size ) {
+      mp_reallocate_paths(mp, mp->path_size+(mp->path_size>>2));
+      goto RESTART; /* retry, loop size has changed */
+    }
+    if ( s==q ) n=k;
+  } while (! (k>=n)&&(left_type(s)!=end_cycle));
+  if ( k==n ) mp->psi[n]=0; else mp->psi[k]=mp->psi[1];
 }
 
 @ When we get to this point of the code, |right_type(p)| is either
@@ -7350,16 +7357,32 @@ angle *vv; /* values of $v_k$ */
 fraction *ww; /* values of $w_k$ */
 
 @ @<Allocate or initialize ...@>=
-mp->theta = xmalloc (sizeof (angle)*(path_size+1));
-mp->uu = xmalloc (sizeof (fraction)*(path_size+1));
-mp->vv = xmalloc (sizeof (angle)*(path_size+1));
-mp->ww = xmalloc (sizeof (fraction)*(path_size+1));
+mp->theta = NULL;
+mp->uu = NULL;
+mp->vv = NULL;
+mp->ww = NULL;
 
 @ @<Dealloc variables@>=
 xfree(mp->theta);
 xfree(mp->uu);
 xfree(mp->vv);
 xfree(mp->ww);
+
+@ @<Declare |mp_reallocate| functions@>=
+void mp_reallocate_paths (MP mp, int l);
+
+@ @c
+void mp_reallocate_paths (MP mp, int l) {
+  XREALLOC (mp->delta_x, sizeof (scaled)*(l+1));
+  XREALLOC (mp->delta_y, sizeof (scaled)*(l+1));
+  XREALLOC (mp->delta,   sizeof (scaled)*(l+1));
+  XREALLOC (mp->psi,     sizeof (angle)*(l+1));
+  XREALLOC (mp->theta,   sizeof (angle)*(l+1));
+  XREALLOC (mp->uu,      sizeof (fraction)*(l+1));
+  XREALLOC (mp->vv,      sizeof (angle)*(l+1));
+  XREALLOC (mp->ww,      sizeof (fraction)*(l+1));
+  mp->path_size = l;
+}
 
 @ Our immediate problem is to get the ball rolling by setting up the
 first equation or by realizing that no equations are needed, and to fit
@@ -12990,8 +13013,7 @@ new level (having, initially, the same properties as the old).
     mp->max_in_stack=mp->input_ptr;
     if ( mp->input_ptr==mp->stack_size ) {
       int l = (mp->stack_size+(mp->stack_size>>2));
-      mp->input_stack = xrealloc(mp->input_stack,
-          sizeof(in_state_record)*(l+1));
+      XREALLOC(mp->input_stack, sizeof(in_state_record)*(l+1));
       mp->stack_size = l;
     }         
   }
@@ -24166,7 +24188,6 @@ xfree(mp->depth_base);
 xfree(mp->font_sizes);
 
 @ 
-@d XREALLOC(a,b) a = xrealloc(a,b);
 @c 
 void mp_reallocate_fonts (MP mp, font_number l) {
   font_number f;
@@ -24192,7 +24213,7 @@ void mp_reallocate_fonts (MP mp, font_number l) {
   mp->font_max = l;
 }
 
-@ @<Declare |mp_reallocate_fonts|@>=
+@ @<Declare |mp_reallocate| functions@>=
 void mp_reallocate_fonts (MP mp, font_number l);
 
 
