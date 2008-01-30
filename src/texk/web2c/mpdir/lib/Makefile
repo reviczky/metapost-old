@@ -4,7 +4,7 @@ srcdir = .
 KPSEBUILDDIR = ../../../../../build/texk/kpathsea/.libs
 KPSESRCDIR = ../../..
 
-RM = rm
+RM = rm -f
 LD = gcc
 CC = gcc
 CTANGLE = ctangle
@@ -29,4 +29,4 @@ $(OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) -I$(KPSESRCDIR) $< -o $@
 
 clean:
-	$(RM) *.o newmpost mp.c mpost.c psout.c mp*.h 
+	$(RM) *.o newmpost mp.c mpost.c psout.c mp*.h *.scn *.idx *.toc *.pdf *.log  
