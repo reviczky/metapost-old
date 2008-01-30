@@ -22,6 +22,7 @@
 \font\logos=logosl10
 \def\MF{{\tenlogo META}\-{\tenlogo FONT}}
 \def\MP{{\tenlogo META}\-{\tenlogo POST}}
+\def\[#1]{#1.} % from pascal web
 \def\<#1>{$\langle#1\rangle$}
 \def\section{\mathhexbox278}
 \let\swap=\leftrightarrow
@@ -30,18 +31,11 @@
 
 \def\(#1){} % this is used to make section names sort themselves better
 \def\9#1{} % this is used for sort keys in the index via @@:sort key}{entry@@>
-
-\let\?=\relax % we want to be able to \write a \?
-
 \def\title{MetaPost}
-\def\topofcontents{\hsize 5.5in
-  \vglue -30pt plus 1fil minus 1.5in
-  \def\?##1]{\hbox to 1in{\hfil##1.\ }}
-  }
-\def\botofcontents{\vskip 0pt plus 1fil minus 1.5in}
+\def\glob{15} % this should be the section number of "<Global...>"
+\def\gglob{23, 28} % this should be the next two sections of "<Global...>"
+\pdfoutput=1
 \pageno=3
-\def\glob{13} % this should be the section number of "<Global...>"
-\def\gglob{20, 26} % this should be the next two sections of "<Global...>"
 
 @* \[1] Introduction.
 This is \MP, a graphics-language processor based on D. E. Knuth's \MF.
@@ -98,7 +92,7 @@ undergoes any modifications, so that it will be clear which version of
 @d version_string " (Cweb version 0.10)"
 
 @ Different \PASCAL s have slightly different conventions, and the present
-@!@:PASCAL H}{\ph@>
+@:PASCAL H}{\ph@>
 program is expressed in a version of \PASCAL\ that D. E. Knuth used for \MF.
 Constructions that apply to
 this particular compiler, which we shall call \ph, should help the
@@ -110,7 +104,7 @@ Hamburg; cf.\ {\sl SOFTWARE---Practice \AM\ Experience \bf6} (1976),
 29--42. The \MP\ program below is intended to be adaptable, without
 extensive changes, to most other versions of \PASCAL\ and commonly used
 \PASCAL-to-C translators, so it does not fully
-@!@:C@>
+@:C@>
 use the admirable features of \ph. Indeed, a conscious effort has been
 made here to avoid using several idiosyncratic features of standard
 \PASCAL\ itself, so that most of the code can be translated mechanically
@@ -127,8 +121,8 @@ operating systems, can be identified by looking at the sections whose
 numbers are listed under `system dependencies' in the index. Furthermore,
 the index entries for `dirty \PASCAL' list all places where the restrictions
 of \PASCAL\ have not been followed perfectly, for one reason or another.
-@!@^system dependencies@>
-@!@^dirty \PASCAL@>
+@^system dependencies@>
+@^dirty \PASCAL@>
 
 @ The program begins with a normal \PASCAL\ program heading, whose
 components will be filled in later, using the conventions of \.{WEB}.
@@ -172,7 +166,7 @@ typedef struct MP_instance {
 #include <stdarg.h>
 #include <assert.h>
 #include <unistd.h> /* for access() */
-#include <time.h> /* for struct tm & co */
+#include <time.h> /* for struct tm \& co */
 #include "avl.h"
 #include "mpbasictypes.h"
 #include "mppstypes.h"
@@ -976,6 +970,8 @@ int xstrcmp (const char *a, const char *b) {
       return 1;
     return strcmp(a,b);
 }
+
+@ @c
 char * mp_str (MP mp, str_number ss) {
   char *s;
   int len = length(ss);
@@ -1354,7 +1350,6 @@ the result is |true| if and only if the strings are equal.
 @c 
 boolean mp_str_eq_buf (MP mp,str_number s, integer k) {
   /* test equality of strings */
-  /* label not_found; */ /* loop exit */
   pool_pointer j; /* running index */
   j=mp->str_start[s];
   while ( j<str_stop(s) ) { 
@@ -1431,7 +1426,7 @@ for (k=0;k<=255;k++) {
 @ The first 128 strings will contain 95 standard ASCII characters, and the
 other 33 characters will be printed in three-symbol form like `\.{\^\^A}'
 unless a system-dependent change is made here. Installations that have
-an extended character set, where for example |xchr[032]=@t\.{\'^^Z\'}@>|,
+an extended character set, where for example |xchr[032]=@t\.{'^^Z'}@>|,
 would like string 032 to be printed as the single character 032 instead
 of the three characters 0136, 0136, 0132 (\.{\^\^Z}). On the other hand,
 even people with an extended character set will want to represent string
@@ -2005,7 +2000,7 @@ str_number filename_template; /* a string set up by \&{filenametemplate} */
 mp->help_ptr=0; mp->use_err_help=false; mp->err_help=0; mp->filename_template=0;
 
 @ The |jump_out| procedure just cuts across all active procedure levels and
-goes to |end_of_MP|. This is the only nonlocal |@!goto| statement in the
+goes to |end_of_MP|. This is the only nonlocal |goto| statement in the
 whole program. It is used when there is no recovery from a particular error.
 
 Some \PASCAL\ compilers do not implement non-local |goto| statements.
@@ -2380,7 +2375,7 @@ program can be carried out in exactly the same way on a wide variety of
 computers, including some small ones.
 @^small computers@>
 
-But \PASCAL\ does not define the @!|div|
+But \PASCAL\ does not define the |div|
 operation in the case of negative dividends; for example, the result of
 |(-2*n-1) div 2| is |-(n+1)| on some computers and |-n| on others.
 There are two principal types of arithmetic: ``translation-preserving,''
@@ -3866,7 +3861,7 @@ xfree(mp->mem);
 
 @ Users who wish to study the memory requirements of particular applications can
 can use optional special features that keep track of current and
-maximum memory usage. When code between the delimiters |@!stat| $\ldots$
+maximum memory usage. When code between the delimiters |stat| $\ldots$
 |tats| is not ``commented out,'' \MP\ will run a bit slower but it will
 report these statistics when |tracing_stats| is positive.
 
@@ -5937,7 +5932,7 @@ parent points to a node whose |name_type| is |mp_structured_root|; this
 node represents the null attribute, i.e., the variable that is relevant
 when no attributes are attached to the parent. The |attr_head| node is either
 a value node, a subscript node, or an attribute node, depending on what
-the parent would be if it were not mp_structured; but the subscript and
+the parent would be if it were not structured; but the subscript and
 attribute fields are ignored, so it effectively contains only the data of
 a value node. The |link| field in this special node points to an attribute
 node whose |attr_loc| field is zero; the latter node represents a collective
@@ -6034,7 +6029,7 @@ Variables of type \&{transform} are similar, but in this case their
 Finally, variables of type \&{color} have three values in six words
 identified by |mp_red_part_sector|, |mp_green_part_sector|, and |mp_blue_part_sector|.
 
-When an entire mp_structured variable is saved, the |root| indication
+When an entire structured variable is saved, the |root| indication
 is temporarily replaced by |saved_root|.
 
 Some variables have no name; they just are used for temporary storage
@@ -6225,8 +6220,8 @@ boolean mp_interesting (MP mp,pointer p) {
   }
 }
 
-@ Now here is a subroutine that converts an unmp_structured type into an
-equivalent mp_structured type, by inserting a |mp_structured| node that is
+@ Now here is a subroutine that converts an unstructured type into an
+equivalent structured type, by inserting a |mp_structured| node that is
 capable of growing. This operation is done only when |name_type(p)=root|,
 |subscr|, or |attr|.
 
@@ -6736,7 +6731,7 @@ the knot, and to \\{left} fields instead of \\{right} fields.
 Non-|explicit| control points will be chosen based on ``tension'' parameters
 in the |left_tension| and |right_tension| fields. The
 `\&{atleast}' option is represented by negative tension values.
-@!@:at_least_}{\&{atleast} primitive@>
+@:at_least_}{\&{atleast} primitive@>
 
 For example, the \MP\ path specification
 $$\.{z0..z1..tension atleast 1..\{curl 2\}z2..z3\{-1,-2\}..tension
@@ -7680,7 +7675,7 @@ void mp_set_controls (MP mp,pointer p, pointer q, integer k) {
 $\\{ss}\L\sin\theta\,/\sin(\theta+\phi)$ are to be enforced if $\sin\theta$,
 $\sin\phi$, and $\sin(\theta+\phi)$ all have the same sign. Otherwise
 there is no ``bounding triangle.''
-@!@:at_least_}{\&{atleast} primitive@>
+@:at_least_}{\&{atleast} primitive@>
 
 @<Decrease the velocities, if necessary...@>=
 if (((mp->st>=0)&&(mp->sf>=0))||((mp->st<=0)&&(mp->sf<=0)) ) {
@@ -9848,7 +9843,7 @@ link(d)=link(dln);
 mp_free_node(mp, dln,dash_node_size)
 
 @ The name of this module is a bit of a lie because we actually just find the
-first |dd| where |take_scaled(hsf,stop_x(dd))| is large enough to make an
+first |dd| where |take_scaled (hsf, stop_x(dd))| is large enough to make an
 overlap possible.  It could be that the unoffset version of dash |dln| falls
 in the gap between |dd| and its predecessor.
 
@@ -9958,7 +9953,7 @@ mp_find_offset(mp, dx,dy,pp);
 d=mp_take_fraction(mp, xx-mp->cur_x,dx)+mp_take_fraction(mp, yy-mp->cur_y,dy);
 if ( ((d<0)&&(i==1)) || ((d>0)&&(i==2))) 
   mp_confusion(mp, "box_ends");
-@:this can't happen box ends}{\quad\\{box_ends}@>
+@:this can't happen box ends}{\quad\\{box\_ends}@>
 z=x_coord(p)+mp->cur_x+mp_take_fraction(mp, d,dx);
 if ( z<minx_val(h) ) minx_val(h)=z;
 if ( z>maxx_val(h) ) maxx_val(h)=z;
@@ -10152,7 +10147,7 @@ to because |l-k| could be negative.)
 After overwriting the type information with offset differences, we no longer
 have a true path so we refer to the knot list returned by |offset_prep| as an
 ``envelope spec.''
-@!@^envelope spec@>
+@^envelope spec@>
 Since an envelope spec only determines relative changes in pen offsets,
 |offset_prep| sets a global variable |spec_offset| to the relative change from
 |h| to the first offset.
@@ -12521,7 +12516,7 @@ mp->input_stack = xmalloc(sizeof(in_state_record)*(stack_size+1));
 @ @<Dealloc variables@>=
 xfree(mp->input_stack);
 
-@ We've already defined the special variable |@!loc==cur_input.loc_field|
+@ We've already defined the special variable |loc==cur_input.loc_field|
 in our discussion of basic input-output routines. The other components of
 |cur_input| are defined in the same way:
 
@@ -12597,8 +12592,8 @@ read.
 If more information about the input state is needed, it can be
 included in small arrays like those shown here. For example,
 the current page or segment number in the input file might be put
-into a variable |@!page|, that is really a macro for the current entry
-in `\ignorespaces|@!page_stack:array[0..max_in_open] of integer|\unskip'
+into a variable |page|, that is really a macro for the current entry
+in `\ignorespaces|page_stack:array[0..max_in_open] of integer|\unskip'
 by analogy with |line_stack|.
 @^system dependencies@>
 
@@ -13387,10 +13382,10 @@ void mp_get_next (MP mp) {
 @^inner loop@>
   /*restart*/ /* go here to get the next input token */
   /*exit*/ /* go here when the next input token has been got */
-  /*common_ending*/ /* go here to finish getting a symbolic token */
+  /*|common_ending|*/ /* go here to finish getting a symbolic token */
   /*found*/ /* go here when the end of a symbolic token has been found */
   /*switch*/ /* go here to branch on the class of an input character */
-  /*start_numeric_token,start_decimal_token,fin_numeric_token,done*/
+  /*|start_numeric_token|,|start_decimal_token|,|fin_numeric_token|,|done|*/
     /* go here at crucial stages when scanning a number */
   int k; /* an index into |buffer| */
   ASCII_code c; /* the current character in the buffer */
@@ -15977,7 +15972,7 @@ when an `\.{input}' command is being processed.
       if ( mp_try_extension(mp, ".mp") ) break;
       else if ( mp_try_extension(mp, "") ) break;
       else if ( mp_try_extension(mp, ".mf") ) break;
-      /* else do_nothing; */
+      else do_nothing; 
     } else if ( mp_try_extension(mp, mp->cur_ext) ) {
       break;
     }
@@ -16132,8 +16127,8 @@ operator and the \&{write} command.  Such files are stored in separate arrays.
 @:write_}{\&{write} primitive@>
 
 @<Types in the outer block@>=
-typedef unsigned int readf_index; /* 0..max_read_files */
-typedef unsigned int write_index;  /* 0..max_write_files */
+typedef unsigned int readf_index; /* |0..max_read_files| */
+typedef unsigned int write_index;  /* |0..max_write_files| */
 
 @ @<Glob...@>=
 readf_index max_read_files; /* maximum number of simultaneously open \&{readfrom} files */
@@ -19090,7 +19085,7 @@ angle mp_bezier_slope(MP mp, integer AX,integer AY,integer BX,integer BY,
     } else {
       if ((b*b) == (4*a*c)) {
 	res = bezier_error;
-	/* print_roots("double root"); *//* cusp */
+	print_roots("double root"); /* cusp */
       } else if ((b*b) < (4*a*c)) {
 	res = out-in; /* ? */
 	if (res<=0.0 &&res>-180.0) 
@@ -22938,25 +22933,12 @@ and as few as 0 characters (if |bc=ec+1|).
 Incidentally, when two or more 8-bit bytes are combined to form an integer of
 16 or more bits, the most significant bytes appear first in the file.
 This is called BigEndian order.
-@!@^BigEndian order@>
+@^BigEndian order@>
 
 @ The rest of the \.{TFM} file may be regarded as a sequence of ten data
-arrays having the informal specification
-$$\def\arr$[#1]#2${\&{array} $[#1]$ \&{of} #2}
-\tabskip\centering
-\halign to\displaywidth{\hfil\\{#}\tabskip=0pt&$\,:\,$\arr#\hfil
- \tabskip\centering\cr
-header&|[0..lh-1]@t\\{stuff}@>|\cr
-char\_info&|[bc..ec]char_info_word|\cr
-width&|[0..nw-1]fix_word|\cr
-height&|[0..nh-1]fix_word|\cr
-depth&|[0..nd-1]fix_word|\cr
-italic&|[0..ni-1]fix_word|\cr
-lig\_kern&|[0..nl-1]lig_kern_command|\cr
-kern&|[0..nk-1]fix_word|\cr
-exten&|[0..ne-1]extensible_recipe|\cr
-param&|[1..np]fix_word|\cr}$$
-The most important data type used here is a |@!fix_word|, which is
+arrays.
+
+The most important data type used here is a |fix_word|, which is
 a 32-bit representation of a binary fraction. A |fix_word| is a signed
 quantity, with the two's complement of the entire word used to represent
 negation. Of the 32 bits in a |fix_word|, exactly 12 are to the left of the
@@ -23000,16 +22982,16 @@ must be less than 16 design-size units in absolute value; thus,
 |header[1]| and |param[1]| are the only |fix_word| entries in the whole
 \.{TFM} file whose first byte might be something besides 0 or 255.
 
-@ Next comes the |char_info| array, which contains one |@!char_info_word|
+@ Next comes the |char_info| array, which contains one |char_info_word|
 per character. Each word in this part of the file contains six fields
 packed into four bytes as follows.
 
-\yskip\hang first byte: |@!width_index| (8 bits)\par
-\hang second byte: |@!height_index| (4 bits) times 16, plus |@!depth_index|
+\yskip\hang first byte: |width_index| (8 bits)\par
+\hang second byte: |height_index| (4 bits) times 16, plus |depth_index|
   (4~bits)\par
-\hang third byte: |@!italic_index| (6 bits) times 4, plus |@!tag|
+\hang third byte: |italic_index| (6 bits) times 4, plus |tag|
   (2~bits)\par
-\hang fourth byte: |@!remainder| (8 bits)\par
+\hang fourth byte: |remainder| (8 bits)\par
 \yskip\noindent
 The actual width of a character is \\{width}|[width_index]|, in design-size
 units; this is a device for compressing information, since many characters
@@ -23036,7 +23018,7 @@ characters of ascending sizes, and not the largest in the chain.  The
 \hang|tag=3| (|ext_tag|) means that this character code represents an
 extensible character, i.e., a character that is built up of smaller pieces
 so that it can be made arbitrarily large. The pieces are specified in
-|@!exten[remainder]|.\par
+|exten[remainder]|.\par
 \yskip\noindent
 Characters with |tag=2| and |tag=3| are treated as characters with |tag=0|
 unless they are used in special circumstances in math formulas. For example,
@@ -23050,7 +23032,7 @@ operation looks for both |list_tag| and |ext_tag|.
 
 @ The |lig_kern| array contains instructions in a simple programming language
 that explains what to do for special letter pairs. Each word in this array is a
-|@!lig_kern_command| of four bytes.
+|lig_kern_command| of four bytes.
 
 \yskip\hang first byte: |skip_byte|, indicates that this is the final program
   step if the byte is 128 or more, otherwise the next step is obtained by
@@ -23106,8 +23088,8 @@ command is performed.
 @d op_byte(A) mp->lig_kern[(A)].b2
 @d rem_byte(A) mp->lig_kern[(A)].b3
 
-@ Extensible characters are specified by an |@!extensible_recipe|, which
-consists of four bytes called |@!top|, |@!mid|, |@!bot|, and |@!rep| (in this
+@ Extensible characters are specified by an |extensible_recipe|, which
+consists of four bytes called |top|, |mid|, |bot|, and |rep| (in this
 order). These bytes are the character codes of individual pieces used to
 build up a large symbol.  If |top|, |mid|, or |bot| are zero, they are not
 present in the built-up result. For example, an extensible vertical line is
@@ -24095,7 +24077,7 @@ tables.  Since |font_name| entries are permanent, their |str_ref| values are
 set to |max_str_ref|.
 
 @<Types...@>=
-typedef unsigned int font_number; /* 0..font_max */
+typedef unsigned int font_number; /* |0..font_max| */
 
 @ The |font_info| array is indexed via a group directory arrays.
 For example, the |char_info| data for character~|c| in font~|f| will be
