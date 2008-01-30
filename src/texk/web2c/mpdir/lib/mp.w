@@ -275,7 +275,6 @@ in production versions of \MP.
 #define half_error_line 50 /* width of first lines of contexts in terminal
   error messages; should be between 30 and |error_line-15| */
 #define max_print_line 79 /* width of longest text lines output; should be at least 60 */
-#define stack_size 300 /* maximum number of simultaneous input sources */
 #define max_strings 25000 /* maximum number of strings; must not exceed |max_halfword| */
 #define string_vacancies 9000 /* the minimum number of characters that should be
   available for the user's identifier names and strings,
@@ -309,12 +308,16 @@ emphasize this distinction.
 @d hash_size 9500 /* maximum number of symbolic tokens,
   must be less than |max_halfword-3*param_size| */
 @d hash_prime 7919 /* a prime number equal to about 85\pct! of |hash_size| */
-@d param_size 150 /* maximum number of simultaneous macro parameters */
 @^system dependencies@>
 
-@<Types...@>=
-#define mp_max_in_open 25 /* maximum number of input files and error insertions that
+@ @<Glob...@>=
+int param_size; /* maximum number of simultaneous macro parameters */
+int max_in_open; /* maximum number of input files and error insertions that
   can be going on simultaneously */
+
+@ @<Allocate or ...@>=
+mp->param_size=150; 
+mp->max_in_open=25;
 
 @ In case somebody has inadvertently made bad settings of the ``constants,''
 \MP\ checks them using a global variable called |bad|.
@@ -675,8 +678,7 @@ xfree(mp->buffer);
 void mp_reallocate_buffer(MP mp, size_t l) {
   ASCII_code *buffer;
   if (l>max_halfword) {
-    mp_overflow(mp,"buffer size", l);
-@:MetaPost capacity exceeded buffer size}{\quad buffer size@>
+    mp_confusion(mp,"buffer size"); /* can't happen (I hope) */
   }
   buffer = xmalloc(sizeof(ASCII_code)*(l+1));
   memcpy(buffer,mp->buffer,mp->buf_size+1);
@@ -5584,11 +5586,11 @@ printer's sense. It's curious that the same word is used in such different ways.
 @d value_loc(A) ((A)+1) /* the word that contains the |value| field */
 @d value(A) mp->mem[value_loc((A))].cint /* the value stored in a large token node */
 @d expr_base (hash_end+1) /* code for the zeroth \&{expr} parameter */
-@d suffix_base (expr_base+param_size) /* code for the zeroth \&{suffix} parameter */
-@d text_base (suffix_base+param_size) /* code for the zeroth \&{text} parameter */
+@d suffix_base (expr_base+mp->param_size) /* code for the zeroth \&{suffix} parameter */
+@d text_base (suffix_base+mp->param_size) /* code for the zeroth \&{text} parameter */
 
 @<Check the ``constant''...@>=
-if ( text_base+param_size>max_halfword ) mp->bad=18;
+if ( text_base+mp->param_size>max_halfword ) mp->bad=18;
 
 @ We have set aside a two word node beginning at |null| so that we can have
 |value(null)=0|.  We will make use of this coincidence later.
@@ -11651,7 +11653,7 @@ numbers. Diagnosed and patched by Thorsten Dahlheimer.
 @d max_serial_no 017777777700 /* |max_indep_vars*s_scale| */
 @d new_indep(A)  /* create a new independent variable */
   { if ( mp->serial_no==max_serial_no )
-    mp_overflow(mp, "independent variables",max_indep_vars);
+    mp_fatal_error(mp, "variable instance identifiers exhausted");
   type((A))=mp_independent; mp->serial_no=mp->serial_no+s_scale;
   value((A))=mp->serial_no;
   }
@@ -12509,9 +12511,11 @@ in_state_record *input_stack;
 integer input_ptr; /* first unused location of |input_stack| */
 integer max_in_stack; /* largest value of |input_ptr| when pushing */
 in_state_record cur_input; /* the ``top'' input state */
+int stack_size; /* maximum number of simultaneous input sources */
 
 @ @<Allocate or initialize ...@>=
-mp->input_stack = xmalloc(sizeof(in_state_record)*(stack_size+1));
+mp->stack_size = 300;
+mp->input_stack = xmalloc(sizeof(in_state_record)*(mp->stack_size+1));
 
 @ @<Dealloc variables@>=
 xfree(mp->input_stack);
@@ -12611,23 +12615,37 @@ by analogy with |line_stack|.
 @<Glob...@>=
 integer in_open; /* the number of lines in the buffer, less one */
 unsigned int open_parens; /* the number of open text files */
-FILE * input_file[(mp_max_in_open+1)];
-integer line_stack[(mp_max_in_open+1)]; /* the line number for each file */
-char *iname_stack[(mp_max_in_open+1)]; /* used for naming \.{MPX} files */
-char *iarea_stack[(mp_max_in_open+1)]; /* used for naming \.{MPX} files */
-halfword mpx_name[(mp_max_in_open+1)];
+FILE  * *input_file ;
+integer *line_stack ; /* the line number for each file */
+char *  *iname_stack; /* used for naming \.{MPX} files */
+char *  *iarea_stack; /* used for naming \.{MPX} files */
+halfword*mpx_name  ;
 
-@ @<Set init...@>=
-for (k=0;k<=mp_max_in_open;k++) {
-  mp->iname_stack[k] =NULL;
-  mp->iarea_stack[k] =NULL;
+@ @<Allocate or ...@>=
+mp->input_file  = xmalloc(sizeof(FILE *)*(mp->max_in_open+1));
+mp->line_stack  = xmalloc(sizeof(integer)*(mp->max_in_open+1));
+mp->iname_stack = xmalloc(sizeof(char *)*(mp->max_in_open+1));
+mp->iarea_stack = xmalloc(sizeof(char *)*(mp->max_in_open+1));
+mp->mpx_name    = xmalloc(sizeof(halfword)*(mp->max_in_open+1));
+{
+  int k;
+  for (k=0;k<=mp->max_in_open;k++) {
+    mp->iname_stack[k] =NULL;
+    mp->iarea_stack[k] =NULL;
+  }
 }
 
 @ @<Dealloc variables@>=
-for (k=0;k<=mp_max_in_open;k++) {
+for (k=0;k<=mp->max_in_open;k++) {
   xfree(mp->iname_stack[k]);
   xfree(mp->iarea_stack[k]);
 }
+xfree(mp->input_file);
+xfree(mp->line_stack);
+xfree(mp->iname_stack);
+xfree(mp->iarea_stack);
+xfree(mp->mpx_name);
+
 
 @ However, all this discussion about input state really applies only to the
 case that we are inputting from a file. There is another important case,
@@ -12682,15 +12700,15 @@ macro|.
 @^reference counts@>
 
 @d token_type index /* type of current token list */
-@d token_state (index>mp_max_in_open) /* are we scanning a token list? */
-@d file_state (index<=mp_max_in_open) /* are we scanning a file line? */
+@d token_state (index>mp->max_in_open) /* are we scanning a token list? */
+@d file_state (index<=mp->max_in_open) /* are we scanning a file line? */
 @d param_start limit /* base of macro parameters in |param_stack| */
-@d forever_text (mp_max_in_open+1) /* |token_type| code for loop texts */
-@d loop_text (mp_max_in_open+2) /* |token_type| code for loop texts */
-@d parameter (mp_max_in_open+3) /* |token_type| code for parameter texts */
-@d backed_up (mp_max_in_open+4) /* |token_type| code for texts to be reread */
-@d inserted (mp_max_in_open+5) /* |token_type| code for inserted texts */
-@d macro (mp_max_in_open+6) /* |token_type| code for macro replacement texts */
+@d forever_text (mp->max_in_open+1) /* |token_type| code for loop texts */
+@d loop_text (mp->max_in_open+2) /* |token_type| code for loop texts */
+@d parameter (mp->max_in_open+3) /* |token_type| code for parameter texts */
+@d backed_up (mp->max_in_open+4) /* |token_type| code for texts to be reread */
+@d inserted (mp->max_in_open+5) /* |token_type| code for inserted texts */
+@d macro (mp->max_in_open+6) /* |token_type| code for macro replacement texts */
 
 @ The |param_stack| is an auxiliary array used to hold pointers to the token
 lists for parameters at the current level and subsidiary levels of input.
@@ -12702,7 +12720,7 @@ integer param_ptr; /* first unused entry in |param_stack| */
 integer max_param_stack;  /* largest value of |param_ptr| */
 
 @ @<Allocate or initialize ...@>=
-mp->param_stack = xmalloc(sizeof(pointer)*(param_size+1));
+mp->param_stack = xmalloc(sizeof(pointer)*(mp->param_size+1));
 
 @ @<Dealloc variables@>=
 xfree(mp->param_stack);
@@ -12722,7 +12740,7 @@ integer mp_true_line (MP mp) {
   } else { 
     k=mp->input_ptr;
     while ((k>0) &&
-           ((mp->input_stack[(k-1)].index_field>mp_max_in_open)||
+           ((mp->input_stack[(k-1)].index_field>mp->max_in_open)||
             (mp->input_stack[(k-1)].name_field<=max_spec_src))) {
       decr(k);
     }
@@ -12799,24 +12817,31 @@ if ( name>max_spec_src ) {
 }
 mp_print_char(mp, ' ')
 
-@ @<Print type of token list@>=
-switch (token_type) {
-case forever_text: mp_print_nl(mp, "<forever> "); break;
-case loop_text: @<Print the current loop value@>; break;
-case parameter: mp_print_nl(mp, "<argument> "); break;
-case backed_up: 
-  if ( loc==null ) mp_print_nl(mp, "<recently read> ");
-  else mp_print_nl(mp, "<to be read again> ");
-  break;
-case inserted: mp_print_nl(mp, "<inserted text> "); break;
-case macro: 
-  mp_print_ln(mp);
-  if ( name!=null ) mp_print_str(mp, text(name));
-  else @<Print the name of a \&{vardef}'d macro@>;
-  mp_print(mp, "->");
-  break;
-default: mp_print_nl(mp, "?"); break; /* this should never happen */
+@ Can't use case statement here because the |token_type| is not
+a constant expression.
+
+@<Print type of token list@>=
+{
+  if(token_type==forever_text) {
+    mp_print_nl(mp, "<forever> ");
+  } else if (token_type==loop_text) {
+    @<Print the current loop value@>;
+  } else if (token_type==parameter) {
+    mp_print_nl(mp, "<argument> "); 
+  } else if (token_type==backed_up) { 
+    if ( loc==null ) mp_print_nl(mp, "<recently read> ");
+    else mp_print_nl(mp, "<to be read again> ");
+  } else if (token_type==inserted) {
+    mp_print_nl(mp, "<inserted text> ");
+  } else if (token_type==macro) {
+    mp_print_ln(mp);
+    if ( name!=null ) mp_print_str(mp, text(name));
+    else @<Print the name of a \&{vardef}'d macro@>;
+    mp_print(mp, "->");
+  } else {
+    mp_print_nl(mp, "?");/* this should never happen */
 @.?\relax@>
+  }
 }
 
 @ The parameter that corresponds to a loop text is either a token list
@@ -12960,15 +12985,19 @@ The following subroutines change the input status in commonly needed ways.
 First comes |push_input|, which stores the current state and creates a
 new level (having, initially, the same properties as the old).
 
-@d push_input @t@> /* enter a new input level, save the old */
-  { if ( mp->input_ptr>mp->max_in_stack )
-    { mp->max_in_stack=mp->input_ptr;
-    if ( mp->input_ptr==stack_size ) mp_overflow(mp, "input stack size",stack_size);
-@:MetaPost capacity exceeded input stack size}{\quad input stack size@>
-    };
+@d push_input  { /* enter a new input level, save the old */
+  if ( mp->input_ptr>mp->max_in_stack ) {
+    mp->max_in_stack=mp->input_ptr;
+    if ( mp->input_ptr==mp->stack_size ) {
+      int l = (mp->stack_size+(mp->stack_size>>2));
+      mp->input_stack = xrealloc(mp->input_stack,
+          sizeof(in_state_record)*(l+1));
+      mp->stack_size = l;
+    }         
+  }
   mp->input_stack[mp->input_ptr]=mp->cur_input; /* stack the record */
   incr(mp->input_ptr);
-  }
+}
 
 @ And of course what goes up must come down.
 
@@ -13083,8 +13112,8 @@ or |limit| or |line|.
 @^system dependencies@>
 
 @c void mp_begin_file_reading (MP mp) { 
-  if ( mp->in_open==mp_max_in_open ) 
-    mp_overflow(mp, "text input levels",mp_max_in_open);
+  if ( mp->in_open==mp->max_in_open ) 
+    mp_overflow(mp, "text input levels",mp->max_in_open);
 @:MetaPost capacity exceeded text input levels}{\quad text input levels@>
   if ( mp->first==mp->buf_size ) 
     mp_reallocate_buffer(mp,(mp->buf_size+(mp->buf_size>>2)));
@@ -13610,7 +13639,7 @@ if ( loc>=mp->hi_mem_min ) { /* one-word token */
 
 @ @<Insert a suffix or text parameter...@>=
 { 
-  if ( mp->cur_sym>=text_base ) mp->cur_sym=mp->cur_sym-param_size;
+  if ( mp->cur_sym>=text_base ) mp->cur_sym=mp->cur_sym-mp->param_size;
   /* |param_size=text_base-suffix_base| */
   mp_begin_token_list(mp,
                       mp->param_stack[param_start+mp->cur_sym-(suffix_base)],
@@ -14235,7 +14264,7 @@ do {
   link(q)=mp_get_avail(mp); q=link(q); info(q)=base+k;
   mp_get_symbol(mp); p=mp_get_node(mp, token_node_size); 
   value(p)=base+k; info(p)=mp->cur_sym;
-  if ( k==param_size ) mp_overflow(mp, "parameter stack size",param_size);
+  if ( k==mp->param_size ) mp_overflow(mp, "parameter stack size",mp->param_size);
 @:MetaPost capacity exceeded parameter stack size}{\quad parameter stack size@>
   incr(k); link(p)=r; r=p; get_t_next;
 } while (mp->cur_cmd==comma)
@@ -14251,11 +14280,11 @@ do {
     else if ( mp->cur_mod==suffix_base ) c=suffix_macro;
     else c=text_macro;
   }
-  if ( k==param_size ) mp_overflow(mp, "parameter stack size",param_size);
+  if ( k==mp->param_size ) mp_overflow(mp, "parameter stack size",mp->param_size);
   incr(k); mp_get_symbol(mp); info(p)=mp->cur_sym; link(p)=r; r=p; get_t_next;
   if ( c==expr_macro ) if ( mp->cur_cmd==of_token ) {
     c=of_macro; p=mp_get_node(mp, token_node_size);
-    if ( k==param_size ) mp_overflow(mp, "parameter stack size",param_size);
+    if ( k==mp->param_size ) mp_overflow(mp, "parameter stack size",mp->param_size);
     value(p)=expr_base+k; mp_get_symbol(mp); info(p)=mp->cur_sym;
     link(p)=r; r=p; get_t_next;
   }
@@ -14838,8 +14867,8 @@ with a call to itself will not require unbounded stack space.
 while ( token_state &&(loc==null) ) mp_end_token_list(mp); /* conserve stack space */
 if ( mp->param_ptr+n>mp->max_param_stack ) {
   mp->max_param_stack=mp->param_ptr+n;
-  if ( mp->max_param_stack>param_size )
-    mp_overflow(mp, "parameter stack size",param_size);
+  if ( mp->max_param_stack>mp->param_size )
+    mp_overflow(mp, "parameter stack size",mp->param_size);
 @:MetaPost capacity exceeded parameter stack size}{\quad parameter stack size@>
 }
 mp_begin_token_list(mp, def_ref,macro); name=macro_name; loc=r;
@@ -14857,8 +14886,8 @@ The |stack_argument| subroutine does this.
 @c void mp_stack_argument (MP mp,pointer p) { 
   if ( mp->param_ptr==mp->max_param_stack ) {
     incr(mp->max_param_stack);
-    if ( mp->max_param_stack>param_size )
-      mp_overflow(mp, "parameter stack size",param_size);
+    if ( mp->max_param_stack>mp->param_size )
+      mp_overflow(mp, "parameter stack size",mp->param_size);
 @:MetaPost capacity exceeded parameter stack size}{\quad parameter stack size@>
   }
   mp->param_stack[mp->param_ptr]=p; incr(mp->param_ptr);
@@ -15972,7 +16001,7 @@ when an `\.{input}' command is being processed.
       if ( mp_try_extension(mp, ".mp") ) break;
       else if ( mp_try_extension(mp, "") ) break;
       else if ( mp_try_extension(mp, ".mf") ) break;
-      else do_nothing; 
+      /* |else do_nothing; | */
     } else if ( mp_try_extension(mp, mp->cur_ext) ) {
       break;
     }
@@ -21766,7 +21795,7 @@ void mp_grow_internals (MP mp, int l) {
   char * *int_name; 
   int k;
   if ( hash_end+l>max_halfword ) {
-    mp_overflow(mp, "number of internals",mp->max_internal);
+    mp_confusion(mp, "out of memory space"); /* can't be reached */
   }
   int_name = xmalloc (sizeof(char *)* (l+1));
   internal = xmalloc (sizeof(scaled)* (l+1));
@@ -26070,6 +26099,8 @@ dump_int(mem_min);
 dump_int(mem_top);
 dump_int(hash_size);
 dump_int(hash_prime)
+dump_int(mp->param_size);
+dump_int(mp->max_in_open);
 
 @ Sections of a \.{WEB} program that are ``commented out'' still contribute
 strings to the string pool; therefore \.{INIMP} and \MP\ will have
@@ -26085,7 +26116,11 @@ if ( x!=mem_top ) goto OFF_BASE;
 undump_int(x);
 if ( x!=hash_size ) goto OFF_BASE;
 undump_int(x);
-if ( x!=hash_prime ) goto OFF_BASE
+if ( x!=hash_prime ) goto OFF_BASE;
+undump_int(x);
+if ( x!=mp->param_size ) goto OFF_BASE;
+undump_int(x);
+if ( x!=mp->max_in_open ) goto OFF_BASE
 
 @ We do string pool compaction to avoid dumping unused strings.
 
@@ -26432,7 +26467,7 @@ if ( mp->log_opened ) {
   snprintf(s,128," %ii, %in, %ip, %ib stack positions out of %ii, %in, %ip, %ib",
            (int)mp->max_in_stack,(int)mp->int_ptr,
            (int)mp->max_param_stack,(int)mp->max_buf_stack+1,
-           (int)stack_size,(int)mp->max_internal,(int)param_size,(int)mp->buf_size);
+           (int)mp->stack_size,(int)mp->max_internal,(int)mp->param_size,(int)mp->buf_size);
   wlog_ln(s);
   snprintf(s,128," %i string compactions (moved %i characters, %i strings)",
           (int)mp->pact_count,(int)mp->pact_chars,(int)mp->pact_strs);
