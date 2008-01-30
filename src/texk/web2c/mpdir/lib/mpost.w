@@ -4,7 +4,9 @@
 \font\tenlogo=logo10 % font used for the METAFONT logo
 \def\MP{{\tenlogo META}\-{\tenlogo POST}}
 
-\def\title{MetaPost}
+\def\title{MetaPost executable}
+\def\[#1]{#1.}
+\pdfoutput=1
 
 @* \[1] Metapost executable.
 
@@ -12,7 +14,7 @@ Now that all of \MP\ is a library, a separate program is needed to
 have our customary command-line interface. 
 
 @ First, here are the C includes. |avl.h| is needed because of an 
-avl_allocator that is defined in |mplib.h|
+|avl_allocator| that is defined in |mplib.h|
 
 @d true 1
 @d false 0
