@@ -305,17 +305,20 @@ emphasize this distinction.
 @d mem_top 3000000 /* largest index in the |mem| array dumped by \.{INIMP};
   must be substantially larger than |mem_min|
   and not greater than |mem_max| */
-@d hash_size 9500 /* maximum number of symbolic tokens,
-  must be less than |max_halfword-3*param_size| */
-@d hash_prime 7919 /* a prime number equal to about 85\pct! of |hash_size| */
 @^system dependencies@>
 
 @ @<Glob...@>=
+int hash_size; /* maximum number of symbolic tokens,
+  must be less than |max_halfword-3*param_size| */
+int hash_prime; /* a prime number equal to about 85\pct! of |hash_size| */
+
 int param_size; /* maximum number of simultaneous macro parameters */
 int max_in_open; /* maximum number of input files and error insertions that
   can be going on simultaneously */
 
 @ @<Allocate or ...@>=
+mp->hash_size=9500;
+mp->hash_prime=7919;
 mp->param_size=150; 
 mp->max_in_open=25;
 
@@ -336,7 +339,7 @@ mp->bad=0;
 if ( (half_error_line<30)||(half_error_line>error_line-15) ) mp->bad=1;
 if ( max_print_line<60 ) mp->bad=2;
 if ( mem_min+1100>mem_top ) mp->bad=4;
-if ( hash_prime>hash_size ) mp->bad=5;
+if (mp->hash_prime>mp->hash_size ) mp->bad=5;
 
 @ Labels are given symbolic names by the following definitions, so that
 occasional |goto| statements will be meaningful. We insert the label
@@ -5246,7 +5249,7 @@ integer st_count; /* total number of known identifiers */
 @ Certain entries in the hash table are ``frozen'' and not redefinable,
 since they are used in error recovery.
 
-@d hash_top (hash_base+hash_size) /* the first location of the frozen area */
+@d hash_top (hash_base+mp->hash_size) /* the first location of the frozen area */
 @d frozen_inaccessible hash_top /* |hash| location to protect the frozen area */
 @d frozen_repeat_loop (hash_top+1) /* |hash| location of a loop-repeat token */
 @d frozen_right_delimiter (hash_top+2) /* |hash| location of a permanent `\.)' */
@@ -5340,7 +5343,7 @@ pointer mp_id_lookup (MP mp,integer j, integer l) { /* search the hash table */
 if ( text(p)>0 ) { 
   do {  
     if ( hash_is_full )
-      mp_overflow(mp, "hash size",hash_size);
+      mp_overflow(mp, "hash size",mp->hash_size);
 @:MetaPost capacity exceeded hash size}{\quad hash size@>
     decr(mp->hash_used);
   } while (text(mp->hash_used)!=0); /* search for an empty location in |hash| */
@@ -5368,7 +5371,7 @@ than two table probes, on the average, when the search is successful.
 h=mp->buffer[j];
 for (k=j+1;k<=j+l-1;k++){ 
   h=h+h+mp->buffer[k];
-  while ( h>=hash_prime ) h=h-hash_prime;
+  while ( h>=mp->hash_prime ) h=h-mp->hash_prime;
 }
 
 @ @<Search |eqtb| for equivalents equal to |p|@>=
@@ -25529,7 +25532,10 @@ boolean mp_has_font_size(MP mp, font_number f ) {
 }
 
 
-@ @d fscale_tolerance 65 /* that's $.001\times2^{16}$ */
+@ The overflow here is caused by the fact the returned value
+has to fit in a |name_type|, which is a quarterword. 
+
+@d fscale_tolerance 65 /* that's $.001\times2^{16}$ */
 
 @<Declare the \ps\ output procedures@>=
 quarterword mp_size_index (MP mp, font_number f, scaled s) {
@@ -26118,8 +26124,8 @@ dump/undump macros.
 @<Dump constants for consistency check@>=
 dump_int(mem_min);
 dump_int(mem_top);
-dump_int(hash_size);
-dump_int(hash_prime)
+dump_int(mp->hash_size);
+dump_int(mp->hash_prime)
 dump_int(mp->param_size);
 dump_int(mp->max_in_open);
 
@@ -26135,9 +26141,9 @@ if ( x!=mem_min ) goto OFF_BASE;
 undump_int(x);
 if ( x!=mem_top ) goto OFF_BASE;
 undump_int(x);
-if ( x!=hash_size ) goto OFF_BASE;
+if ( x!=mp->hash_size ) goto OFF_BASE;
 undump_int(x);
-if ( x!=hash_prime ) goto OFF_BASE;
+if ( x!=mp->hash_prime ) goto OFF_BASE;
 undump_int(x);
 if ( x!=mp->param_size ) goto OFF_BASE;
 undump_int(x);
@@ -26483,7 +26489,7 @@ if ( mp->log_opened ) {
            (int)mp->lo_mem_max-mem_min+mp->mem_end-mp->hi_mem_min+2,
            (int)mp->mem_end+1-mem_min);
   wlog_ln(s);
-  snprintf(s,128," %i symbolic tokens out of %i", (int)mp->st_count, (int)hash_size);
+  snprintf(s,128," %i symbolic tokens out of %i", (int)mp->st_count, (int)mp->hash_size);
   wlog_ln(s);
   snprintf(s,128," %ii, %in, %ip, %ib stack positions out of %ii, %in, %ip, %ib",
            (int)mp->max_in_stack,(int)mp->int_ptr,
