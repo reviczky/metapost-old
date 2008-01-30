@@ -3692,7 +3692,7 @@ The code below gives a formal definition of |memory_word| and
 its subsidiary types, using packed variant records. \MP\ makes no
 assumptions about the relative positions of the fields within a word.
 
-@d max_quarterword 255 /* largest allowable value in a |quarterword| */
+@d max_quarterword 0x3FFF /* largest allowable value in a |quarterword| */
 @d max_halfword 0xFFFFFFF /* largest allowable value in a |halfword| */
 
 @ Here are the inequalities that the quarterword and halfword values
