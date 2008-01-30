@@ -183,7 +183,7 @@ typedef struct MP_instance {
 @<Declare |mp_reallocate| functions@>;
 MP mp_new (void) {
   MP mp;
-  mp = xmalloc(sizeof(MP_instance));
+  mp = xmalloc(1,sizeof(MP_instance));
   @<Allocate or initialize variables@>
   mp_reallocate_paths(mp,1000);
   mp_reallocate_fonts(mp,8);
@@ -667,7 +667,7 @@ size_t max_buf_stack; /* largest index used in |buffer| */
 
 @ @<Allocate or initialize ...@>=
 mp->buf_size = 200;
-mp->buffer = xmalloc(sizeof(ASCII_code)*(mp->buf_size+1));
+mp->buffer = xmalloc((mp->buf_size+1),sizeof(ASCII_code));
 
 @ @<Dealloc variables@>=
 xfree(mp->buffer);
@@ -678,7 +678,7 @@ void mp_reallocate_buffer(MP mp, size_t l) {
   if (l>max_halfword) {
     mp_confusion(mp,"buffer size"); /* can't happen (I hope) */
   }
-  buffer = xmalloc(sizeof(ASCII_code)*(l+1));
+  buffer = xmalloc((l+1),sizeof(ASCII_code));
   memcpy(buffer,mp->buffer,(mp->buf_size+1));
   xfree(mp->buffer);
   mp->buffer = buffer ;
@@ -933,9 +933,9 @@ pool_pointer max_pool_ptr; /* the maximum so far of |pool_ptr| */
 str_number max_str_ptr; /* the maximum so far of |str_ptr| */
 
 @ @<Allocate or initialize ...@>=
-mp->str_pool = xmalloc (sizeof(ASCII_code)* (pool_size +1));
-mp->str_start = xmalloc (sizeof(pool_pointer) * (max_strings+1));
-mp->next_str = xmalloc (sizeof(str_number) * (max_strings+1));
+mp->str_pool  = xmalloc ((pool_size +1),sizeof(ASCII_code));
+mp->str_start = xmalloc ((max_strings+1),sizeof(pool_pointer));
+mp->next_str  = xmalloc ((max_strings+1),sizeof(str_number));
 
 @ @<Dealloc variables@>=
 xfree(mp->str_pool);
@@ -950,7 +950,7 @@ by the printing routines, and vice versa.
 @d rts(A) mp_rts(mp,A)
 
 @<Exported function headers@>=
-int xstrcmp (const char *a, const char *b);
+int mp_xstrcmp (const char *a, const char *b);
 char * mp_str (MP mp, str_number s);
 
 @ @<Declarations@>=
@@ -961,7 +961,7 @@ str_number mp_make_string (MP mp);
 very good: it does not handle nesting over more than one level.
 
 @c 
-int xstrcmp (const char *a, const char *b) {
+int mp_xstrcmp (const char *a, const char *b) {
 	if (a==NULL && b==NULL) 
 	  return 0;
     if (a==NULL)
@@ -975,7 +975,7 @@ int xstrcmp (const char *a, const char *b) {
 char * mp_str (MP mp, str_number ss) {
   char *s;
   int len = length(ss);
-  s = xmalloc(len+1);
+  s = xmalloc(len+1,sizeof(char));
   strncpy(s,(char *)(mp->str_pool+(mp->str_start[ss])),len);
   s[len] = 0;
   return (char *)s;
@@ -1090,7 +1090,7 @@ put it in this category. Hence a single byte suffices to store each |str_ref|.
 int *str_ref;
 
 @ @<Allocate or initialize ...@>=
-mp->str_ref = xmalloc (sizeof(int) * (max_strings+1));
+mp->str_ref = xmalloc ((max_strings+1),sizeof(int));
 
 @ @<Dealloc variables@>=
 xfree(mp->str_ref);
@@ -1523,7 +1523,7 @@ integer first_count; /* another variable for pseudoprinting */
 
 @ @<Allocate or initialize ...@>=
 memset(mp->dig,0,23);
-mp->trick_buf = xmalloc(sizeof(ASCII_code)* (error_line+1));
+mp->trick_buf = xmalloc((error_line+1),sizeof(ASCII_code));
 
 @ @<Dealloc variables@>=
 xfree(mp->trick_buf);
@@ -3819,36 +3819,54 @@ pointer hi_mem_min; /* the smallest location of one-word memory in use */
 
 
 @ 
-@d XREALLOC(a,b) a = xrealloc(a,b);
+@d xfree    mp_xfree
+@d xrealloc mp_xrealloc
+@d xmalloc  mp_xmalloc
+@d xstrdup  mp_xstrdup
+@d XREALLOC(a,b,c) a = xrealloc(a,b,sizeof(c));
 
 @<Declare helpers@>=
-void  xfree (void *x);
-void *xrealloc (void *p, size_t s) ;
-void *xmalloc (size_t s) ;
-char *xstrdup(const char *s);
+void mp_xfree (void *x);
+void *mp_xrealloc (void *p, size_t nmem, size_t size) ;
+void *mp_xmalloc (size_t nmem, size_t size) ;
+char *mp_xstrdup(const char *s);
 
-@ 
+@ The |max_size_test| guards against overflow, on the assumption that
+|size_t| is at least 31bits wide.
+
+@d max_size_test 0x7FFFFFFF
+
 @c
-void xfree (void *x) {
+void mp_xfree (void *x) {
   if (x!=NULL) free(x);
 }
-void  *xrealloc (void *p, size_t s) {
-  void *w = realloc (p,s);
+void  *mp_xrealloc (void *p, size_t nmem, size_t size) {
+  void *w ; 
+  if ((max_size_test/size)<nmem) {
+    fprintf(stderr,"Memory size overflow!\n");
+    exit(1);
+  }
+  w = realloc (p,(nmem*size));
   if (w==NULL) {
     fprintf(stderr,"Out of memory!\n");
     exit(1);
   }
   return w;
 }
-void  *xmalloc (size_t s) {
-  void *w = malloc (s);
+void  *mp_xmalloc (size_t nmem, size_t size) {
+  void *w;
+  if ((max_size_test/size)<nmem) {
+    fprintf(stderr,"Memory size overflow!\n");
+    exit(1);
+  }
+  w = malloc (nmem*size);
   if (w==NULL) {
     fprintf(stderr,"Out of memory!\n");
     exit(1);
   }
   return w;
 }
-char *xstrdup(const char *s) {
+char *mp_xstrdup(const char *s) {
   char *w = strdup(s);
   if (w==NULL) {
     fprintf(stderr,"Out of memory!\n");
@@ -3860,7 +3878,7 @@ char *xstrdup(const char *s) {
 
 @ 
 @<Allocate or initialize ...@>=
-mp->mem = xmalloc (sizeof (memory_word) * (mp->mem_max+1));
+mp->mem = xmalloc ((mp->mem_max+1),sizeof (memory_word));
 
 @ @<Dealloc variables@>=
 xfree(mp->mem);
@@ -4223,8 +4241,8 @@ pointer was_mem_end; pointer was_lo_max; pointer was_hi_min;
 boolean panicking; /* do we want to check memory constantly? */
 
 @ @<Allocate or initialize ...@>=
-mp->free = xmalloc (sizeof (unsigned char) * (mp->mem_max+1));
-mp->was_free = xmalloc (sizeof (unsigned char) * (mp->mem_max+1));
+mp->free = xmalloc ((mp->mem_max+1),sizeof (unsigned char));
+mp->was_free = xmalloc ((mp->mem_max+1), sizeof (unsigned char));
 
 @ @<Dealloc variables@>=
 xfree(mp->free);
@@ -4240,9 +4258,9 @@ void mp_reallocate_memory(MP mp, int l) ;
 
 @ @c
 void mp_reallocate_memory(MP mp, int l) {
-   XREALLOC(mp->free,     sizeof (unsigned char) * (l+1));
-   XREALLOC(mp->was_free, sizeof (unsigned char) * (l+1));
-   XREALLOC(mp->mem,      sizeof (memory_word)   * (l+1));
+   XREALLOC(mp->free,     (l+1), unsigned char);
+   XREALLOC(mp->was_free, (l+1), unsigned char);
+   XREALLOC(mp->mem,      (l+1), memory_word);
    mp->mem_max = l;
    if (mp->ini_version) 
      mp->mem_top = l;
@@ -4919,8 +4937,8 @@ boolean troff_mode;
 
 @ @<Allocate or initialize ...@>=
 mp->max_internal=2*max_given_internal;
-mp->internal = xmalloc (sizeof(scaled)* (mp->max_internal+1));
-mp->int_name = xmalloc (sizeof(char *)* (mp->max_internal+1));
+mp->internal = xmalloc ((mp->max_internal+1), sizeof(scaled));
+mp->int_name = xmalloc ((mp->max_internal+1), sizeof(char *));
 
 @ @<Set init...@>=
 for (k=0;k<= mp->max_internal; k++ ) { 
@@ -5288,8 +5306,8 @@ two_halves *hash; /* the hash table */
 two_halves *eqtb; /* the equivalents */
 
 @ @<Allocate or initialize ...@>=
-mp->hash = xmalloc(sizeof(two_halves)*(hash_end+1));
-mp->eqtb = xmalloc(sizeof(two_halves)*(hash_end+1));
+mp->hash = xmalloc((hash_end+1),sizeof(two_halves));
+mp->eqtb = xmalloc((hash_end+1),sizeof(two_halves));
 
 @ @<Dealloc variables@>=
 xfree(mp->hash);
@@ -7392,14 +7410,14 @@ void mp_reallocate_paths (MP mp, int l);
 
 @ @c
 void mp_reallocate_paths (MP mp, int l) {
-  XREALLOC (mp->delta_x, sizeof (scaled)*(l+1));
-  XREALLOC (mp->delta_y, sizeof (scaled)*(l+1));
-  XREALLOC (mp->delta,   sizeof (scaled)*(l+1));
-  XREALLOC (mp->psi,     sizeof (angle)*(l+1));
-  XREALLOC (mp->theta,   sizeof (angle)*(l+1));
-  XREALLOC (mp->uu,      sizeof (fraction)*(l+1));
-  XREALLOC (mp->vv,      sizeof (angle)*(l+1));
-  XREALLOC (mp->ww,      sizeof (fraction)*(l+1));
+  XREALLOC (mp->delta_x, (l+1), scaled);
+  XREALLOC (mp->delta_y, (l+1), scaled);
+  XREALLOC (mp->delta,   (l+1), scaled);
+  XREALLOC (mp->psi,     (l+1), angle);
+  XREALLOC (mp->theta,   (l+1), angle);
+  XREALLOC (mp->uu,      (l+1), fraction);
+  XREALLOC (mp->vv,      (l+1), angle);
+  XREALLOC (mp->ww,      (l+1), fraction);
   mp->path_size = l;
 }
 
@@ -11411,7 +11429,7 @@ integer *bisect_stack;
 unsigned int bisect_ptr;
 
 @ @<Allocate or initialize ...@>=
-mp->bisect_stack = xmalloc(sizeof(integer)*(bistack_size+1));
+mp->bisect_stack = xmalloc((bistack_size+1),sizeof(integer));
 
 @ @<Dealloc variables@>=
 xfree(mp->bisect_stack);
@@ -12557,7 +12575,7 @@ int stack_size; /* maximum number of simultaneous input sources */
 
 @ @<Allocate or initialize ...@>=
 mp->stack_size = 300;
-mp->input_stack = xmalloc(sizeof(in_state_record)*(mp->stack_size+1));
+mp->input_stack = xmalloc((mp->stack_size+1),sizeof(in_state_record));
 
 @ @<Dealloc variables@>=
 xfree(mp->input_stack);
@@ -12664,11 +12682,11 @@ char *  *iarea_stack; /* used for naming \.{MPX} files */
 halfword*mpx_name  ;
 
 @ @<Allocate or ...@>=
-mp->input_file  = xmalloc(sizeof(FILE *)*(mp->max_in_open+1));
-mp->line_stack  = xmalloc(sizeof(integer)*(mp->max_in_open+1));
-mp->iname_stack = xmalloc(sizeof(char *)*(mp->max_in_open+1));
-mp->iarea_stack = xmalloc(sizeof(char *)*(mp->max_in_open+1));
-mp->mpx_name    = xmalloc(sizeof(halfword)*(mp->max_in_open+1));
+mp->input_file  = xmalloc((mp->max_in_open+1),sizeof(FILE *));
+mp->line_stack  = xmalloc((mp->max_in_open+1),sizeof(integer));
+mp->iname_stack = xmalloc((mp->max_in_open+1),sizeof(char *));
+mp->iarea_stack = xmalloc((mp->max_in_open+1),sizeof(char *));
+mp->mpx_name    = xmalloc((mp->max_in_open+1),sizeof(halfword));
 {
   int k;
   for (k=0;k<=mp->max_in_open;k++) {
@@ -12762,7 +12780,7 @@ integer param_ptr; /* first unused entry in |param_stack| */
 integer max_param_stack;  /* largest value of |param_ptr| */
 
 @ @<Allocate or initialize ...@>=
-mp->param_stack = xmalloc(sizeof(pointer)*(mp->param_size+1));
+mp->param_stack = xmalloc((mp->param_size+1),sizeof(pointer));
 
 @ @<Dealloc variables@>=
 xfree(mp->param_stack);
@@ -13032,7 +13050,7 @@ new level (having, initially, the same properties as the old).
     mp->max_in_stack=mp->input_ptr;
     if ( mp->input_ptr==mp->stack_size ) {
       int l = (mp->stack_size+(mp->stack_size>>2));
-      XREALLOC(mp->input_stack, sizeof(in_state_record)*(l+1));
+      XREALLOC(mp->input_stack, (l+1), in_state_record);
       mp->stack_size = l;
     }         
   }
@@ -15593,7 +15611,7 @@ boolean mp_more_name (MP mp, ASCII_code c) {
 @^system dependencies@>
 
 @d copy_pool_segment(A,B,C) { 
-      A = xmalloc(C+1); 
+      A = xmalloc(C+1,sizeof(char)); 
       strncpy(A,(char *)(mp->str_pool+B),C);  
       A[C] = 0;}
 
@@ -16212,13 +16230,13 @@ write_index write_files; /* number of valid entries in the above arrays */
 
 @ @<Allocate or initialize ...@>=
 mp->max_read_files=8;
-mp->rd_file = xmalloc(sizeof(FILE *)*(mp->max_read_files+1));
-mp->rd_fname = xmalloc(sizeof(char *)*(mp->max_read_files+1));
+mp->rd_file = xmalloc((mp->max_read_files+1),sizeof(FILE *));
+mp->rd_fname = xmalloc((mp->max_read_files+1),sizeof(char *));
 memset(mp->rd_fname, 0, sizeof(char *)*(mp->max_read_files+1));
 mp->read_files=0;
 mp->max_write_files=8;
-mp->wr_file = xmalloc(sizeof(FILE *)*(mp->max_write_files+1));
-mp->wr_fname = xmalloc(sizeof(char *)*(mp->max_write_files+1));
+mp->wr_file = xmalloc((mp->max_write_files+1),sizeof(FILE *));
+mp->wr_fname = xmalloc((mp->max_write_files+1),sizeof(char *));
 memset(mp->wr_fname, 0, sizeof(char *)*(mp->max_write_files+1));
 mp->write_files=0;
 
@@ -19582,7 +19600,7 @@ FOUND:
   n=mp->read_files;
   n0=mp->read_files;
   fn = str(mp->cur_exp);
-  while (xstrcmp(fn,mp->rd_fname[n])!=0) { 
+  while (mp_xstrcmp(fn,mp->rd_fname[n])!=0) { 
     if ( n>0 ) {
       decr(n);
     } else if ( c==close_from_op ) {
@@ -19596,8 +19614,8 @@ FOUND:
           char **rd_fname;
 	      readf_index l,k;
           l = mp->max_read_files + (mp->max_read_files>>2);
-          rd_file = xmalloc(sizeof(FILE *)*(l+1));
-          rd_fname = xmalloc(sizeof(char *)*(l+1));
+          rd_file = xmalloc((l+1), sizeof(FILE *));
+          rd_fname = xmalloc((l+1), sizeof(char *));
 	      for (k=0;k<=l;k++) {
             if (k<=mp->max_read_files) {
    	          rd_file[k]=mp->rd_file[k]; 
@@ -21838,8 +21856,8 @@ void mp_grow_internals (MP mp, int l) {
   if ( hash_end+l>max_halfword ) {
     mp_confusion(mp, "out of memory space"); /* can't be reached */
   }
-  int_name = xmalloc (sizeof(char *)* (l+1));
-  internal = xmalloc (sizeof(scaled)* (l+1));
+  int_name = xmalloc ((l+1),sizeof(char *));
+  internal = xmalloc ((l+1),sizeof(scaled));
   for (k=0;k<=l; k++ ) { 
     if (k<=mp->max_internal) {
       internal[k]=mp->internal[k]; 
@@ -22913,7 +22931,7 @@ void mp_do_write (MP mp) ;
   char *fn = str(mp->cur_exp);
   n=mp->write_files;
   n0=mp->write_files;
-  while (xstrcmp(fn,mp->wr_fname[n])!=0) { 
+  while (mp_xstrcmp(fn,mp->wr_fname[n])!=0) { 
     if ( n==0 ) { /* bottom reached */
 	  if ( n0==mp->write_files ) {
         if ( mp->write_files<mp->max_write_files ) {
@@ -22923,8 +22941,8 @@ void mp_do_write (MP mp) ;
           char **wr_fname;
 	      write_index l,k;
           l = mp->max_write_files + (mp->max_write_files>>2);
-          wr_file = xmalloc(sizeof(FILE *)*(l+1));
-          wr_fname = xmalloc(sizeof(char *)*(l+1));
+          wr_file = xmalloc((l+1),sizeof(FILE *));
+          wr_fname = xmalloc((l+1),sizeof(char *));
 	      for (k=0;k<=l;k++) {
             if (k<=mp->max_write_files) {
    	          wr_file[k]=mp->wr_file[k]; 
@@ -23265,7 +23283,7 @@ short label_ptr; /* highest position occupied in |label_loc| */
 
 @ @<Allocate or initialize ...@>=
 mp->header_last = 0; mp->header_size = 128; /* just for init */
-mp->header_byte = xmalloc(mp->header_size);
+mp->header_byte = xmalloc(mp->header_size, sizeof(char));
 mp->lig_kern = NULL; /* allocated when needed */
 mp->kern = NULL; /* allocated when needed */ 
 mp->param = NULL; /* allocated when needed */
@@ -23426,9 +23444,9 @@ void mp_do_tfm_command (MP mp) ;
     break;
   case lig_table_code: 
     if (mp->lig_kern==NULL) 
-       mp->lig_kern = xmalloc(sizeof(four_quarters)*(max_tfm_int+1));
+       mp->lig_kern = xmalloc((max_tfm_int+1),sizeof(four_quarters));
     if (mp->kern==NULL) 
-       mp->kern = xmalloc(sizeof(scaled)*(max_tfm_int+1));
+       mp->kern = xmalloc((max_tfm_int+1),sizeof(scaled));
     @<Store a list of ligature/kern steps@>;
     break;
   case extensible_code: 
@@ -23456,7 +23474,7 @@ void mp_do_tfm_command (MP mp) ;
 	@<Store a list of header bytes@>;
       } else {     
         if (mp->param==NULL) 
-          mp->param = xmalloc(sizeof(scaled)*(max_tfm_int+1));
+          mp->param = xmalloc((max_tfm_int+1),sizeof(scaled));
         @<Store a list of font dimensions@>;
       }
     }
@@ -23631,7 +23649,7 @@ We may need to cancel skips that span more than 127 lig/kern steps.
 do {  
   if ( j>=mp->header_size ) {
     int l = mp->header_size + (mp->header_size >> 2);
-    char *t = xmalloc(l);
+    char *t = xmalloc(l,sizeof(char));
     memset(t,0,l); 
     memcpy(t,mp->header_byte,mp->header_size);
     xfree (mp->header_byte);
@@ -24175,7 +24193,7 @@ pointer     *font_sizes;
 
 @ @<Allocate or initialize ...@>=
 mp->font_mem_size = 10000; 
-mp->font_info = xmalloc (sizeof(memory_word)*(mp->font_mem_size+1));
+mp->font_info = xmalloc ((mp->font_mem_size+1),sizeof(memory_word));
 memset (mp->font_info,0,sizeof(memory_word)*(mp->font_mem_size+1));
 mp->font_enc_name = NULL;
 mp->font_ps_name_fixed = NULL;
@@ -24210,18 +24228,18 @@ xfree(mp->font_sizes);
 @c 
 void mp_reallocate_fonts (MP mp, font_number l) {
   font_number f;
-  XREALLOC(mp->font_enc_name,      sizeof(char *)    *(l+1));
-  XREALLOC(mp->font_ps_name_fixed, sizeof(boolean)   *(l+1));
-  XREALLOC(mp->font_dsize,         sizeof(scaled)    *(l+1));
-  XREALLOC(mp->font_name,          sizeof(char *)    *(l+1));
-  XREALLOC(mp->font_ps_name,       sizeof(char *)    *(l+1));
-  XREALLOC(mp->font_bc,            sizeof(eight_bits)*(l+1));
-  XREALLOC(mp->font_ec,            sizeof(eight_bits)*(l+1));
-  XREALLOC(mp->char_base,          sizeof(int)       *(l+1));
-  XREALLOC(mp->width_base,         sizeof(int)       *(l+1));
-  XREALLOC(mp->height_base,        sizeof(int)       *(l+1));
-  XREALLOC(mp->depth_base,         sizeof(int)       *(l+1));
-  XREALLOC(mp->font_sizes,         sizeof(pointer)   *(l+1));
+  XREALLOC(mp->font_enc_name,      (l+1), char *);
+  XREALLOC(mp->font_ps_name_fixed, (l+1), boolean);
+  XREALLOC(mp->font_dsize,         (l+1), scaled);
+  XREALLOC(mp->font_name,          (l+1), char *);
+  XREALLOC(mp->font_ps_name,       (l+1), char *);
+  XREALLOC(mp->font_bc,            (l+1), eight_bits);
+  XREALLOC(mp->font_ec,            (l+1), eight_bits);
+  XREALLOC(mp->char_base,          (l+1), int);
+  XREALLOC(mp->width_base,         (l+1), int);
+  XREALLOC(mp->height_base,        (l+1), int);
+  XREALLOC(mp->depth_base,         (l+1), int);
+  XREALLOC(mp->font_sizes,         (l+1), pointer);
   for (f=(mp->last_fnum+1);f<=l;f++) {
     mp->font_enc_name[f]=NULL;
     mp->font_ps_name_fixed[f] = false;
@@ -24377,7 +24395,7 @@ if (mp->last_fnum==mp->font_max)
 while (mp->next_fmem+whd_size>=mp->font_mem_size) {
   size_t l = mp->font_mem_size+(mp->font_mem_size>>2);
   memory_word *font_info;
-  font_info = xmalloc (sizeof(memory_word)*(l+1));
+  font_info = xmalloc ((l+1),sizeof(memory_word));
   memset (font_info,0,sizeof(memory_word)*(l+1));
   memcpy (font_info,mp->font_info,sizeof(memory_word)*(mp->font_mem_size+1));
   xfree(mp->font_info);
@@ -24458,7 +24476,7 @@ we scan the |font_name| array before calling |read_font_info|.
 font_number mp_find_font (MP mp, char *f) {
   font_number n;
   for (n=0;n<=mp->last_fnum;n++) {
-    if (xstrcmp(f,mp->font_name[n])==0 )
+    if (mp_xstrcmp(f,mp->font_name[n])==0 )
       return n;
   }
   return mp_read_font_info(mp, f);
@@ -24727,7 +24745,7 @@ extreme cases so it may have to be shortened on some systems.
 
 @<Use |c| to compute the file extension |s|@>=
 { 
-  s = xmalloc(7);
+  s = xmalloc(7,1);
   snprintf(s,7,".%i",(int)c);
 }
 
@@ -26131,7 +26149,7 @@ read an integer value |x| that is supposed to be in the range |a<=x<=b|.
                if (x<(A)) goto OFF_BASE; 
                if (x>(B)) { too_small((C)); } else {(D)=x;} }
 @d undump_string(A) { integer XX=0; undump_int(XX);
-                      A = xmalloc(XX);
+                      A = xmalloc(XX,sizeof(char));
                       fread(A,XX,1,mp->mem_file); }
 
 @ The next few sections of the program should make it clear how we use the
@@ -26360,7 +26378,7 @@ if ( (x!=69073)|| feof(mp->mem_file) ) goto OFF_BASE
 @ @<Create the |mem_ident|...@>=
 { 
   xfree(mp->mem_ident);
-  mp->mem_ident = xmalloc(256);
+  mp->mem_ident = xmalloc(256,1);
   snprintf(mp->mem_ident,256," (mem=%s %i.%i.%i)", 
            mp->job_name,
            (int)(mp_round_unscaled(mp, mp->internal[year]) % 100),

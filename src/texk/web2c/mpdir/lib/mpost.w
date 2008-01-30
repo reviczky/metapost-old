@@ -55,7 +55,7 @@ string normalize_quotes (const char *name, const char *mesg) {
     boolean quoted = false;
     boolean must_quote = (strchr(name, ' ') != NULL);
     /* Leave room for quotes and NUL. */
-    string ret = (string)xmalloc(strlen(name)+3);
+    string ret = (string)mp_xmalloc(strlen(name)+3, sizeof(char));
     string p;
     const_string q;
     p = ret;
@@ -100,7 +100,7 @@ boolean mpost_run_make_mpx (MP mp, char *mpname, char *mpxname) {
     string qmpname = normalize_quotes(mpname, "mpname");
     string qmpxname = normalize_quotes(mpxname, "mpxname");
     if (!cnf_cmd)
-      cnf_cmd = xstrdup (MPXCOMMAND);
+      cnf_cmd = mp_xstrdup (MPXCOMMAND);
 
     if (mp->troff_mode)
       cmd = concatn (cnf_cmd, " -troff ",
@@ -113,12 +113,12 @@ boolean mpost_run_make_mpx (MP mp, char *mpname, char *mpxname) {
 
     /* Run it.  */
     ret = system (cmd);
-    free (cmd);
-    free (qmpname);
-    free (qmpxname);
+    mp_xfree (cmd);
+    mp_xfree (qmpname);
+    mp_xfree (qmpxname);
   }
 
-  free (cnf_cmd);
+  mp_xfree (cnf_cmd);
   return ret == 0;
 }
 
@@ -181,7 +181,7 @@ mp->get_random_seed = mpost_get_random_seed;
       break;
     }
   } else {
-    s = strdup(fname); /* when writing */
+    s = mp_xstrdup(fname); /* when writing */
   }
   return s;
 }
@@ -211,11 +211,11 @@ mp->find_file = mpost_find_file;
     } else if (option_is ("kpathsea-debug")) {
       kpathsea_debug |= atoi (optarg);
     } else if (option_is("mem")) {
-      mp->mem_name = xstrdup(optarg);
+      mp->mem_name = mp_xstrdup(optarg);
       if (!user_progname) 
 	    user_progname = optarg;
     } else if (option_is("jobname")) {
-      mp->job_name = xstrdup(optarg);
+      mp->job_name = mp_xstrdup(optarg);
     } else if (option_is ("progname")) {
       user_progname = optarg;
     } else if (option_is("troff")) {
@@ -304,7 +304,7 @@ input.
 
 @<Copy the rest of the command line@>=
 {
-  mp->command_line = malloc(command_line_size);
+  mp->command_line = mp_xmalloc(command_line_size,1);
   if (mp->command_line==NULL) {
     fprintf(stderr,"Out of memory!\n");
     exit(EXIT_FAILURE);
