@@ -1456,14 +1456,17 @@ Similarly, a color {\tt c} is equivalent
 to\index{redpart?\texttt{redpart}}%
 \index{greenpart?\texttt{greenpart}}%
 \index{bluepart?\texttt{bluepart}}\label{Drgbprt}
-$$ \hbox{\tt (redpart c, greenpart c, bluepart c)} $$.
-For a cmykcolor {\tt c},  the parts are:\index{cyanpart?\texttt{cyanpart}}%
+$$ \hbox{\tt (redpart c, greenpart c, bluepart c)}. $$
+For a cmykcolor {\tt c}, the components are%
+\index{cyanpart?\texttt{cyanpart}}%
 \index{magentapart?\texttt{magentapart}}%
 \index{yellowpart?\texttt{yellowpart}}%
 \index{blackpart?\texttt{blackpart}}\label{Dcmykprt}
 $$ \hbox{\tt (cyanpart c, magentapart c, yellowpart c, blackpart c)} $$ 
-The part
-specifiers for transforms will be discussed later.
+and for a greyscale color {\tt c}, there is only one component%
+\index{greypart?\texttt{greypart}}\label{Dgreyprt}%
+$$ \hbox{\tt greypart c}. $$
+The part specifiers for transforms will be discussed later.
 
 
 \section{Variables}
