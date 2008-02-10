@@ -2899,12 +2899,18 @@ $$
 $$\index{withprescript?\texttt{withprescript}}\label{Dwithpre}%
 and 
 $$ 
-{\tt withpostcript} \descr{string expression}
+{\tt withpostscript} \descr{string expression}
 $$\index{withpostscript?\texttt{withpostscript}}\label{Dwithpost}%
 The strings will be written to the output file before and after the
 current object, each beginning on their own line. You can specify
 multiple {\tt withprescript} or {\tt withpostscript} options if you
 like.
+
+When you specify more than one {\tt withprescript} or more than one {\tt
+  withpostscript} option, be wary of the fact that the scripts use a
+form of nesting: the {\tt withprescript} items are written to the
+PostScript file in last in, first out order; whereas the {\tt
+  withpostscript} items are written in first in, first out order.
 
 \subsection{Other Options}
 \label{oopt}
