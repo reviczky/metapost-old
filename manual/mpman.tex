@@ -4726,6 +4726,16 @@ result is a string consisting of a single null character.  The preloaded
 {\tt readfrom} has returned {\tt EOF}, additional reads from the same file
 cause the file to be reread from the start.
 
+All files opened by \ttt{readfrom} that have not completely been read
+yet are closed\index{files!closing} automatically when the program
+terminates, but there exists a command
+$${\tt closefrom}\ \descr{file name}$$%
+\index{closefrom?\texttt{closefrom}}\label{Dclosefrom}%
+to close files opened by {\tt readfrom} explicitly.  It is wise to
+manually close files you do not need to read completely (i.e. until {\tt
+  EOF} is returned) because otherwise such files will continue to use
+internal resources and perhaps cause a \ttt{capacity exceeded!} error.
+
 The opposite of {\tt readfrom} is the command
 $$ {\tt write}\ \descr{string expression}\ {\tt to}\ \descr{file name} $$%
 \index{write to?\texttt{write to}}\label{Dwrite}%
@@ -5361,6 +5371,8 @@ $$\begin{tabular}{|l|r|l|}
         Low-level command for drawing and filling\\\hline
 \tt \verb|clip|&        \pageref{Dclip}&
         Applies a clipping path to a picture\\\hline
+\tt \verb|closefrom|&  \pageref{Dclosefrom}&
+        Close a file opened by {\tt readfrom}\\\hline
 \pl\tt \verb|cutdraw|&  \pageref{Dctdraw}&
         Draw with butt end caps\\\hline
 \pl\tt \verb|draw|&     \pageref{curves}&
@@ -6009,6 +6021,7 @@ bounded\\
 btex\\
 clip\\
 clipped\\
+closefrom\\
 cmykcolor\\
 color\\
 colormodel\\
