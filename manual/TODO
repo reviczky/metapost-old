@@ -1,0 +1,53 @@
+This file contains an unsorted list of tasks to be done on the
+MetaPost manual.  Feel free to add new, move or remove finished
+items.  Please communicate that you're working on an issue (you
+didn't remember adding yourself) on the mp-implementors list or
+alternatively the metapost list.
+
+Section 'For Release' lists items that are meant to be finished
+before the next release.  Even minor issues should be added here.
+
+Items in section 'Mid Term Issues' have no dead-line, but should
+be small enough to be relatively quickly done.
+
+Items in section 'Long Term Issues' are less actively worked on.
+The reason they are less actively worked on is not lack of
+importance, but lack of developer resources.  Nevertheless, they
+are on the agenda.  Contributions are welcome!
+
+
+
+
+*****************************
+***   For Release         ***
+*****************************
+
+* Review description of all with... primitives in appendix.
+* Describe colormodel primitive (application in for..within loops).
+
+
+
+
+*****************************
+***   Mid Term Issues     ***
+*****************************
+
+* Add decent title graphics.
+* Review presentation of primitives and plain macros in appendix A.
+* Separate description of boxes package from mpman.
+* Make manual sources compatible with preview mode (Emacs).
+
+
+
+
+*****************************
+***   Long Term Issues    ***
+*****************************
+
+* Make manual sources LaTeX2e conform.
+* Make manual sources look nice in Emacs (AUCTeX font-locking).
+* Review overall layout of the manuals (type area, float placement,
+  listing presentation etc.)
+
+
+
