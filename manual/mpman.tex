@@ -2157,7 +2157,7 @@ $$
 \label{fig20}
 \end{figure}
 
-The general {\tt fill} statement\index{withcolor?\texttt{withcolor}}
+The general {\tt fill} statement\index{withcolor?\texttt{withcolor}}\label{Dwithcolor}
 $$ {\tt fill}\, \descr{path expression}\,
         {\tt withcolor}\, \descr{color expression}
 $$
@@ -2168,10 +2168,10 @@ values, mapping to four possible color models:
 $$
 \begin{tabular}{|l|l|}
 Actual input                          & Remapped meaning\\
-{\tt withcolor} $\descr{rgbcolor} c$  & withrgbcolor\index{withrgbcolor?\texttt{withrgbcolor}} $c$\\
-{\tt withcolor} $\descr{cmykcolor} c$ & withcmykcolor\index{withrgbcolor?\texttt{withcmykcolor}} $c$\\
-{\tt withcolor} $\descr{numeric} c$   & withgreyscale\index{withrgbcolor?\texttt{withgreyscale}} $c$\\
-{\tt withcolor} $\descr{false}$       & withoutcolor\index{withrgbcolor?\texttt{withoutcolor}} \\
+{\tt withcolor} $\descr{rgbcolor} c$  & withrgbcolor\index{withrgbcolor?\texttt{withrgbcolor}}\label{Dwithrgbcolor} $c$\\
+{\tt withcolor} $\descr{cmykcolor} c$ & withcmykcolor\index{withcmykcolor?\texttt{withcmykcolor}}\label{Dwithcmykcolor} $c$\\
+{\tt withcolor} $\descr{numeric} c$   & withgreyscale\index{withgreyscale?\texttt{withgreyscale}}\label{Dwithgreyscale} $c$\\
+{\tt withcolor} $\descr{false}$       & withoutcolor\index{withoutcolor?\texttt{withoutcolor}}\label{Dwithoutcolor} \\
 {\tt withcolor} $\descr{true}$        & $\descr{current default color model}$\\
 \end{tabular}
 $$
@@ -2762,7 +2762,7 @@ $$
 The MetaPost language provides many ways of changing the appearance of a
 line besides just changing its width.  One way is to use dashed lines as
 was done in Figures \ref{fig4} and~\ref{fig22}.  The syntax for this
-is\index{dashed?\texttt{dashed}}
+is\index{dashed?\texttt{dashed}}\label{Ddashed}
 $$ {\tt draw}\, \descr{path expression}\, {\tt dashed}\, \descr{dash pattern} $$
 where a \tdescr{dash pattern}\index{dash pattern?\tdescr{dash pattern}}
 is really a special type of \tdescr{picture expression}.  There is a
@@ -5375,6 +5375,8 @@ $$\begin{tabular}{|l|r|l|}
         Close a file opened by {\tt readfrom}\\\hline
 \pl\tt \verb|cutdraw|&  \pageref{Dctdraw}&
         Draw with butt end caps\\\hline
+\tt \verb|dashed|&     \pageref{Ddashed}&
+        Apply dash pattern to drawing command\\\hline
 \pl\tt \verb|draw|&     \pageref{curves}&
         Draw a line or a picture\\\hline
 \pl\tt \verb|drawarrow|&        \pageref{Ddrwarr}&
@@ -5423,6 +5425,22 @@ $$\begin{tabular}{|l|r|l|}
         Erase inside a cyclic path\\\hline
 \pl\tt \verb|unfilldraw|&       \pageref{Dunfdrw}&
         Erase a cyclic path and its inside\\\hline
+\tt \verb|withcmykcolor|&    \pageref{Dwithcmykcolor}&
+        Apply CMYK color to drawing command\\\hline
+\tt \verb|withcolor|&        \pageref{Dwithcolor}&
+        Apply generic color specification to drawing command\\\hline
+\tt \verb|withgreyscale|&    \pageref{Dwithgreyscale}&
+        Apply greyscale color to drawing command\\\hline
+\tt \verb|withoutcolor|&     \pageref{Dwithoutcolor}&
+        Don't apply any color specification to drawing command\\\hline
+\tt \verb|withpen|&          \pageref{sec.pens}&
+        Apply pen to drawing operation\\\hline
+\tt \verb|withpostscript|&   \pageref{Dwithpost}&
+        End raw PostScript code\\\hline
+\tt \verb|withprescript|&    \pageref{Dwithpre}&
+        Begin raw PostScript code\\\hline
+\tt \verb|withrgbcolor|&     \pageref{Dwithrgbcolor}&
+        Apply RGB color to drawing command\\\hline
 \tt \verb|write to|&         \pageref{Dwrite}&
         Write string to file\\\hline
 \end{tabular}
