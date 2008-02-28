@@ -32,7 +32,7 @@ alternatively the metapost list.
 *****************************
 
 * Describe colormodel primitive (application in for..within loops).
-
+* Update README.
 
 
 
@@ -42,8 +42,10 @@ alternatively the metapost list.
 
 * Add decent title graphics.
 * Review presentation of primitives and plain macros in appendix A.
+* Build reference manual automatically from mp.web (as a separate manual?).
 * Separate description of boxes package from mpman.
 * Make manual sources compatible with preview mode (Emacs).
+* Re-enable (or remove) SVN keyword substitution (for complete repository).
 
 
 
