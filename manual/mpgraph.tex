@@ -12,6 +12,8 @@
 \documentclass{article} % article is NOT the original style
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage{mflogo}
 \pdfmapfile{=cm2lm.map}% replace CM by LM in figures
 \usepackage{makeidx}
 \usepackage{fancyvrb}
@@ -26,14 +28,7 @@
 \newcommand\tdescr[1]{$\langle$\invisgap{\rm#1}\invisgap$\rangle$}
 \newcommand\Ignore[1]{} % For fooling delatex so spell will work
 
-\newfont\psyvii{psyr at 7pt}
-\newcommand\regmark{$^{\hbox{\psyvii\char'322}}$}   % Registered trademark
-\newcommand\logofn{\global\font\logofn=logo8 \logofn}
-\newcommand\logo{\global\font\logo=logo10 \logo}
-\newcommand\logosl{\global\font\logosl=logosl10 \logosl}
-\newcommand\MF{{\ifdim \fontdimen6\font <9pt \def\logo{\logofn}\fi
-        \ifdim \fontdimen1\font >0pt \def\logo{\logosl}\fi
-        {\logo META}\-{\logo FONT}}}
+\newcommand*{\regmark}{$^{\mbox{\textregistered}}$}% Registered trademark
 
 \newcommand\mathcenter[1]{\vcenter{\hbox{#1}}}
 
