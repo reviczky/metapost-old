@@ -65,4 +65,4 @@ mpman.ps: mpman.tex mpman.bib mpman.ist manfig.mp
 
 clean distclean:
 	rm -f *.aux *.bbl *.blg *.dvi *.log *.mpx *.mps
-	rm -f *.idx *.ilg *.ind *.toc
+	rm -f *.idx *.ilg *.ind *.toc *.out
