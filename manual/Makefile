@@ -3,11 +3,14 @@
 # Rules for the groff/troff docs are in TeX Live,
 # texmf-dist/doc/metapost/base/Makefile.
 
+latex = latex
 pdflatex = pdflatex
+dvips = dvips
 bibtex = bibtex
 mpost = mpost -tex=tex
 
-all: mpman.pdf mpintro.pdf mpgraph.pdf grdemo.pdf
+pdf: mpman.pdf mpintro.pdf mpgraph.pdf grdemo.pdf
+ps: mpman.ps mpintro.ps mpgraph.ps
 
 mpgraph.pdf: mpgraph.tex mpgraph.bib mpgraph.mp
 	$(mpost) mpgraph
@@ -32,6 +35,33 @@ mpman.pdf: mpman.tex mpman.bib mpman.ist manfig.mp
 	$(pdflatex) mpman
 	makeindex -s mpman.ist mpman
 	$(pdflatex) mpman
+
+mpgraph.ps: mpgraph.tex mpgraph.bib mpgraph.mp
+	$(mpost) mpgraph
+	$(latex) mpgraph
+	$(bibtex) mpgraph
+	$(latex) mpgraph
+	$(latex) mpgraph
+	$(dvips) mpgraph
+
+mpintro.ps: mpintro.tex mpintro.bib examples.mp manfig.mp
+	$(mpost) examples
+	$(mpost) manfig
+	$(latex) mpintro
+	$(bibtex) mpintro
+	$(latex) mpintro
+	$(latex) mpintro
+	$(dvips) mpintro
+
+mpman.ps: mpman.tex mpman.bib mpman.ist manfig.mp 
+	$(mpost) manfig
+	$(latex) mpman
+	$(bibtex) mpman
+	$(latex) mpman
+	$(latex) mpman
+	makeindex -s mpman.ist mpman
+	$(latex) mpman
+	$(dvips) mpman
 
 clean distclean:
 	rm -f *.aux *.bbl *.blg *.dvi *.log *.mpx *.mps

@@ -1,11 +1,14 @@
 % $Id: mpman.tex,v 1.26 2005/04/13 12:57:28 karl Exp $
 % MetaPost manual, by John Hobby.  License at end.
+\RequirePackage{ifpdf}
+\ifpdf
 \ifnum\pdftexversion<140
 \else
 \pdfminorversion=5
 \pdfobjcompresslevel=1% Use compressed object streams.
 \fi
 \RequirePackage[resetfonts]{cmap}
+\fi
 \documentclass{article} % article is NOT the original style
 %
 \usepackage{makeidx}
@@ -15,7 +18,6 @@
   {verbatim}{BVerbatim}{baseline=c}
 \usepackage{graphicx}
 \usepackage[latin1]{inputenc}
-\pdfmapfile{+lm-math.map}
 \usepackage[textwidth=6in,textheight=8.65in]{geometry}
 \usepackage{tocloft}
   \setlength\cftbeforesecskip{1.3ex plus 0.3ex minus 0.3ex}
@@ -78,6 +80,12 @@
   citecolor=SpringGreen3
 }
 \usepackage[all]{hypcap}
+\ifpdf
+\else
+\DeclareGraphicsExtensions{.mps}
+\DeclareGraphicsRule{mps}{eps}{*}{}
+\usepackage{breakurl}
+\fi
 \begin{document}
 \VerbatimFootnotes
 \author{John D. Hobby\\\small and the MetaPost development team}

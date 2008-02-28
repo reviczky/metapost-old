@@ -2,6 +2,12 @@
 % MetaPost doc, by John Hobby.
 \documentclass{article}
 \usepackage{graphicx}
+\usepackage{ifpdf}
+\ifpdf
+\else
+\DeclareGraphicsExtensions{.mps}
+\DeclareGraphicsRule{mps}{eps}{*}{}
+\fi
 
 \author{John D. Hobby}
 \title{The MetaPost System}

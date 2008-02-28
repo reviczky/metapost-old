@@ -1,11 +1,14 @@
 % $Id: mpgraph.tex,v 1.3 2005/03/22 00:16:53 karl Exp $
 % MetaPost graph doc, by John Hobby.  License at end.
+\RequirePackage{ifpdf}
+\ifpdf
 \ifnum\pdftexversion<140
 \else
 \pdfminorversion=5
 \pdfobjcompresslevel=1% Use compressed object streams.
 \fi
 \RequirePackage[resetfonts]{cmap}
+\fi
 \documentclass{article} % article is NOT the original style
 \usepackage{makeidx}
 \usepackage{fancyvrb}
@@ -64,6 +67,12 @@ in a stand-alone graph package.}
   citecolor=SpringGreen3
 }
 \usepackage[all]{hypcap}
+\ifpdf
+\else
+\DeclareGraphicsExtensions{.mps}
+\DeclareGraphicsRule{mps}{eps}{*}{}
+\usepackage{breakurl}
+\fi
 
 
 \begin{document}
