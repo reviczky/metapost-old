@@ -19,6 +19,7 @@ cannot incorporate a license themselves.
 
 Included files:
 
+Makefile
 README
 TODO
 agepop91.d
@@ -26,11 +27,22 @@ agepopm.d
 cm2lm.map
 countries.d
 ctabbing.sty
+demo.ms
 energy.d
 examples.mp
+figs.1
+figs.mp
+grdemo-doc.ms
+grdemo-doc.pdf
+grdemo-doc.ps
+grdemo.eps
+grdemo.mp
+grdemo.ms
+grdemo.pdf
 lead.d
 manfig.mp
 matmul.d
+mp.1
 mpgraph.bib
 mpgraph.mp
 mpgraph.tex
