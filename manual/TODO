@@ -32,7 +32,8 @@ alternatively the metapost list.
 *****************************
 
 * Describe colormodel primitive (application in for..within loops).
-
+* (SH) Add a pointer to section \ref{text} in section \ref{mpoutput}.
+* Redesign mpman title to use MP logo.
 
 
 *****************************
