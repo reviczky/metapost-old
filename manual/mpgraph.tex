@@ -14,7 +14,6 @@
 \usepackage{lmodern}
 \usepackage{textcomp}
 \usepackage{mflogo}
-\pdfmapfile{=cm2lm.map}% replace CM by LM in figures
 \usepackage{makeidx}
 \usepackage{fancyvrb}
 \usepackage{ctabbing}
@@ -66,6 +65,7 @@ in a stand-alone graph package.}
 }
 \usepackage[all]{hypcap}
 \ifpdf
+\pdfmapfile{=cm2lm.map}% replace CM by LM in figures
 \else
 \DeclareGraphicsExtensions{.mps}
 \DeclareGraphicsRule{mps}{eps}{*}{}
