@@ -7,14 +7,13 @@
 \pdfminorversion=5
 \pdfobjcompresslevel=1% Use compressed object streams.
 \fi
-\RequirePackage[resetfonts]{cmap}
+\RequirePackage{cmap}
 \fi
 \documentclass{article} % article is NOT the original style
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{textcomp}
 \usepackage{mflogo}
-\pdfmapfile{=cm2lm.map}% replace CM by LM in figures
 \usepackage{makeidx}
 \usepackage{fancyvrb}
 \usepackage{ctabbing}
@@ -75,6 +74,7 @@
 }
 \usepackage[all]{hypcap}
 \ifpdf
+\pdfmapfile{=cm2lm.map}% replace CM by LM in figures
 \else
 \DeclareGraphicsExtensions{.mps}
 \DeclareGraphicsRule{mps}{eps}{*}{}
