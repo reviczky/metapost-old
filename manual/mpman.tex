@@ -316,6 +316,21 @@ document.  The next sections give some more information.
 \section{Handling MetaPost output}
 \label{Dmpoutput}
 
+There can be a two-fold interaction between \TeX\ and MetaPost.  On one
+hand, MetaPost graphics can be imported into documents typeset by \TeX\
+and friends.  On the other hand, MetaPost can delegate typesetting
+textual elements to \TeX, \LaTeX\ or \emph{troff}, e.g., text labels or
+mathematical formulas in a graphic.  That way, MetaPost graphics can
+easily adopt the style of a document (type, type size, etc.) and fit its
+typesetting quality (use kerning, ligatures, etc.)  This makes MetaPost
+an ideal tool for preparing high-quality graphics for \TeX\ or
+\emph{troff} documents.
+
+This section deals with the first aspect of \TeX--MetaPost interaction,
+the import of MetaPost graphics into \TeX\ and friends.  Typesetting
+text in MetaPost is discussed in section~\ref{text}.
+
+
 \subsection{Previewing MetaPost graphics}
 \label{Dpreview}
 \index{previewing}
