@@ -10,6 +10,9 @@
 \RequirePackage{cmap}
 \fi
 \documentclass{article} % article is NOT the original style
+\usepackage{svninfo}% Access VCS information.
+\svnInfo $Id$
+
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{textcomp}
@@ -84,7 +87,7 @@
 \VerbatimFootnotes
 \author{John D. Hobby\\\small and the MetaPost development team}
 \title{A User's Manual for MetaPost}
-\date{documented version: 1.000}
+\date{documented version: 1.000\\\small\svnToday}
 \maketitle
 
 \begin{abstract}
