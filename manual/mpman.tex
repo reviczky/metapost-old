@@ -3477,22 +3477,38 @@ of a picture.  If {\tt p} is a picture and {\tt stroked p} is true,
 path describing the line that got stroked,
 {\tt penpart p}\index{penpart?\texttt{penpart}}\label{Dpenpart} is the pen
 that was used, {\tt dashpart p}\index{dashpart?\texttt{dashpart}}\label{Ddashpart}
-is the dash pattern, and the color is
-$$ \hbox{\tt (redpart p, greenpart p, bluepart p)} $$%
-\index{redpart?\texttt{redpart}}\index{greenpart?\texttt{greenpart}}\index{bluepart?\texttt{bluepart}}
-If the line is not dashed, {\tt dashpart p} returns an empty picture.
+is the dash pattern.  If the line is not dashed, {\tt dashpart p}
+returns an empty picture.
 
 The same part extraction operators work when {\tt filled p} is true, except
-that {\tt dashpart p} is not meaningful in that case.  For text components,
-{\tt textual p} is true,
+that {\tt dashpart p} is not meaningful in that case.
+
+For text components, {\tt textual p} is true,
 {\tt textpart p}\index{textpart?\texttt{textpart}}\label{Dtextpart}
 gives the text that got typeset,
 {\tt fontpart p}\index{fontpart?\texttt{fontpart}}\label{Dfontpart}
 gives the font that was used, and {\tt xpart~p}\index{xpart?\texttt{xpart}}\index{ypart?\texttt{ypart}}\index{xxpart?\texttt{xxpart}}%
 \index{xypart?\texttt{xypart}}\index{yxpart?\texttt{yxpart}}\index{yypart?\texttt{yypart}},
 {\tt ypart~p}, {\tt xxpart~p}, {\tt xypart~p}, {\tt yxpart~p}, {\tt yypart~p}
-tell how the text has been shifted, rotated, and scaled.  The {\tt redpart},
-{\tt greenpart}, and {\tt bluepart} operators also work for text components.
+tell how the text has been shifted, rotated, and scaled.
+
+Additionally, for \ttt{stroked}, \ttt{filled} and \ttt{textual}
+components the color can be inspected.  Depending on the color model of
+a picture component \ttt{p} the color is
+$$ \hbox{\tt (redpart p, greenpart p, bluepart p)} $$%
+\index{redpart?\texttt{redpart}}\index{greenpart?\texttt{greenpart}}\index{bluepart?\texttt{bluepart}}
+for RGB colors or
+$$ \hbox{\tt (cyanpart p, magentapart p, yellowpart p, blackpart p)} $$%
+\index{cyanpart?\texttt{cyanpart}}\index{magentapart?\texttt{magentapart}}\index{yellowpart?\texttt{yellowpart}}\index{blackpart?\texttt{blackpart}}
+for CMYK colors or
+$$ \hbox{\tt (greypart p)} $$%
+\index{greypart?\texttt{greypart}} for grey scale colors.
+
+The color model of a picture component can be requested by the
+\ttt{colormodel}\index{colormodel?\texttt{colormodel}}\label{Dcolormodel}
+operator (see section~\ref{adv.gr}).  Applying a non-matching color part
+operator to a picture component returns a \ttindex{black} color
+component and triggers an error.
 
 When {\tt clipped p} or {\tt bounded p} is true, {\tt pathpart p} gives the
 clipping or {\tt setbounds} path and the other part extraction operators are
