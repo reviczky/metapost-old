@@ -3507,8 +3507,8 @@ $$ \hbox{\tt (greypart p)} $$%
 The color model of a picture component can be requested by the
 \ttt{colormodel}\index{colormodel?\texttt{colormodel}}\label{Dcolormodel}
 operator (see section~\ref{adv.gr}).  Applying a non-matching color part
-operator to a picture component returns a \ttindex{black} color
-component and triggers an error.
+operator to a picture component triggers an error and returns a color
+part for the color \ttindex{black} in the requested color model.
 
 When {\tt clipped p} or {\tt bounded p} is true, {\tt pathpart p} gives the
 clipping or {\tt setbounds} path and the other part extraction operators are
