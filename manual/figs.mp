@@ -1,4 +1,3 @@
-% $Id: figs.mp,v 1.2 2004/09/19 19:10:08 karl Exp $
 % Examples for MetaPost doc, by John Hobby.  Public domain.
 
 input boxes

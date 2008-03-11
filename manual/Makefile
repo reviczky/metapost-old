@@ -1,4 +1,3 @@
-# $Id: Makefile,v 1.4 2005/03/21 15:25:51 taco Exp $
 # Makefile for MetaPost documentation.  Public domain.
 # Rules for the groff/troff docs are in TeX Live,
 # texmf-dist/doc/metapost/base/Makefile.

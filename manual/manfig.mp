@@ -1,4 +1,3 @@
-% $Id: manfig.mp,v 1.4 2005/03/27 17:29:22 karl Exp $
 % Figures for MetaPost manual, by John Hobby.  Public domain.
 
 filenametemplate "%j-%c.mps";
