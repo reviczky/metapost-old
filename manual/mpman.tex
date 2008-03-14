@@ -2133,7 +2133,8 @@ does the lying:\index{picture variable?\tdescr{picture variable}}
 $$ {\tt setbounds}\, \descr{picture variable}\, {\tt to}\, \descr{path expression}
 $$
 makes the \tdescr{picture variable} behave as if its bounding box were
-the same as the given path.  To get the true bounding box of such a
+the same as the given path.  The path has to be a cycle, i.e., it must
+be a closed path.  To get the true bounding box of such a
 picture, assign a positive value to the internal variable\index{internal
 variables}\index{variables!internal} {\tt
 truecorners}\index{truecorners?\texttt{truecorners}}\label{Dtruecorn}:\footnote{The
