@@ -39,6 +39,9 @@ alternatively the metapost list.
 ***   Mid Term Issues     ***
 *****************************
 
+* Revise introduction.
+* Discuss difference between "draw <pic> withpen" and
+    "label(<pic>, ...) withpen" (when label bug is fixed).
 * Add decent title graphics.
 * Review presentation of primitives and plain macros in appendix A.
 * Build reference manual automatically from mp.web (as a separate manual?).
