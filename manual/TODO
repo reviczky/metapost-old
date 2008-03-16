@@ -32,6 +32,8 @@ alternatively the metapost list.
 *****************************
 
 * Redesign mpman title to use MP logo.
+* (SH) Add index entries to table 7.
+
 
 
 
@@ -39,6 +41,7 @@ alternatively the metapost list.
 ***   Mid Term Issues     ***
 *****************************
 
+* Add index entries to section piccomp.
 * Revise introduction.
 * Discuss difference between "draw <pic> withpen" and
     "label(<pic>, ...) withpen" (when label bug is fixed).
