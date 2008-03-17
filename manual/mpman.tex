@@ -806,7 +806,7 @@ between {\tt z1} and {\tt z2}:
 $$ \hbox{\verb|draw z0..z1..tension 1.3..z2..z3|} $$
 This produces Figure~\ref{fig9}b.  For an asymmetrical effect like
 Figure~\ref{fig9}c, the \verb|draw| statement becomes
-$$ \hbox{\verb|draw z0..z1..tension 1.6 and 1..z2..z3|} $$
+$$ \hbox{\verb|draw z0..z1..tension 1.5 and 1..z2..z3|} $$
 The tension parameter can be less than one, but it must be at least $3\over4$.
 
 \begin{figure}[htp]
@@ -1099,7 +1099,7 @@ $$ \hbox{\verb|! Inconsistent equation (off by 71.99979).|} $$
 This error message illustrates
 roundoff\index{roundoff error} error in MetaPost's linear equation solving
 mechanism.  Roundoff error
-is normally not a serious problem. but it is likely to cause trouble if you are
+is normally not a serious problem, but it is likely to cause trouble if you are
 trying to do something like find the intersection of two lines that are almost
 parallel.
 
@@ -1497,7 +1497,7 @@ in section~\ref{transsec}.
 \section{Variables}
 \label{vars}
 
-MetaPost allows compound variable names such as {x.a}, {\tt x2r}, {\tt y2r},
+MetaPost allows compound variable names such as {z.a}, {\tt x2r}, {\tt y2r},
 and {\tt z2r}, where {\tt z2r} means {\tt (x2r,y2r)} and {\tt z.a} means
 {\tt (x.a,y.a)}.  In fact there is a broad class of suffixes such that
 {\tt z}\tdescr{suffix}\index{suffix?\tdescr{suffix}} means
@@ -2655,7 +2655,7 @@ identity}\index{identity?\texttt{identity}}\label{Dident} is a useful
 starting point for this process.  This can be illustrated by
 paraphrasing the above equation for {\tt T} into English: ``{\tt T}
 should be the transform obtained by doing whatever {\tt identity}
-does. Then scaling $x$~coordinates by $-1$, rotating $45^\circ$, and
+does. Then scaling $x$~coordinates by $-1$, rotating $90^\circ$, and
 shifting by $(1,1)$.''  This works because {\tt identity} is the
 identity transformation which does nothing; i.e., {\tt transformed
 identity} is a no-op.
@@ -3750,7 +3750,7 @@ $$
 where the \tdescr{balanced tokens}\index{balanced
 tokens?\tdescr{balanced tokens}} can be anything that is balanced with
 respect to {\tt if} and {\tt fi}, the complete {\tt
-middlepoint}\index{midpoint?\texttt{midpoint}} macro with type test
+middlepoint}\index{middlepoint?\texttt{middlepoint}} macro with type test
 looks like this:
 $$\begin{verbatim}
 def middlepoint(expr a) = if path a: (point .5*length a of a)
@@ -3768,9 +3768,9 @@ Note that {\tt if} tests are not statements and the \tdescr{balanced
 tokens} in the syntax rules can be any sequence of balanced tokens even
 if they do not form a complete expression or statement.  Thus we could
 have saved two tokens at the expense of clarity by defining {\tt
-midpoint} like this:
+middlepoint} like this:
 $$\begin{verbatim}
-def midpoint(expr a) = if path a: (point .5*length a of
+def middlepoint(expr a) = if path a: (point .5*length a of
   else: .5(llcorner a + urcorner fi  a) enddef;
 \end{verbatim}
 $$
@@ -4337,7 +4337,8 @@ $$ \hbox{\tt for i=a step b until c} $$
 scans a sequence of {\tt i} values {\tt a}, ${\tt a}+{\tt b}$, ${\tt
 a}+2{\tt b}$, \ldots, stopping before {\tt i} passes {\tt c}; i.e., the
 loop scans {\tt i} values where ${\tt i}\le {\tt c}$ if ${\tt b}>0$ and
-${\tt i}\ge {\tt c}$ if ${\tt i}<0$.
+${\tt i}\ge {\tt c}$ if ${\tt b}<0$.  For ${\tt b}=0$ the loop never
+terminates, even if ${\tt a}={\tt c}$.
 
 It is best to use this feature only when the step size is an integer or
 some number that can be represented exactly in fixed point
@@ -4662,8 +4663,8 @@ $$
 where \tdescr{box name} is a suffix and \tdescr{box contents} is either a
 picture expression, a string expression, or \tdescr{empty}.
 
-The {\tt circleit} macro defines pair variable just as {\tt boxit} does, except
-that there are no corner points \tdescr{box name}{\tt.ne},
+The {\tt circleit} macro defines pair variables just as {\tt boxit}
+does, except that there are no corner points \tdescr{box name}{\tt.ne},
 \tdescr{box name}{\tt.sw}, etc.  A call to
 $$ \hbox{\tt circleit.a(}\ldots \hbox{\tt )} $$
 gives relationships among points {\tt a.c}, {\tt a.s}, {\tt a.e}, {\tt
@@ -5592,7 +5593,7 @@ $$\begin{tabular}{|l|l|l|r|l|}
 \pl\tt \verb|thelabel|& suffix, picture, pair&  picture&        \pageref{Dthelab}&
         Picture shifted as if to label a point\\\hline
 \pl\tt \verb|thelabel|& suffix, string, pair&   picture&        \pageref{Dthelab}&
-        text positioned as if to label a point\\\hline
+        Text positioned as if to label a point\\\hline
 \pl\tt \verb|z|&        suffix& pair&   \pageref{Dzconv}&
         The pair ${\tt x}\descr{suffix},{\tt y}\descr{suffix})$\\\hline
 \end{tabular}
