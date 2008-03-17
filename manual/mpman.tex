@@ -1143,8 +1143,8 @@ less than 4096 but intermediate results can be eight times larger.
 This should not be a problem for distances or coordinate values since 4096
 PostScript points is more than 1.4~meters.  If you need to work with numbers
 of magnitude 4096 or more, setting the internal variable
-{\tt warningcheck}\index{warningcheck}\label{Dwarncheck} to zero
-suppresses the warning messages about large numeric quantities.
+{\tt warningcheck}\index{warningcheck?\texttt{warningcheck}}\label{Dwarncheck}
+to zero suppresses the warning messages about large numeric quantities.
 
 The pair\index{pair type} type is represented as a pair of numeric
 quantities.  We have seen that pairs are used to give coordinates in
@@ -4858,7 +4858,8 @@ MetaPost text variable~$s$.
 values are remembered, and included before and after (respectively) each
 call to \texttt{TEX}.  Otherwise, each \texttt{TEX} call is effectively
 typeset independently.  \texttt{TEX} calls also do not interfere with
-uses of \ttindex{verbatimtex} (p.\ \pageref{Dverbatimtex}).
+uses of {\tt verbatimtex}\index{verbatimtex?\texttt{verbatimtex}} (p.\ 
+\pageref{Dverbatimtex}).
 
 Here's the same example as above, using the \LaTeX\ commands \verb|\(|
 and \verb|\)|:
