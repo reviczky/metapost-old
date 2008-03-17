@@ -1405,7 +1405,7 @@ the {\tt /}\index{fractions} operator binds most tightly when its
 operands are numbers.  Thus {\tt 2/3} is a \tdescr{numeric
 atom}\index{numeric atom?\tdescr{numeric atom}}\index{parsing
 irregularities} while {\tt (1+1)/3} is only a \tdescr{numeric
-secondary}.  Applying a \tdescr{primary binop} such as {\tt
+secondary}.  Applying a \tdescr{unary op} such as {\tt
 sqrt}\index{sqrt?\texttt{sqrt}}\label{Dsqrt} makes the difference clear:
 $$ \hbox{\tt sqrt 2/3} $$
 means $\sqrt{2\over3}$ while
@@ -1413,7 +1413,7 @@ $$ \hbox{\tt sqrt(1+1)/3} $$
 means $\sqrt 2/3$.  Operators such as {\tt sqrt} can be written in
 standard functional notation, but it is often unnecessary to
 parenthesize the argument.  This applies to any function that is parsed
-as a \tdescr{primary binop}.  For instance {\tt
+as a \tdescr{unary op}.  For instance {\tt
 abs(x)}\index{abs?\texttt{abs}}\label{Dabs} and {\tt abs x} both compute
 the absolute value of {\tt x}.  The same holds for the {\tt
 round}\index{round?\texttt{round}}\label{Dround}, {\tt
