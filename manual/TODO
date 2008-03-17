@@ -33,6 +33,9 @@ alternatively the metapost list.
 
 * Redesign mpman title to use MP logo.
 * (SH) Add index entries to table 7.
+* (SH) Add example for cyanpart and blackpart on a rgbcolor in section piccomp.
+* (SH) Fix sqrt description (unary op).
+* (SH) Apply set of changes by Vladimir Lidovski.
 
 
 
