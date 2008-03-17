@@ -3513,6 +3513,29 @@ The color model of a picture component can be requested by the
 operator (see section~\ref{adv.gr}).  Applying a non-matching color part
 operator to a picture component triggers an error and returns a color
 part for the color \ttindex{black} in the requested color model.
+That is, for the code
+$$\begin{verbatim}
+picture pic;
+pic := image(fill unitsquare scaled 1cm withcolor (0.3, 0.6, 0.9););
+for item within pic:
+  show greypart item;
+  show cyanpart item;
+  show blackpart item;
+  show redpart item;
+endfor
+\end{verbatim}
+$$
+the output is
+$$\begin{verbatim}
+>> 0
+>> 0
+>> 1
+>> 0.3
+\end{verbatim}
+$$
+since in grey scale color model black is {\tt 0} and in CMYK color model
+black is {\tt (0, 0, 0, 1)}.  For the matching RGB color model the true
+color component is returned.
 
 When {\tt clipped p} or {\tt bounded p} is true, {\tt pathpart p} gives the
 clipping or {\tt setbounds} path and the other part extraction operators are
