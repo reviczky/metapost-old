@@ -10,6 +10,7 @@ mpost = mpost -tex=tex
 
 pdf: mpman.pdf mpintro.pdf mpgraph.pdf grdemo.pdf
 ps: mpman.ps mpintro.ps mpgraph.ps
+all: pdf
 
 mpgraph.pdf: mpgraph.tex mpgraph.bib mpgraph.mp
 	$(mpost) mpgraph
