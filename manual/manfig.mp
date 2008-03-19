@@ -945,4 +945,11 @@ path body;
     withpen currentpen scaled 4 withcolor .7white;
 endfig;
 
+%%% Title page rule.
+beginfig(60);
+  pickup pencircle scaled 1.1bp;
+  linecap := rounded;
+  draw origin--(4.38in,0);
+endfig;
+
 end

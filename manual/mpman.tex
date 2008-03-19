@@ -85,26 +85,39 @@
 \fi
 \begin{document}
 \VerbatimFootnotes
-\title{\mbox{}\vfill\resizebox{3.5in}{!}{\MP}\\[1ex]\resizebox{3.5in}{!}{A USER'S MANUAL}\\[2ex]}
-\author{John D. Hobby\\\small and the MetaPost development team\\[2ex]}
-\date{documented version: 1.003\\\small\svnToday\vfill\vfill}
-\maketitle
-
-%\begin{abstract}
-%The MetaPost system implements a picture-drawing language very much like
-%Knuth's \MF\ except that it outputs PostScript commands instead of
-%run-length-encoded bitmaps.  MetaPost is a powerful language for
-%producing figures for documents to be printed on PostScript printers.
-%It provides easy access to all the features of PostScript and it
-%includes facilities for integrating text and graphics.
-%
-%This document serves as an introductory user's manual.  It does not require
-%knowledge of \MF\ or access to {\sl The \MF book}, but both are beneficial.
-%An appendix explains the differences between MetaPost and \MF.
-%
-%\end{abstract}
-\thispagestyle{empty}
-\newpage
+%%% Title page layout documentation is missing.
+\begin{titlepage}
+  \vbox to \textheight {%
+    \vskip0pt
+    \vfil
+    \vfil
+    \vfil
+    \centerline{\resizebox{3.5in}{!}{\fontseries{b}\selectfont\MP}}
+    \vskip10bp% actually 21bp (-11bp)
+    \centerline{\includegraphics{manfig-60.mps}}
+    \vskip15bp% actually 21bp (-6bp)
+    \centerline{%
+      \resizebox{3.5in}{!}{%
+        \scshape%
+        \fontsize{28bp}{28bp}\selectfont
+        \strut\lowercase{A USER\kern-2bp\lower3bp\hbox{'}S MANUAL}%
+      }%
+    }
+    \vskip-11bp
+    \vfil
+    \vfil
+    \centerline{\large John D. Hobby}
+    \vskip3bp
+    \centerline{and the MetaPost development team}
+    \vskip20.8bp% actually 31.8bp (-11bp)
+    \centerline{\large documented version: 1.003}
+    \vskip3bp
+    \centerline{\svnToday}
+    \vfil
+    \vfil
+    \vfil
+  }
+\end{titlepage}
 
 \setlength{\columnsep}{2.5em}
 \begin{multicols}{2}
