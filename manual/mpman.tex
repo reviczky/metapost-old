@@ -3510,7 +3510,10 @@ gives the font that was used, and {\tt xpart~p}\index{xpart?\texttt{xpart}}\inde
 tell how the text has been shifted, rotated, and scaled.
 
 Additionally, for \ttt{stroked}, \ttt{filled} and \ttt{textual}
-components the color can be inspected.  Depending on the color model of
+components the color can be inspected.  The color model of a picture
+component can be requested by the
+\ttt{colormodel}\index{colormodel?\texttt{colormodel}}\label{Dcolormodel}
+operator (see section~\ref{adv.gr}).  Depending on the color model of
 a picture component \ttt{p} the color is
 $$ \hbox{\tt (redpart p, greenpart p, bluepart p)} $$%
 \index{redpart?\texttt{redpart}}\index{greenpart?\texttt{greenpart}}\index{bluepart?\texttt{bluepart}}
@@ -3521,9 +3524,7 @@ for CMYK colors or
 $$ \hbox{\tt (greypart p)} $$%
 \index{greypart?\texttt{greypart}} for grey scale colors.
 
-The color model of a picture component can be requested by the
-\ttt{colormodel}\index{colormodel?\texttt{colormodel}}\label{Dcolormodel}
-operator (see section~\ref{adv.gr}).  Applying a non-matching color part
+Applying a non-matching color part
 operator to a picture component triggers an error and returns a color
 part for the color \ttindex{black} in the requested color model.
 That is, for the code
