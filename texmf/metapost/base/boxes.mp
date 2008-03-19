@@ -20,8 +20,7 @@ enddef;
 % Take a string returned by the str operator and return the same string
 % with explicit numeric subscripts replaced by generic subscript symbols [].
 %
-% This new version makes sure that variables with '[[' in them are treated 
-% correctly. 
+% Fixed version supplied by Eddie Kohler
 
 vardef generisize (expr ss) =
   save res, s, stest, l; string res, s, stest;
@@ -32,16 +31,16 @@ vardef generisize (expr ss) =
     res := res & substring (0,l) of s;
     s := substring (l,infinity) of s;
     if s<>"":
-      if s>="[":
-        stest := substring (0,1) of s;
+      if (s>="[") and (length s > 1):
+        stest := substring (1,2) of s;
         if stest="[":
-          l := 1;
-	      res := res & "[";
+          l := 2;
+          res := res & "[[";
         else:
           l := 1 + str_prefix(s, c<>"]");
           res := res & "[]";
         fi
-      else:  
+      else:
         res := res & "[]";
         l := str_prefix(s, (c=".") or ("0"<=c) and (c<="9"));
       fi
@@ -50,6 +49,7 @@ vardef generisize (expr ss) =
   endfor
   res
 enddef;
+
 
 % Make sure the string _n_gen_ is generisize(_n_):
 vardef set_n_gen_ =
