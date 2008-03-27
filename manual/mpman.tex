@@ -2120,7 +2120,10 @@ macro\index{bbox?\texttt{bbox}}\label{Dbbox}
 $$ {\tt bbox}\, \descr{picture primary} $$
 finds a rectangular path that represents the bounding box of a given picture.
 If {\tt p} is a picture, {\tt bbox p} equivalent to
-$$ \hbox{\tt (llcorner p--lrcorner p--urcorner p--ulcorner p--cycle)} $$
+$$\begin{verbatim}
+(llcorner p--lrcorner p--urcorner p--ulcorner p--cycle)
+\end{verbatim}
+$$
 except that it allows for a small amount of extra space around {\tt p}
 as specified by the internal variable\index{internal
 variables}\index{variables!internal} {\tt
