@@ -1200,12 +1200,16 @@ MetaPost solves linear equations involving
 colors the same way it does for pairs. The type `rgbcolor' is an alias of
 type `color'. 
 
-The cmykcolor\index{cmykcolor type} type is similar to the color
-type except that it has four components instead of three.  This type is used to
-specify colors by their cyan, magenta, yellow, and black components explicitly.
-Because cmykcolors deal with pigments instead of light rays, the color
-black would be expressed as {\tt (1,1,1,1)} and white as {\tt (0,0,0,0)}.
-
+The {\tt cmykcolor}\index{cmykcolor?\texttt{cmykcolor}} type is similar
+to the {\tt color} type except that it has four components instead of
+three.  This type is used to specify colors by their cyan, magenta,
+yellow, and black components explicitly.  Because CMYK colors deal with
+pigments instead of light rays, the color white would be expressed as
+{\tt (0,0,0,0)} and black as {\tt (0,0,0,1)}.  In theory, the colors
+{\tt ($c$,$m$,$y$,1)} and {\tt (1,1,1,$k$)} should result in black for
+any values of $c$, $m$, $y$ and~$k$, too.  But in practice, this is
+avoided since it is a waste of colored ink and can lead to
+unsatisfactory results.
 
 A string\index{string type} represents a sequence of characters.
 String constants\index{string constants} are given
