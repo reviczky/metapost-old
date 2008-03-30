@@ -68,4 +68,4 @@ clean:
 	rm -f *.idx *.ilg *.ind *.toc *.out
 
 distclean: clean
-	rm -f *.pdf *.ps
+	rm -f mp*.pdf mp*.ps
