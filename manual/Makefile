@@ -63,6 +63,9 @@ mpman.ps: mpman.tex mpman.bib mpman.ist manfig.mp
 	$(latex) mpman
 	$(dvips) mpman
 
-clean distclean:
+clean:
 	rm -f *.aux *.bbl *.blg *.dvi *.log *.mpx *.mps
 	rm -f *.idx *.ilg *.ind *.toc *.out
+
+distclean: clean
+	rm -f *.pdf *.ps
