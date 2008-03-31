@@ -2179,7 +2179,7 @@ form, the {\tt fill} statement requires a \tdescr{path expression} that
 gives the boundary of the region to be filled.  In the syntax
 $$ {\tt fill}\, \descr{path expression} $$
 the argument should be a cyclic path, i.e., a path that describes a
-closed curve via the {\tt ..cycle} or {\tt --cycle} notation.  For
+closed curve via the \verb|..cycle| or \verb|--cycle| notation.  For
 example, the {\tt fill} statement in Figure~\ref{fig20} builds a closed
 path by extending the roughly semicircular path~{\tt p}.  This path has
 a counter-clockwise orientation, but that does not matter because the
@@ -3260,7 +3260,7 @@ convex-polygon-shaped path and makes a pen that shape and size.  If the
 path is not exactly convex or polygonal, the {\tt makepen} operator will
 straighten the edges and/or drop some of the vertices.  In particular,
 {\tt pensquare} is equivalent to
-$$ \hbox{\tt makepen((-.5,-.5)--(.5,-.5)--(.5,.5)--(-.5,.5)--cycle)} $$
+$$ \hbox{\verb|makepen((-.5,-.5)--(.5,-.5)--(.5,.5)--(-.5,.5)--cycle)|} $$
 
 {\tt pensquare} and {\tt makepen} should not be used with dash
 patterns.  See the end of Section~\ref{sec.pens}, p.\
@@ -4386,9 +4386,9 @@ semicolon.  It is common for the body of a loop to be one or more statements,
 but this need not be the case.  A loop is like a macro definition followed by
 calls to the macro.  The loop body can be virtually any sequence of tokens as
 long as they make sense together.  Thus, the (ridiculous) statement
-$$ \hbox{\tt draw for p=(3,1),(6,2),(7,5),(4,6),(1,3): p-- endfor cycle;} $$
+$$ \hbox{\verb|draw for p=(3,1),(6,2),(7,5),(4,6),(1,3): p-- endfor cycle;|} $$
 is equivalent to
-$$ \hbox{\tt draw (3,1)--(6,2)--(7,5)--(4,6)--(1,3)--cycle;} $$
+$$ \hbox{\verb|draw (3,1)--(6,2)--(7,5)--(4,6)--(1,3)--cycle;|} $$
 (See Figure~\ref{fig17} for a more realistic example of this.)
 
 If a loop is like a macro definition, the loop index is like an expr
@@ -4967,7 +4967,7 @@ Further information on error messages, debugging, and generating tracing
 information can be found in {\sl The\ \MF book} \cite{kn:c}.
 
 Suppose your input file says
-$$ \hbox{\tt draw z1--z2;} $$
+$$ \hbox{\verb|draw z1--z2;|} $$
 on line 17 without first giving known values to {\tt z1} and {\tt z2}.
 Figure~\ref{errmsg} shows what the MetaPost interpreter prints on your
 terminal when it finds the error.  The actual error message is the line
@@ -5009,7 +5009,7 @@ line number like ``{\tt l.17}'' for line 17 of the current file; or it
 can be a macro name followed by ``{\tt ->}''; or it is a descriptive
 phrase in angle brackets.  Thus, the meaning of the context listing in
 Figure~\ref{errmsg} is that the interpreter has just read line 17 of the
-input file up to ``{\tt --},'' the expansion of the {\tt --} macro has
+input file up to ``\verb|--|,'' the expansion of the \verb|--| macro has
 just started, and the initial ``\verb|{|'' has been reinserted to allow
 for user input before scanning this token.
 
@@ -5427,7 +5427,7 @@ $$\begin{tabular}{|l|l|r|l|}
 \tt     true&   boolean&        \pageref{Dtrue}&
         The boolean value {\tt true}\\\hline
 \pl\tt  unitsquare&     path&   --&
-        The path {\tt (0,0)--(1,0)--(1,1)--(0,1)--cycle}\\\hline
+        The path \verb|(0,0)--(1,0)--(1,1)--(0,1)--cycle|\\\hline
 \pl\tt  up&     pair&   \pageref{Dup}&
         Upward direction $(0,1)$\\\hline
 \pl\tt  white&  color&  \pageref{Dwhite}&
@@ -5657,7 +5657,7 @@ $\tt \qquad \;|\; \descr{path subexpression} \descr{direction specifier}$\\
 $\tt \qquad \;|\; \descr{path subexpression} \descr{path join} cycle$\\
 $\tt $\\
 $\tt \descr{path knot} \rightarrow \descr{tertiary}$\\
-$\tt \descr{path join} \rightarrow --$\\
+$\tt \descr{path join} \rightarrow \verb|--|$\\
 $\tt \qquad \;|\; \descr{direction specifier} \descr{basic path join} \descr{direction specifier}$\\
 $\tt \descr{direction specifier} \rightarrow \descr{empty}$\\
 $\tt \qquad \;|\; \char`\{curl \descr{numeric expression}\char`\}$\\
