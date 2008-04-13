@@ -4,12 +4,12 @@ items.
 
 Where to put new items?
 -----------------------
-Section 'For Release' contains items that we want to be finished
-before the next release.  Even minor issues can and should be
-added here.
+Section 'Wanted For Release' contains items that we want to be
+finished before the next release.  Even minor issues can and
+should be added here.
 
 Items in section 'Mid Term Issues' have no dead-line, but should
-be small enough to be relatively quickly done.
+be self-contained enough to be done independent from other stuff.
 
 Items in section 'Long Term Issues' are less actively worked on.
 The reason they are less actively worked on is not lack of
@@ -21,10 +21,10 @@ How to pick items?
 You can indicate interest or active work on an item by putting your
 initials in parenthese in front of that item and checking the
 modified TODO file into the repository.  That way, anybody who is
-subscribed to the metapost-commits list is notified.  Additionally,
-it is wise to communicate that you're working on an issue (you
-didn't remember adding yourself) on the mp-implementors list or
-alternatively the metapost list.
+subscribed to the metapost-commits list is notified of your
+interest.  Additionally, it is wise to communicate that you're
+working on an issue (you didn't remember adding yourself) on the
+mp-implementors list or alternatively the metapost list.
 
 
 *****************************
