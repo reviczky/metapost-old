@@ -31,6 +31,12 @@ mp-implementors list or alternatively the metapost list.
 ***   For Release         ***
 *****************************
 
+* Revise introduction.
+* Add a sub-section discussing colours in section 9.
+* Add index entries to section piccomp.
+* Separate description of boxes package from mpman.
+* Discuss difference between "draw <pic> withpen" and
+    "label(<pic>, ...) withpen" (when label bug is fixed).
 
 
 
@@ -39,15 +45,9 @@ mp-implementors list or alternatively the metapost list.
 ***   Mid Term Issues     ***
 *****************************
 
-* Add a sub-section discussing colours in section 9.
-* Add index entries to section piccomp.
-* Revise introduction.
-* Discuss difference between "draw <pic> withpen" and
-    "label(<pic>, ...) withpen" (when label bug is fixed).
 * Add decent title graphics.
 * Review presentation of primitives and plain macros in appendix A.
 * Build reference manual automatically from mp.web (as a separate manual?).
-* Separate description of boxes package from mpman.
 * Make manual sources compatible with preview mode (Emacs).
 * Re-enable (or remove) SVN keyword substitution (for complete repository).
 
