@@ -13,6 +13,7 @@
 \documentclass{article} % article is NOT the original style
 \usepackage[nofancy]{svninfo}% Access VCS information.
 \svnInfo $Id$
+\newcommand*{\mpversion}{1.003}
 
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -110,7 +111,7 @@
     \vskip3bp
     \centerline{and the MetaPost development team}
     \vskip20.8bp% actually 31.8bp (-11bp)
-    \centerline{\large documented version: 1.003}
+    \centerline{\large documented version: \mpversion}
     \vskip3bp
     \centerline{\svnToday}
     \vfil
@@ -184,8 +185,8 @@ fi
 \end{verbatim}
 $$
 prints
-$$\begin{verbatim}
-mp = 1.003
+$$\begin{verbatim}[commandchars=\\\{\}]
+mp = \mpversion
 \end{verbatim}
 $$
 The {\tt scantokens} command is described on p.~\pageref{Dscantokens}
