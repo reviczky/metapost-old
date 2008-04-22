@@ -8,9 +8,17 @@ dvips = dvips
 bibtex = bibtex
 mpost = mpost -tex=tex
 
-pdf: mpman.pdf mpintro.pdf mpgraph.pdf grdemo.pdf
-ps: mpman.ps mpintro.ps mpgraph.ps
+pdf: mpman.pdf mpintro.pdf mpgraph.pdf mpboxes.pdf grdemo.pdf
+ps: mpman.ps mpintro.ps mpgraph.ps mpboxes.ps
 all: pdf
+
+mpboxes.pdf: mpboxes.tex mpboxes.bib mpboxes.mp
+	$(mpost) mpboxes
+	$(pdflatex) mpboxes
+	$(bibtex) mpboxes
+	$(pdflatex) mpboxes
+	makeindex -s mpman.ist mpboxes
+	$(pdflatex) mpboxes
 
 mpgraph.pdf: mpgraph.tex mpgraph.bib mpgraph.mp
 	$(mpost) mpgraph
