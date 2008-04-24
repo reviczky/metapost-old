@@ -155,7 +155,7 @@ def Gwithpc_(expr q) =
     (redpart q, greenpart q, bluepart q)
   elseif colormodel q=7:
     (cyanpart q, magentapart q, yellowpart q, blackpart q)
-  if
+  fi
 enddef;
 
 % Add picture component q to picture @# and change part p to tp, where p is
