@@ -558,16 +558,20 @@ sequences are possible, see table~\ref{tab:fntmpl} for details.
 \def\d{$\langle$0-9$\rangle$}
 
 \begin{table}
-\begin{center}\begin{tabular}{>{\ttfamily}ll}
+\centering
+\begin{tabular}{|>{\ttfamily}l|l|}
+\hline
+\multicolumn1{|c|}{Escape sequence} & \multicolumn1{c|}{Meaning}\\\hline
 \%\%    & A percent sign \\
-\%\,j     & The current jobname\\
+\%j     & The current jobname\\
 \%\d  c & The charcode value\\
 \%\d  y & The current year\\
 \%\d  m & The numeric month\\
 \%\d  d & The day of the month\\
 \%\d  H & The hour\\
-\%\d  M &  The minute\\
-\end{tabular}\end{center}
+\%\d  M & The minute\\
+\hline
+\end{tabular}
 \caption{Allowed escape sequences for \ttt{filenametemplate}}
 \label{tab:fntmpl}
 \end{table}
@@ -2049,7 +2053,7 @@ has the correct encoding internally, 8r.enc will not be embedded also.
 The argument to both commands has an optional flag character at the very
 beginning. This optional flag has the same meaning as in pdf\TeX: 
 $$\begin{tabular}{|c|l|} \hline
-\multicolumn1{|c|}{option}&  \multicolumn1{c|}{meaning}\\ \hline
+\multicolumn1{|c|}{Option}&  \multicolumn1{c|}{Meaning}\\ \hline
     +    & extend the font list, but ignore duplicates \\
     =    & extend the font list, replacing duplicates \\
     $-$  & remove all matching fonts from the font list \\
@@ -2210,8 +2214,8 @@ rainbow color. The $\descr{color expression}$ can have five possible
 values, mapping to four possible color models:
 
 $$
-\begin{tabular}{|l|l|}
-Actual input                          & Remapped meaning\\
+\begin{tabular}{ll}
+Actual input                          & Remapped meaning\\\hline
 {\tt withcolor} $\descr{rgbcolor} c$  & withrgbcolor\index{withrgbcolor?\texttt{withrgbcolor}}\label{Dwithrgbcolor} $c$\\
 {\tt withcolor} $\descr{cmykcolor} c$ & withcmykcolor\index{withcmykcolor?\texttt{withcmykcolor}}\label{Dwithcmykcolor} $c$\\
 {\tt withcolor} $\descr{numeric} c$   & withgreyscale\index{withgreyscale?\texttt{withgreyscale}}\label{Dwithgreyscale} $c$\\
@@ -2244,15 +2248,22 @@ this model means that MetaPost will not write a color selection
 statement to the PostScript output file for this object.
 
 The `current default' color model can be set up using the internal
-parameter \ttindex{defaultcolormodel}. Valid values are:
-$$
-\begin{tabular}{|l|l|}
+variable \ttindex{defaultcolormodel}.  Table~\ref{dfltcmod} lists the
+valid values.
+\begin{table}
+\centering
+\begin{tabular}{|c|l|}
+\hline
+Value & Color model\\\hline
 1  & no model\\
 3  & greyscale\\
 5  & rgb (default)\\
 7  & cmyk\\
+\hline
 \end{tabular}
-$$
+\caption{Supported color models.}
+\label{dfltcmod}
+\end{table}
 
 
 Figure~\ref{fig21} illustrates several applications of the fill command
