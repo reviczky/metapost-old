@@ -20,6 +20,7 @@
 \usepackage{graphics}
 \usepackage[textwidth=6in,textheight=8.65in]{geometry}
 \usepackage{multicol}
+\usepackage{ltxtable}
 
 \newcommand\descr[1]{{\langle\hbox{\rm#1}\rangle}}
 \newcommand\invisgap{\nobreak\hskip0pt\relax}
@@ -427,68 +428,66 @@ Tables~\ref{pseudotab} and~\ref{ivartab} summarize macros and internal
 variables\index{internal variables}\index{variables!internal} provided
 by the \texttt{boxes} package.
 
-\begin{table}[htp]
-\caption{Function-Like Macros}
-$$\begin{tabular}{|l|l|l|r|l|}
+\begin{table}[hp]
+\centering
+\caption{\strut Function-Like Macros}
+\label{pseudotab}
+\bigskip
+\begin{tabular}{|>{\ttfamily}l|l|l|r|>{\arraybackslash}p{2.5in}|}
 \hline
 \multicolumn1{|c}{Name}&  \multicolumn1{|c}{Arguments}&
         \multicolumn1{|c}{Result}&  \multicolumn1{|c}{Page}&
         \multicolumn1{|c|}{Explanation}\\
 \hline
 \hline
-\tt \verb|boxit|&    suffix, picture&        --&     \pageref{Dboxit}&
+boxit\index{boxit?\texttt{boxit}}&           suffix, picture&      --&  \pageref{Dboxit}&
         Define a box containing the picture\\\hline
-\tt \verb|boxit|&    suffix, string& --&     \pageref{Dsboxit}&
+boxit\index{boxit?\texttt{boxit}}&            suffix, string&      --&  \pageref{Dsboxit}&
         Define a box containing text\\\hline
-\tt \verb|boxit|&    suffix, \tdescr{empty}& --&     \pageref{Deboxit}&
+boxit\index{boxit?\texttt{boxit}}&    suffix, \tdescr{empty}&      --&  \pageref{Deboxit}&
         Define an empty box\\\hline
-\tt \verb|boxjoin|&  equations&      --&     \pageref{Dbxjoin}&
+boxjoin\index{boxjoin?\texttt{boxjoin}}&           equations&      --&  \pageref{Dbxjoin}&
         Give equations for connecting boxes\\\hline
-\tt \verb|bpath|&    suffix& path&   \pageref{Dbpath}&
+bpath\index{bpath?\texttt{bpath}}&                    suffix&    path&  \pageref{Dbpath}&
         A box's bounding circle or rectangle\\\hline
-\tt \verb|circleit|& suffix, picture&        --&     \pageref{Dcircit}&
+circleit\index{circleit?\texttt{circleit}}&  suffix, picture&      --&  \pageref{Dcircit}&
         Put picture in a circular box\\\hline
-\tt \verb|circleit|& suffix, picture&        --&     \pageref{Dcircit}&
+circleit\index{circleit?\texttt{circleit}}&  suffix, picture&      --&  \pageref{Dcircit}&
         Put a string in a circular box\\\hline
-\tt \verb|circleit|& suffix, \tdescr{empty}& --&     \pageref{Dcircit}&
+circleit\index{circleit?\texttt{circleit}}& suffix, \tdescr{empty}& --& \pageref{Dcircit}&
         Define an empty circular box\\\hline
-\tt \verb|drawboxed|&        list of suffixes&       --&     \pageref{Ddrbxed}&
-        Draw the named boxes and their\\
-&       &       &       &
-        contents\\\hline
-\tt \verb|drawboxes|&        list of suffixes&       --&     \pageref{Ddrbxes}&
+drawboxed\index{drawboxed?\texttt{drawboxed}}& list of suffixes&   --&  \pageref{Ddrbxed}&
+        Draw the named boxes and their contents\\\hline
+drawboxes\index{drawboxes?\texttt{drawboxes}}& list of suffixes&   --&  \pageref{Ddrbxes}&
         Draw the named boxes\\\hline
-\tt \verb|drawunboxed|&      list of suffixes&       --&     \pageref{Ddrunbx}&
+drawunboxed\index{drawunboxed?\texttt{drawunboxed}}& list of suffixes& --& \pageref{Ddrunbx}&
         Draw contents of named boxes\\\hline
-\tt \verb|fixpos|&   list of suffixes&       --&     \pageref{Dfixpos}&
-        Solve for the size and position of the\\
-&       &       &       &
-        named boxes\\\hline
-\tt \verb|fixsize|&  list of suffixes&       --&     \pageref{Dfixsiz}&
+fixpos\index{fixpos?\texttt{fixpos}}&       list of suffixes&      --&  \pageref{Dfixpos}&
+        Solve for the size and position of the named boxes\\\hline
+fixsize\index{fixsize?\texttt{fixsize}}&    list of suffixes&      --&  \pageref{Dfixsiz}&
         Solve for size of named boxes\\\hline
-\tt \verb|pic|&      suffix& picture&        \pageref{Dpic}&
+pic\index{pic?\texttt{pic}}&                          suffix& picture&  \pageref{Dpic}&
         Box contents shifted into position\\\hline
 \end{tabular}
-$$
-\label{pseudotab}
 \end{table}
 
-\begin{table}[htp]
-\caption{Internal variables with numeric values}
-$$\begin{tabular}{|l|r|l|}
+\begin{table}[hp]
+\centering
+\caption{\strut Internal variables with numeric values}
+\label{ivartab}
+\bigskip
+\begin{tabular}{|>{\ttfamily}l|r|>{\arraybackslash}p{3.5in}|}
 \hline
 \multicolumn1{|c}{Name}&  \multicolumn1{|c}{Page}&  \multicolumn1{|c|}{Explanation}\\
 \hline
 \hline
-\tt  circmargin&     \pageref{Dcmargin}&
+circmargin\index{circmargin?\texttt{circmargin}}&   \pageref{Dcmargin}&
         clearance around contents of a circular or oval box\\\hline
-\tt  defaultdx&      \pageref{Ddefaultdx}&
+defaultdx\index{defaultdx?\texttt{defaultdx}}&      \pageref{Ddefaultdx}&
         usual horizontal space around box contents (default 3{\tt bp})\\\hline
-\tt  defaultdy&      \pageref{Ddefaultdy}&
+defaultdy\index{defaultdy?\texttt{defaultdy}}&      \pageref{Ddefaultdy}&
         usual vertical space around box contents (default 3{\tt bp})\\\hline
 \end{tabular}
-$$
-\label{ivartab}%
 \end{table}
 
 
