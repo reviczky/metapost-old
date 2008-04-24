@@ -432,7 +432,7 @@ by the \texttt{boxes} package.
 \centering
 \caption{\strut Function-Like Macros}
 \label{pseudotab}
-\bigskip
+\medskip
 \begin{tabular}{|>{\ttfamily}l|l|l|r|>{\arraybackslash}p{2.5in}|}
 \hline
 \multicolumn1{|c}{Name}&  \multicolumn1{|c}{Arguments}&
@@ -473,9 +473,30 @@ pic\index{pic?\texttt{pic}}&                          suffix& picture&  \pageref
 
 \begin{table}[hp]
 \centering
+\caption{\strut Box variables}
+\label{objvartab}
+\medskip
+\begin{tabular}[t]{|>{\ttfamily $\descr{boxname}$.}l|p{1.5in}||>{\ttfamily $\descr{boxname}$.}l|>{\arraybackslash}p{1.5in}|}
+\hline
+\multicolumn1{|c|}{Variable}&  \multicolumn1{c||}{Explanation}&
+\multicolumn1{c|}{Variable}&  \multicolumn1{c|}{Explanation}\\
+\hline
+\hline
+n   &top center       &c   &center\\
+ne  &top right        &e   &center right\\
+nw  &top left         &w   &center left\\
+s   &bottom center    &dx  &horizontal clearance\\
+se  &bottom right     &dy  &vertical clearance\\
+sw  &bottom left      &\multicolumn1{l|}{}&\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[hp]
+\centering
 \caption{\strut Internal variables with numeric values}
 \label{ivartab}
-\bigskip
+\medskip
 \begin{tabular}{|>{\ttfamily}l|r|>{\arraybackslash}p{3.5in}|}
 \hline
 \multicolumn1{|c}{Name}&  \multicolumn1{|c}{Page}&  \multicolumn1{|c|}{Explanation}\\
