@@ -31,6 +31,13 @@ mp-implementors list or alternatively the metapost list.
 ***   For Release         ***
 *****************************
 
+mpboxes.tex
+* Add list of box variables a.n, a.c, a.dx, etc. to appendix A.
+
+mpintro.tex
+* (SH) Fix missing dotlabels commands in some figures.
+
+mpman.tex
 * Revise introduction.
 * (SH) Revise figure fig0 (TeX-MetaPost-workflow).
 * Add a sub-section discussing colours in section 9.
