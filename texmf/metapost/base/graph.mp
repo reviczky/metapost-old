@@ -146,9 +146,17 @@ pair Gboff_; Gboff_=epsilon*(3,3);      % allowance to avoid numerical trouble
 
 
 def Gwithpc_(expr q) =
-  withpen penpart q withcolor (redpart q, greenpart q, bluepart q)
+  withpen penpart q withcolor
+  if colormodel q=1:
+    false
+  elseif colormodel q=3:
+    (greypart q)
+  elseif colormodel q=5:
+    (redpart q, greenpart q, bluepart q)
+  elseif colormodel q=7:
+    (cyanpart q, magentapart q, yellowpart q, blackpart q)
+  if
 enddef;
-
 
 % Add picture component q to picture @# and change part p to tp, where p is
 % something from q that needs coordinate transformation.  The type of p is pair
