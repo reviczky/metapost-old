@@ -33,7 +33,6 @@ mp-implementors list or alternatively the metapost list.
 
 * Revise introduction.
 * Add a sub-section discussing colours in section 9.
-* Add index entries to section piccomp.
 * Discuss difference between "draw <pic> withpen" and
     "label(<pic>, ...) withpen" (when label bug is fixed).
 
