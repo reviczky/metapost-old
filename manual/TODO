@@ -32,7 +32,10 @@ mp-implementors list or alternatively the metapost list.
 *****************************
 
 * Revise introduction.
+* (SH) Revise figure fig0 (TeX-MetaPost-workflow).
 * Add a sub-section discussing colours in section 9.
+* Extend discussion of non-matching part operators in section piccomp.
+* (SH) Colour cars and change code example in section 9.9.
 * Discuss difference between "draw <pic> withpen" and
     "label(<pic>, ...) withpen" (when label bug is fixed).
 
