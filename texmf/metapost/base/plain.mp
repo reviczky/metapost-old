@@ -5,7 +5,7 @@
 % It contains all the features of plain METAFONT except those specific to
 % font-making.  (See The METAFONTbook by D.E. Knuth).
 % There are also a number of macros for labeling figures, etc.
-string base_name, base_version; base_name="plain"; base_version="0.99";
+string base_name, base_version; base_name="plain"; base_version="1.004";
 
 message "Preloading the plain mem file, version "&base_version;
 
@@ -113,6 +113,22 @@ red = (1,0,0);
 green = (0,1,0);
 blue = (0,0,1);
 background = white;   % The user can reset this
+
+% color part selection for within
+def colorpart primary t =
+  if colormodel t=7:
+    (cyanpart t, magentapart t, yellowpart t, blackpart t)
+  elseif colormodel t=5:
+    (redpart t, greenpart t, bluepart t)
+  elseif colormodel t=3:
+    (greypart t)
+  elseif colormodel t=1:
+    false
+  else:
+    %%% For clipping and bounding paths, etc.
+    hide(errmessage("This item has no colors attached!"))
+  fi
+enddef;
 
 % picture constants
 picture blankpicture,evenly,withdots;
