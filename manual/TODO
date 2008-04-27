@@ -31,9 +31,6 @@ mp-implementors list or alternatively the metapost list.
 ***   Wanted For Release  ***
 *****************************
 
-mpintro.tex
-* (SH) Fix missing dotlabels commands in some figures.
-
 mpman.tex
 * Revise introduction.
 * (SH) Revise figure fig0 (TeX-MetaPost-workflow).
