@@ -115,6 +115,10 @@ you intend to create lots of structural drawings, flow charts,
 \section{Rectangular Boxes}
 \label{rectbox}
 
+\mbox{}% Start paragraph.
+\index{variables!box|(}
+\index{box variables|see{variables, box}}%
+%
 The main idea of the box-making macros is that one should
 say\index{boxit?\texttt{boxit}}\label{Dboxit}
 $$ {\tt boxit.} \descr{suffix}
@@ -152,9 +156,11 @@ give equations for positioning the boxes.  If no such equations are
 given, macros such as {\tt drawboxed} can detect this and give default
 values.  The default values for {\tt dx} and {\tt dy} variables are
 controlled by the internal variables\index{internal
-variables}\index{variables!internal} {\tt
+variables|see{variables, internal}}\index{variables!internal} {\tt
 defaultdx}\index{defaultdx?\texttt{defaultdx}}\label{Ddefaultdx} and
-{\tt defaultdy}\index{defaultdy?\texttt{defaultdy}}\label{Ddefaultdy}.
+{\tt defaultdy}\index{defaultdy?\texttt{defaultdy}}\label{Ddefaultdy}.%
+%
+\index{variables!box|)}
 
 \begin{figure}[htp]
 $$ \includegraphics{mpboxes-48} $$
@@ -306,6 +312,9 @@ $$
 where \tdescr{box name} is a suffix and \tdescr{box contents} is either a
 picture expression, a string expression, or \tdescr{empty}.
 
+\mbox{}% Start paragraph.
+\index{variables!box|(}%
+%
 The {\tt circleit} macro defines pair variables just as {\tt boxit}
 does, except that there are no corner points \tdescr{box name}{\tt.ne},
 \tdescr{box name}{\tt.sw}, etc.  A call to
@@ -313,7 +322,9 @@ $$ \hbox{\tt circleit.a(}\ldots \hbox{\tt )} $$
 gives relationships among points {\tt a.c}, {\tt a.s}, {\tt a.e}, {\tt
 a.n}, {\tt a.w} and distances {\tt a.dx} and {\tt a.dy}.  Together with
 {\tt a.c} and {\tt a.off}, these variables describe how the picture is
-centered in an oval as can be seen from the Figure~\ref{fig50}.
+centered in an oval as can be seen from the Figure~\ref{fig50}.%
+%
+\index{variables!box|)}
 
 \begin{figure}[htp]
 $$ \includegraphics{mpboxes-50} $$
@@ -331,7 +342,7 @@ bpath}\index{bpath?\texttt{bpath}} macros work for {\tt circleit} boxes
 just as they do for {\tt boxit} boxes.  By default, the boundary path
 for a {\tt circleit} box is a circle large enough to surround the box
 contents with a small safety margin controlled by the internal
-variable\index{internal variables}\index{variables!internal} {\tt
+variable\index{variables!internal} {\tt
 circmargin}\label{Dcmargin}.  Figure~\ref{fig51} gives a basic example
 of the use of {\tt bpath} with {\tt circleit} boxes.
 
@@ -362,6 +373,9 @@ endfig;
 \index{drawshadowed?\texttt{drawshadowed}}
 \end{figure}
 
+\mbox{}% Start paragraph.
+\index{variables!box|(}%
+%
 A full example of {\tt circleit} boxes appears in Figure~\ref{fig52}.
 The oval boundary paths around ``Start'' and ``Stop'' are due to the equations
 $$ \hbox{\tt aa.dx=aa.dy;} \quad {\rm and}\quad \hbox{\tt ee.dx=ee.dy} $$
@@ -374,8 +388,9 @@ The general rule is that {\tt bpath.}$c$ comes out circular if
 $c${\tt.dx}, $c${\tt.dy}, and $c\hbox{\tt.dx}-c\hbox{\tt.dy}$ are all
 unknown.  Otherwise, the macros select an oval big enough to contain the
 given picture with the safety margin {\tt
-circmargin}\index{circmargin?\texttt{circmargin}}.
-
+circmargin}\index{circmargin?\texttt{circmargin}}.%
+%
+\index{variables!box|)}
 
 \begin{figure}[htp]
 $$\hbox{$\begin{verbatim}
@@ -424,16 +439,14 @@ $$
 \section{Reference manual}
 \label{refman}
 
-Tables~\ref{pseudotab} and~\ref{ivartab} summarize macros and internal
-variables\index{internal variables}\index{variables!internal} provided
-by the \texttt{boxes} package.
+Tables~\ref{pseudotab} to~\ref{ivartab} summarize macros, box variables
+and internal variables provided by the \texttt{boxes} package.
 
 \begin{table}[hp]
 \centering
 \caption{\strut Function-Like Macros}
 \label{pseudotab}
-\medskip
-\begin{tabular}{|>{\ttfamily}l|l|l|r|>{\arraybackslash}p{2.5in}|}
+\begin{tabular}[t]{|>{\ttfamily}l|l|l|r|>{\arraybackslash}p{2.5in}|}
 \hline
 \multicolumn1{|c}{Name}&  \multicolumn1{|c}{Arguments}&
         \multicolumn1{|c}{Result}&  \multicolumn1{|c}{Page}&
@@ -474,20 +487,25 @@ pic\index{pic?\texttt{pic}}&                          suffix& picture&  \pageref
 \begin{table}[hp]
 \centering
 \caption{\strut Box variables}
-\label{objvartab}
-\medskip
-\begin{tabular}[t]{|>{\ttfamily $\descr{boxname}$.}l|p{1.5in}||>{\ttfamily $\descr{boxname}$.}l|>{\arraybackslash}p{1.5in}|}
+\label{boxvartab}
+\index{variables!box}
+\begin{tabular}[t]{|>{\ttfamily $\descr{box name}$.}l|>{\arraybackslash}p{2in}|c|}
 \hline
-\multicolumn1{|c|}{Variable}&  \multicolumn1{c||}{Explanation}&
-\multicolumn1{c|}{Variable}&  \multicolumn1{c|}{Explanation}\\
+\multicolumn1{|c|}{Variable}&  \multicolumn1{c|}{Explanation}&  Validity\\
 \hline
 \hline
-n   &top center       &c   &center\\
-ne  &top right        &e   &center right\\
-nw  &top left         &w   &center left\\
-s   &bottom center    &dx  &horizontal clearance\\
-se  &bottom right     &dy  &vertical clearance\\
-sw  &bottom left      &\multicolumn1{l|}{}&\\
+c      &center point                       &\\
+n      &top center point                   &\\
+s      &bottom center point                &\\
+w      &center left point                  &\\
+e      &center right point                 &\\
+nw     &top left corner                    &\texttt{boxit} only\\
+ne     &top right corner                   &\texttt{boxit} only\\
+sw     &bottom left corner                 &\texttt{boxit} only\\
+se     &bottom right corner                &\texttt{boxit} only\\
+dx     &horizontal clearance               &\\
+dy     &vertical clearance                 &\\
+off    &actual location of box contents    &\\
 \hline
 \end{tabular}
 \end{table}
@@ -496,8 +514,8 @@ sw  &bottom left      &\multicolumn1{l|}{}&\\
 \centering
 \caption{\strut Internal variables with numeric values}
 \label{ivartab}
-\medskip
-\begin{tabular}{|>{\ttfamily}l|r|>{\arraybackslash}p{3.5in}|}
+\index{variables!internal}
+\begin{tabular}[t]{|>{\ttfamily}l|r|>{\arraybackslash}p{3.5in}|}
 \hline
 \multicolumn1{|c}{Name}&  \multicolumn1{|c}{Page}&  \multicolumn1{|c|}{Explanation}\\
 \hline
