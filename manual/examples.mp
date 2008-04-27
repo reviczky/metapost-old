@@ -85,7 +85,7 @@ def gray = withcolor .8white enddef;
 draw z0..z3 gray;
 linecap:=butt; draw z1..z4 gray;
 linecap:=squared; draw z2..z5 gray;
-labels.top(0,1,2,3,4,5);
+dotlabels.top(0,1,2,3,4,5);
 endfig; linecap:=rounded;
 
 
@@ -100,7 +100,7 @@ def gray = withcolor .8white enddef;
 draw z0--z3--z6 gray;
 linejoin:=mitered; draw z1..z4--z7 gray;
 linejoin:=beveled; draw z2..z5--z8 gray;
-labels.bot(0,1,2,3,4,5,6,7,8);
+dotlabels.bot(0,1,2,3,4,5,6,7,8);
 endfig; linejoin:=rounded;
 
 
