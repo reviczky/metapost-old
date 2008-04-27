@@ -35,7 +35,7 @@ mpintro.pdf: mpintro.tex mpintro.bib examples.mp manfig.mp
 	$(pdflatex) mpintro
 	$(pdflatex) mpintro
 
-mpman.pdf: mpman.tex mpman.bib mpman.ist manfig.mp 
+mpman.pdf: mpman.tex mpman-optab.tex mpman.bib mpman.ist manfig.mp
 	$(mpost) manfig
 	$(pdflatex) mpman
 	$(bibtex) mpman
@@ -61,7 +61,7 @@ mpintro.ps: mpintro.tex mpintro.bib examples.mp manfig.mp
 	$(latex) mpintro
 	$(dvips) mpintro
 
-mpman.ps: mpman.tex mpman.bib mpman.ist manfig.mp 
+mpman.ps: mpman.tex mpman-optab.tex mpman.bib mpman.ist manfig.mp
 	$(mpost) manfig
 	$(latex) mpman
 	$(bibtex) mpman
