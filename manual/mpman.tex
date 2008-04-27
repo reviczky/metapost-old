@@ -3472,9 +3472,10 @@ values.
 \subsection{Inspecting the Components of a Picture}
 \label{piccomp}
 
-\index{setbounds?\texttt{setbounds}|(}
-\index{for within?\texttt{for within}|(}
-
+\mbox{}% Start paragraph here.
+\index{setbounds?\texttt{setbounds}|(}%
+\index{for within?\texttt{for within}|(}%
+%
 MetaPost pictures are composed of stroked lines, filled outlines, pieces
 of typeset text, clipping paths\index{clip?\texttt{clip}}, and
 {\tt setbounds}\index{setbounds?\texttt{setbounds}} paths.  (A {\tt setbounds}
@@ -3498,12 +3499,13 @@ $$ {\tt length}\ \descr{picture primary}\index{length?\texttt{length}}\label{Dle
 
 \index{for within?\texttt{for within}|)}
 
-\index{stroked?\texttt{stroked}|(}
-\index{filled?\texttt{filled}|(}
-\index{textual?\texttt{textual}|(}
-\index{clipped?\texttt{clipped}|(}
-\index{bounded?\texttt{bounded}|(}
-
+\mbox{}% Start paragraph here.
+\index{stroked?\texttt{stroked}|(}%
+\index{filled?\texttt{filled}|(}%
+\index{textual?\texttt{textual}|(}%
+\index{clipped?\texttt{clipped}|(}%
+\index{bounded?\texttt{bounded}|(}%
+%
 Once the {\tt for}\ldots{\tt within} iteration has found a picture component,
 there are numerous operators for identifying it and extracting relevant
 information.  The operator
@@ -3519,10 +3521,11 @@ path or a {\tt setbounds} path.  This is true if the first component is
 clipped or bounded or if the entire picture is enclosed in a clipping or
 {\tt setbounds} path.
 
-\index{pathpart?\texttt{pathpart}|(}
-\index{penpart?\texttt{penpart}|(}
-\index{dashpart?\texttt{dashpart}|(}
-
+\mbox{}% Start paragraph here.
+\index{pathpart?\texttt{pathpart}|(}%
+\index{penpart?\texttt{penpart}|(}%
+\index{dashpart?\texttt{dashpart}|(}%
+%
 There are also numerous part extraction operators that test the first component
 of a picture.  If {\tt p} is a picture and {\tt stroked p} is true,
 {\tt pathpart p}\index{pathpart?\texttt{pathpart}}\label{Dpathpart} is the
@@ -3544,16 +3547,17 @@ gives the font that was used, and {\tt xpart~p}\index{xpart?\texttt{xpart}}\inde
 {\tt ypart~p}, {\tt xxpart~p}, {\tt xypart~p}, {\tt yxpart~p}, {\tt yypart~p}
 tell how the text has been shifted, rotated, and scaled.
 
-\index{colormodel?\texttt{colormodel}|(}
-\index{redpart?\texttt{redpart}|(}
-\index{greenpart?\texttt{greenpart}|(}
-\index{bluepart?\texttt{bluepart}|(}
-\index{cyanpart?\texttt{cyanpart}|(}
-\index{magentapart?\texttt{magentapart}|(}
-\index{yellowpart?\texttt{yellowpart}|(}
-\index{blackpart?\texttt{blackpart}|(}
-\index{greypart?\texttt{greypart}|(}
-
+\mbox{}% Start paragraph here.
+\index{colormodel?\texttt{colormodel}|(}%
+\index{redpart?\texttt{redpart}|(}%
+\index{greenpart?\texttt{greenpart}|(}%
+\index{bluepart?\texttt{bluepart}|(}%
+\index{cyanpart?\texttt{cyanpart}|(}%
+\index{magentapart?\texttt{magentapart}|(}%
+\index{yellowpart?\texttt{yellowpart}|(}%
+\index{blackpart?\texttt{blackpart}|(}%
+\index{greypart?\texttt{greypart}|(}%
+%
 Additionally, for \ttt{stroked}, \ttt{filled} and \ttt{textual}
 components the color can be inspected.  The color model of a picture
 component can be requested by the
