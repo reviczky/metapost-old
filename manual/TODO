@@ -39,6 +39,7 @@ mpman.tex
 * (SH) Colour cars and change code example in section 9.9.
 * Discuss difference between "draw <pic> withpen" and
     "label(<pic>, ...) withpen" (when label bug is fixed).
+* Rename  examples.mp -> mpintro.mp  and  manfig.mp -> mpman.mp.
 
 
 
