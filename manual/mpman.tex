@@ -3548,6 +3548,7 @@ gives the font that was used, and {\tt xpart~p}\index{xpart?\texttt{xpart}}\inde
 tell how the text has been shifted, rotated, and scaled.
 
 \mbox{}% Start paragraph here.
+\index{colorpart?\texttt{colorpart}|(}%
 \index{colormodel?\texttt{colormodel}|(}%
 \index{redpart?\texttt{redpart}|(}%
 \index{greenpart?\texttt{greenpart}|(}%
@@ -3558,12 +3559,19 @@ tell how the text has been shifted, rotated, and scaled.
 \index{blackpart?\texttt{blackpart}|(}%
 \index{greypart?\texttt{greypart}|(}%
 %
-Additionally, for \ttt{stroked}, \ttt{filled} and \ttt{textual}
-components the color can be inspected.  The color model of a picture
-component can be requested by the
+Finally, for \ttt{stroked}, \ttt{filled} and \ttt{textual} components
+the color can be examined by saying
+$$ {\tt colorpart}\
+\descr{item}\index{colorpart?\texttt{colorpart}}\label{Dcolorpart}
+$$
+This returns the color of a component in its respective color model.
+The color model of a component can be identified by the
 \ttt{colormodel}\index{colormodel?\texttt{colormodel}}\label{Dcolormodel}
-operator (see Table~\ref{dfltcmod} on p.~\pageref{dfltcmod}).
-The color of a picture component \ttt{p} is
+operator (cf. Table~\ref{dfltcmod} on p.~\pageref{dfltcmod}).
+
+For more fine grained color operations there are operators to extract
+single color components of an item.  Depending on the color model the
+color of a picture component \ttt{p} is
 $$ \hbox{\tt (cyanpart p, magentapart p, yellowpart p, blackpart p)} $$%
 \index{cyanpart?\texttt{cyanpart}}\index{magentapart?\texttt{magentapart}}\index{yellowpart?\texttt{yellowpart}}\index{blackpart?\texttt{blackpart}}
 or
@@ -3573,12 +3581,13 @@ or
 $$ \hbox{\tt greypart p} $$%
 \index{greypart?\texttt{greypart}}
 or
-$$ \hbox{\tt false} $$
-depending on the color model.
+$$ \hbox{\tt false}. $$
 
-Applying a non-matching color part operator to a picture component
-triggers an error and returns a \ttindex{black} color part in the
-requested color model.  That is, for the code
+Note, color part operators {\tt redpart}, {\tt cyanpart} etc. have to
+match the color model of the picture component in question.  Applying a
+non-matching color part operator to a picture component triggers an
+error and returns a \ttindex{black} color part in the requested color
+model.  That is, for the code
 $$\begin{verbatim}
 picture pic;
 pic := image(fill unitsquare scaled 1cm withcolor (0.3, 0.6, 0.9););
@@ -3599,7 +3608,7 @@ $$\begin{verbatim}
 \end{verbatim}
 $$
 since in grey scale color model black is {\tt 0} and in CMYK color model
-black is {\tt (0, 0, 0, 1)}.  For the matching RGB color model the true
+black is {\tt (0,0,0,1)}.  For the matching RGB color model the true
 color component is returned.
 
 When {\tt clipped p} or {\tt bounded p} is true, {\tt pathpart p} gives the
@@ -3622,6 +3631,7 @@ and the null string for {\tt textpart} or {\tt fontpart}.
 \index{penpart?\texttt{penpart}|)}
 \index{dashpart?\texttt{dashpart}|)}
 \index{colormodel?\texttt{colormodel}|)}
+\index{colorpart?\texttt{colorpart}|)}
 \index{redpart?\texttt{redpart}|)}
 \index{greenpart?\texttt{greenpart}|)}
 \index{bluepart?\texttt{bluepart}|)}
@@ -5880,6 +5890,7 @@ blue\\
 buildcycle\\
 butt\\
 center\\
+colorpart\\
 cutafter\\
 cutbefore\\
 cuttings\\
