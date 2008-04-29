@@ -3618,12 +3618,28 @@ color component is returned.
 When {\tt clipped p} or {\tt bounded p} is true, {\tt pathpart p} gives the
 clipping or {\tt setbounds} path and the other part extraction operators are
 not meaningful.  Such non-meaningful part extractions do not generate
-errors---they return null values instead:
+errors.  Instead, they return null values or black color (components):
 the trivial path {\tt (0,0)} for {\tt pathpart},
 {\tt nullpen}\index{nullpen?\texttt{nullpen}}\label{Dnlpen} for {\tt penpart},
 an empty picture for {\tt dashpart},
-zero for {\tt redpart}, {\tt greenpart}, {\tt bluepart},
-and the null string for {\tt textpart} or {\tt fontpart}.
+the null string for {\tt textpart} or {\tt fontpart},
+zero for {\tt colormodel},
+{\tt greypart},
+{\tt redpart}, {\tt greenpart}, {\tt bluepart},
+{\tt cyanpart}, {\tt magentapart}, {\tt yellowpart},
+one for {\tt blackpart}, and
+black in the current default color model for {\tt colorpart}.
+
+To summarize the discussion of mismatching part operators:
+\begin{enumerate}
+\item Asking for non-meaningful parts of an item---such as the {\tt
+    redpart} of a clipping path, the {\tt textpart} of a stroked item,
+  or the {\tt pathpart} of a textual item---is silently accepted and
+  returns a null value or a black color (component).
+\item Applying a color part operator of the wrong color model to a
+  coloured item returns a black color component.  Additionally, this
+  triggers an error.
+\end{enumerate}
 
 \index{setbounds?\texttt{setbounds}|)}
 \index{stroked?\texttt{stroked}|)}
