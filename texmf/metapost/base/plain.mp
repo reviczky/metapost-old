@@ -126,7 +126,11 @@ def colorpart primary t =
     false
   else:
     %%% For clipping and bounding paths, etc.
-    hide(errmessage("This item has no colors attached!"))
+    if defaultcolormodel=7: (0,0,0,1)
+    elseif defaultcolormodel=5: black
+    elseif defaultcolormodel=3: 0
+    else: false
+    fi
   fi
 enddef;
 
