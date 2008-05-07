@@ -1140,11 +1140,11 @@ mentioned below by using the statement\index{show?\texttt{show}}\label{Dshow}
 $$ {\tt show}\, \descr{expression} $$
 to ask MetaPost to print a symbolic representation of the value of each
 expression.  For known numeric values, each is printed on a new line
-preceded by ``{\tt >>} ''.  Other types of result are printed similarly,
+preceded by ``\verb|>> |''.  Other types of result are printed similarly,
 except that complicated values are sometimes not printed on standard
 output.  This produces a reference to the transcript
 file\index{files!transcript} that looks like this:
-$$ \hbox{\tt >> picture (see the transcript file)} $$
+$$ \hbox{\verb|>> picture (see the transcript file)|} $$
 If you want to the full results of {\tt show} statements to be printed
 on your terminal, assign a positive value to the internal\index{internal
 variables} variable\index{variables!internal} {\tt
@@ -3785,7 +3785,7 @@ This returns an unknown numeric quantity, but it is no longer called
 question mark since that name was local to the group.  Asking the name
 via {\tt show\index{show?\texttt{show}} whatever}
 yields\index{CAPSULE?\texttt{CAPSULE}}
-$$ \hbox{\tt >> \%CAPSULE}{\it nnnn} $$
+$$ \hbox{\verb|>> %CAPSULE|}{\it nnnn} $$
 where {\it nnnn} is an identification number that is chosen when {\tt save}
 makes the name question mark disappear.
 
@@ -4738,7 +4738,7 @@ beginning with ``{\tt !}''; the next six lines give the context that
 shows exactly what input was being read when the error was found; and
 the ``{\tt ?}'' on last line is a prompt for your response.  Since the
 error message talks about an undefined $x$~coordinate, this value is
-printed on the first line after the ``{\tt >>}''.  In this case the
+printed on the first line after the ``\verb|>>|''.  In this case the
 $x$~coordinate of {\tt z1} is just the unknown variable {\tt x1}, so the
 interpreter prints the variable name {\tt x1} just as it would if it
 were told to\index{show?\texttt{show}} ``{\tt show x1}'' at this point.
