@@ -8,9 +8,9 @@ dvips = dvips
 bibtex = bibtex
 mpost = mpost -tex=tex
 
+all: pdf
 pdf: mpman.pdf mpintro.pdf mpgraph.pdf mpboxes.pdf grdemo.pdf
 ps: mpman.ps mpintro.ps mpgraph.ps mpboxes.ps
-all: pdf
 
 mpboxes.pdf: mpboxes.tex mpboxes.bib mpboxes.mp
 	$(mpost) mpboxes
