@@ -3636,9 +3636,9 @@ To summarize the discussion of mismatching part operators:
     redpart} of a clipping path, the {\tt textpart} of a stroked item,
   or the {\tt pathpart} of a textual item---is silently accepted and
   returns a null value or a black color (component).
-\item Applying a color part operator of the wrong color model to a
-  coloured item returns a black color component.  Additionally, this
-  triggers an error.
+\item Explicitly asking for a color part of a colored item in the wrong
+  color model returns a black color component.  This operation triggers
+  an error.
 \end{enumerate}
 
 \index{setbounds?\texttt{setbounds}|)}
