@@ -27,8 +27,8 @@ mpgraph.pdf: mpgraph.tex mpgraph.bib mpgraph.mp
 	$(pdflatex) mpgraph
 	$(pdflatex) mpgraph
 
-mpintro.pdf: mpintro.tex mpintro.bib examples.mp manfig.mp
-	$(mpost) examples
+mpintro.pdf: mpintro.tex mpintro.bib mpintro.mp manfig.mp
+	$(mpost) mpintro
 	$(mpost) manfig
 	$(pdflatex) mpintro
 	$(bibtex) mpintro
@@ -52,8 +52,8 @@ mpgraph.ps: mpgraph.tex mpgraph.bib mpgraph.mp
 	$(latex) mpgraph
 	$(dvips) mpgraph
 
-mpintro.ps: mpintro.tex mpintro.bib examples.mp manfig.mp
-	$(mpost) examples
+mpintro.ps: mpintro.tex mpintro.bib mpintro.mp manfig.mp
+	$(mpost) mpintro
 	$(mpost) manfig
 	$(latex) mpintro
 	$(bibtex) mpintro

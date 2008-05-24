@@ -29,7 +29,6 @@ countries.d
 ctabbing.sty
 demo.ms
 energy.d
-examples.mp
 figs.1
 figs.mp
 grdemo-doc.ms
@@ -50,6 +49,7 @@ mpgraph.bib
 mpgraph.mp
 mpgraph.tex
 mpintro.bib
+mpintro.mp
 mpintro.tex
 mpman-optab.tex
 mpman.bib
