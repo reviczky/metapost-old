@@ -39,7 +39,6 @@ grdemo.mp
 grdemo.ms
 grdemo.pdf
 lead.d
-manfig.mp
 matmul.d
 mp.1
 mpboxes.bib
@@ -54,6 +53,7 @@ mpintro.tex
 mpman-optab.tex
 mpman.bib
 mpman.ist
+mpman.mp
 mpman.tex
 timepop.d
 

@@ -27,16 +27,16 @@ mpgraph.pdf: mpgraph.tex mpgraph.bib mpgraph.mp
 	$(pdflatex) mpgraph
 	$(pdflatex) mpgraph
 
-mpintro.pdf: mpintro.tex mpintro.bib mpintro.mp manfig.mp
+mpintro.pdf: mpintro.tex mpintro.bib mpintro.mp mpman.mp
 	$(mpost) mpintro
-	$(mpost) manfig
+	$(mpost) mpman
 	$(pdflatex) mpintro
 	$(bibtex) mpintro
 	$(pdflatex) mpintro
 	$(pdflatex) mpintro
 
-mpman.pdf: mpman.tex mpman-optab.tex mpman.bib mpman.ist manfig.mp
-	$(mpost) manfig
+mpman.pdf: mpman.tex mpman-optab.tex mpman.bib mpman.ist mpman.mp
+	$(mpost) mpman
 	$(pdflatex) mpman
 	$(bibtex) mpman
 	$(pdflatex) mpman
@@ -52,17 +52,17 @@ mpgraph.ps: mpgraph.tex mpgraph.bib mpgraph.mp
 	$(latex) mpgraph
 	$(dvips) mpgraph
 
-mpintro.ps: mpintro.tex mpintro.bib mpintro.mp manfig.mp
+mpintro.ps: mpintro.tex mpintro.bib mpintro.mp mpman.mp
 	$(mpost) mpintro
-	$(mpost) manfig
+	$(mpost) mpman
 	$(latex) mpintro
 	$(bibtex) mpintro
 	$(latex) mpintro
 	$(latex) mpintro
 	$(dvips) mpintro
 
-mpman.ps: mpman.tex mpman-optab.tex mpman.bib mpman.ist manfig.mp
-	$(mpost) manfig
+mpman.ps: mpman.tex mpman-optab.tex mpman.bib mpman.ist mpman.mp
+	$(mpost) mpman
 	$(latex) mpman
 	$(bibtex) mpman
 	$(latex) mpman
