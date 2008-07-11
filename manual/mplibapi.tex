@@ -74,7 +74,7 @@ Lua paragraphs assume you understand Lua code, and familiarity with
 
 There are two different approaches possible when running \MPLIB. The first
 method is most suitable for programs that function as a command-line
-frontend. It uses `normal' \MP\ interface with I/O to and from files,
+frontend. It uses \quote{normal} \MP\ interface with I/O to and from files,
 and needs very little setup to run. On the other hand, it also gives
 almost no chance to control the \MPLIB\ behaviour.
 
@@ -82,6 +82,8 @@ Here is a C language example of how to do this:
 
 
 \starttyping
+#include <stdlib.h>
+#include "mplib.h"
 int main (int argc, char **argv) {
   MP mp;
   MP_options *opt = mp_options();
@@ -118,7 +120,7 @@ if mp then
                          fill fullcircle scaled 20;
                          endfig;
                        ]])
-  if l and l.fig then
+  if l and l.fig and l.fig[1] then
     print (l.fig[1]:postscript())
   end
   mp:finish();
@@ -152,24 +154,25 @@ those that apply in only one of those cases.
                                                       ignored in \type{non-ini} mode, read from mem file\NC \NR
 \NC int            \NC max_in_open      \NC 10    \NC maximum level of \type{input} nesting.
                                                       ignored in \type{non-ini} mode, read from mem file\NC \NR
-\NC int            \NC main_memory      \NC 5000  \NC size of the main memory array.
+\NC int            \NC main_memory      \NC 5000  \NC size of the main memory array in 8-byte words;
                                                       in \type{non-ini} mode only used if larger than the 
                                                       value stored in the mem file\NC\NR
-\NC void *         \NC userdata         \NC NULL  \NC For your personal use only, not used by the library\NC \NR
-\NC char *         \NC banner           \NC NULL  \NC String to use instead of default banner\NC \NR
-\NC int            \NC print_found_names\NC 0     \NC Controls whether asked or found filename as logged\NC \NR
-\NC char *         \NC command_line     \NC NULL  \NC input file name and rest of command line.
+\NC void *         \NC userdata         \NC NULL  \NC for your personal use only, not used by the library\NC \NR
+\NC char *         \NC banner           \NC NULL  \NC string to use instead of default banner\NC \NR
+\NC int            \NC print_found_names\NC 0     \NC controls whether the asked name or the actual found 
+                                                      name of the file is used in messages\NC \NR
+\NC char *         \NC command_line     \NC NULL  \NC input file name and rest of command line;
                                                       only used by \type{mp_run} interface\NC \NR
 \NC int            \NC interaction      \NC 0     \NC explicit \type{mp_interaction_mode} (see below)\NC \NR
 \NC int            \NC noninteractive   \NC 0     \NC set this nonzero to suppress user interaction,
                                                       only sensible if you want to use \type{mp_execute}\NC \NR
 \NC int            \NC random_seed      \NC 0     \NC set this nonzero to force a specific random seed\NC \NR
-\NC int            \NC troff_mode       \NC 0     \NC set this nonzero to initialize `troffmode' \NC \NR
+\NC int            \NC troff_mode       \NC 0     \NC set this nonzero to initialize \quote{troffmode} \NC \NR
 \NC char *         \NC mem_name         \NC NULL  \NC explicit mem name to use instead of \type{plain.mem}.
                                                       ignored in \type{-ini} mode.\NC \NR
 \NC char *         \NC job_name         \NC NULL  \NC explicit job name to use instead of first input file\NC \NR
 \NC mp_file_finder \NC find_file        \NC NULL  \NC function called for finding files \NC \NR
-\NC mp_editor_cmd  \NC run_editor       \NC NULL  \NC function called after `E' error response\NC \NR
+\NC mp_editor_cmd  \NC run_editor       \NC NULL  \NC function called after \quote{E} error response\NC \NR
 \NC mp_makempx_cmd \NC run_make_mpx     \NC NULL  \NC function called for the creation of mpx files\NC \NR
 \stoptabulate
 
@@ -188,8 +191,7 @@ for the fields that can be read out.
 
 When the \MPLIB\ instance is not interactive, any output is redirect
 to this structure.  There are a few string output streams, and a
-linked list of output images (you need to include \type{psout.h} to be
-able to actually make use this list of images)
+linked list of output images. 
 
 \starttabulate[|l|l|p|]
 \NC mp_stream \NC term_out    \NC holds the terminal output          \NC \NR
@@ -203,6 +205,9 @@ able to actually make use this list of images)
 is currently only used for memory allocation errors, the \MP\ error
 messages are written to \type{term_out} (and are often duplicated to
 \type{log_out} as well).
+
+You need to include \type{mplibps.h} to be able to actually make use this list of images, 
+see the next section for the details on \type{mp_edge_object} lists.
 
 See next paragraph for \type{mp_stream}.
 
@@ -246,7 +251,7 @@ argument.
  
 \ctypedef{void }{(*mp_editor_cmd)}{(MP, char*, int)}
 
-This function is executed when a user has pressed `E' as reply to an
+This function is executed when a user has pressed \quote{E} as reply to an
 \MP\ error, so it will only ever be called when \MPLIB\ in interactive mode.
 The function arguments are the file name and the line number. When
 this function is called, any open files are already closed. 
@@ -447,7 +452,13 @@ Returns the current \type{input} levels of this instance.
 
 \section{C API for graphical backend functions}
 
-These are all defined in \type{psout.h}
+These are all defined in \type{mplibps.h}
+
+Unless otherwise stated, the \type{int} fields that express \MP\ values
+should be interpreted as scaled points: the 32bits are divided into an
+integer part and a fraction part so that the value $65536$ equals
+1~\PS\ point (of which there are exactly 72 in an inch).
+
 
 \subsection{Structures}
 
@@ -461,19 +472,17 @@ Each \MPLIB\ path (a sequence of \MP\ points) is represented as a linked list
 of structures of the type \type{mp_knot}.
 
 \starttabulate[|l|l|p|]
-\NC struct mp_knot *   \NC next       \NC The next knot, or NULL\NC \NR
-\NC mp_knot_type       \NC left_type  \NC The \type{mp_knot_type} for the left side \NC \NR
-\NC mp_knot_type       \NC right_type \NC The \type{mp_knot_type} for the right side \NC \NR
+\NC struct mp_knot *   \NC next       \NC the next knot, or NULL\NC \NR
+\NC mp_knot_type       \NC left_type  \NC the \type{mp_knot_type} for the left side \NC \NR
+\NC mp_knot_type       \NC right_type \NC the \type{mp_knot_type} for the right side \NC \NR
 \NC signed int         \NC x_coord    \NC $x$\NC \NR
 \NC signed int         \NC y_coord    \NC $y$\NC \NR
 \NC signed int         \NC left_x     \NC $x$ of the left (incoming) control point\NC \NR
 \NC signed int         \NC left_y     \NC $y$ of the left (incoming) control point\NC \NR
 \NC signed int         \NC right_x    \NC $x$ of the right (outgoing) control point\NC \NR
 \NC signed int         \NC right_y    \NC $y$ of the right (outgoing) control point\NC \NR
-\NC mp_knot_originator \NC originator \NC The \type{mp_knot_originator} \NC \NR
+\NC mp_knot_originator \NC originator \NC the \type{mp_knot_originator} \NC \NR
 \stoptabulate
-
-Coordinate values are in scaled points.
 
 \ctypedef {}{mp_color}{}
 
@@ -505,15 +514,15 @@ the four data fields:
 Dash lists are represented like this:
 
 \starttabulate[|l|l|p|]
-\NC int * \NC array \NC An array of dash lengths, terminated by $-1$.
-                        The values are in scaled points\NC \NR
-\NC int   \NC offset\NC The dash array offset (as in PostScript) \NC \NR
+\NC int * \NC array \NC an array of dash lengths, terminated by $-1$.
+                        the values are in scaled points\NC \NR
+\NC int   \NC offset\NC the dash array offset (as in PostScript) \NC \NR
 \stoptabulate
 
 \ctypedef {}{mp_graphic_object}{}
 
 Now follow the structure definitions of the objects that can appear
-inside a figure (this is called an \quote{edge structure}, in the
+inside a figure (this is called an \quote{edge structure} in the
 internal WEB documentation). 
 
 There are eight different graphical object types, but there are seven
@@ -543,7 +552,7 @@ Contains the following fields on top of the ones defined by \type{mp_graphic_obj
 \NC char *           \NC post_script \NC this is the result of \type{withpostscript}\NC \NR
 \NC mp_color         \NC color       \NC the color value of this object\NC \NR
 \NC mp_color_model   \NC color_model \NC the color model\NC \NR
-\NC unsigned char    \NC ljoin       \NC the line join style. values have the same meaning 
+\NC unsigned char    \NC ljoin       \NC the line join style; values have the same meaning 
                as in \PS: 0 for mitered, 1 for round, 2 for beveled.\NC \NR
 \NC mp_knot *        \NC path_p      \NC the (always cyclic) path\NC \NR
 \NC mp_knot *        \NC htap_p      \NC a possible reversed path (see below)\NC \NR
@@ -557,10 +566,10 @@ involved as well. The final output should behave as follows:
 
 \startitemize
 \item If there is no \type{pen_p}; simply fill \type{path_p}.
-\item If there is a one-knot pen (\type{pen_p->next} = \type{pen_p});  fill \type{path_p}
+\item If there is a one-knot pen (\type{pen_p->next} = \type{pen_p}) then  fill \type{path_p}
 and also draw \type{path_p} with the \type{pen_p}. Do not forget to take \type{ljoin} and
 \type{miterlim} into account when drawing with the pen.
-\item If there is a more complex pen (\type{pen_p->next} != \type{pen_p}), its path 
+\item If there is a more complex pen (\type{pen_p->next} != \type{pen_p}) then its path 
 has already been preprocessed for you. fill \type{path_p} and \type{htap_p}.
 \stopitemize
 
@@ -574,7 +583,7 @@ Contains the following fields on top of the ones defined by \type{mp_graphic_obj
 \NC mp_color         \NC color       \NC color value \NC \NR
 \NC mp_color_model   \NC color_model \NC color model \NC \NR
 \NC unsigned char    \NC ljoin       \NC the line join style \NC \NR
-\NC unsigned char    \NC lcap        \NC the line cap style. values have the same meaning 
+\NC unsigned char    \NC lcap        \NC the line cap style; values have the same meaning 
                as in \PS: 0 for butt ends, 1 for round ends, 2 for projecting ends.\NC \NR
 \NC mp_knot *        \NC path_p      \NC the path \NC \NR
 \NC mp_knot *        \NC pen_p       \NC the pen \NC \NR
@@ -595,8 +604,8 @@ Contains the following fields on top of the ones defined by \type{mp_graphic_obj
 \NC char *         \NC font_name  \NC the \MP\ font name\NC \NR
 \NC unsigned int   \NC font_dsize \NC size of the font\NC \NR
 \NC int            \NC width      \NC width of the picture resulting from the string\NC \NR
-\NC int            \NC height     \NC height etc.\NC \NR
-\NC int            \NC depth      \NC depth etc.\NC \NR
+\NC int            \NC height     \NC height\NC \NR
+\NC int            \NC depth      \NC depth\NC \NR
 \NC int            \NC tx         \NC transformation component\NC \NR
 \NC int            \NC ty         \NC transformation component\NC \NR
 \NC int            \NC txx        \NC transformation component\NC \NR
@@ -630,27 +639,32 @@ of the following objects and that has been taken into account already.
 
 \ctypedef {}{mp_special_object}{}
 
-Contains the following field on top of the ones defined by \type{mp_graphic_object}:
+This represents the output generated by a \MP\ \type{special} command. It
+contains the following field on top of the ones defined by \type{mp_graphic_object}:
 
 \starttabulate[|l|l|p|]
 \NC char *\NC pre_script \NC the special string\NC \NR
 \stoptabulate
 
+Each \type{special} command generates one object. All of the relevant
+\type{mp_special_object}s for a figure are linked together at the start
+of that figure.
+
 \ctypedef {}{mp_edge_object}{}
 
 \starttabulate[|l|l|p|]
-\NC struct mp_edge_object *   \NC next      \NC Points to the next figure (or NULL)\NC \NR
-\NC struct mp_graphic_object *\NC body      \NC A linked list of objects in this figure \NC \NR
-\NC char *                    \NC filename  \NC This would have been the used filename if a \PS\ file
+\NC mp_edge_object *          \NC next      \NC points to the next figure (or NULL)\NC \NR
+\NC mp_graphic_object *       \NC body      \NC a linked list of objects in this figure \NC \NR
+\NC char *                    \NC filename  \NC this would have been the used filename if a \PS\ file
                                                 would have been generated\NC \NR
-\NC MP                        \NC parent    \NC A pointer to the instance that created 
+\NC MP                        \NC parent    \NC a pointer to the instance that created 
                                                 this figure\NC \NR
 \NC int                       \NC minx      \NC lower-left $x$ of the bounding box\NC \NR
 \NC int                       \NC miny      \NC lower-left $y$ of the bounding box\NC \NR
 \NC int                       \NC maxx      \NC upper right $x$ of the bounding box\NC \NR
 \NC int                       \NC maxy      \NC upper right $y$ of the bounding box\NC \NR
-\NC int                       \NC width     \NC Value of \type{charwd}. If \MP's \type{fontmaking:=1} was active,
-this would be the \TFM\ width (but without the potential rounding correction for \TFM\ file format)\NC \NR
+\NC int                       \NC width     \NC value of \type{charwd};
+this would become the \TFM\ width (but without the potential rounding correction for \TFM\ file format)\NC \NR
 \NC int                       \NC height    \NC similar for height (\type{charht})\NC \NR
 \NC int                       \NC depth     \NC similar for depth (\type{chardp})\NC \NR
 \NC int                       \NC ital_corr \NC similar for italic correction (\type{charic})\NC \NR
@@ -698,7 +712,7 @@ one defaults to \type{mptexpre.tex}
 
 
 \starttabulate[|l|l|p|]
-\NC mpx_mode        \NC mode      \NC \NC \NR
+\NC mpx_modes       \NC mode      \NC \NC \NR
 \NC char *          \NC cmd       \NC the command (or sequence of commands) to run\NC \NR
 \NC char *          \NC mptexpre  \NC prepended to the generated \TeX\ file\NC \NR
 \NC char *          \NC mpname    \NC input file name \NC \NR
@@ -745,7 +759,6 @@ it is usually best to simply return a copy of the first argument.
 A return value of zero is success, non-zero values indicate errors.
 
 \page
-
 
 \section{Lua API}
 
@@ -916,7 +929,7 @@ are of \type{table} are explained in the next section.
 \NC pen        \NC table \NC knots of the pen \NC \NR
 \NC color      \NC table \NC the object's color \NC \NR
 \NC linejoin   \NC number \NC line join style (bare number)\NC \NR
-\NC miterlimit \NC number \NC miterlimit\NC \NR
+\NC miterlimit \NC number \NC miter limit\NC \NR
 \NC prescript  \NC string \NC the prescript text \NC \NR
 \NC postscript \NC string \NC the postscript text \NC \NR
 \stoptabulate
@@ -944,7 +957,7 @@ a table containing a bunch of vital characteristics of the used pen
 \NC pen \NC table \NC knots of the pen \NC \NR
 \NC color \NC table \NC the object's color \NC \NR
 \NC linejoin \NC number \NC line join style (bare number)\NC \NR
-\NC miterlimit \NC number \NC miterlimit \NC \NR
+\NC miterlimit \NC number \NC miter limit \NC \NR
 \NC linecap \NC number \NC line cap style (bare number)\NC \NR
 \NC dash \NC table \NC representation of a dash list\NC \NR
 \NC prescript \NC string \NC the prescript text \NC \NR
@@ -995,12 +1008,12 @@ is a table that represents a knot.
 \starttabulate[|lT|l|p|]
 \NC left_type	\NC string \NC when present: 'endpoint', but ususally absent \NC \NR
 \NC right_type	\NC string \NC like \type{left_type}\NC \NR
-\NC x_coord		\NC number \NC X coordinate of this knot\NC \NR
-\NC y_coord		\NC number \NC Y coordinate of this knot\NC \NR
-\NC left_x		\NC number \NC X coordinate of the precontrol point of this knot\NC \NR
-\NC left_y		\NC number \NC Y coordinate of the precontrol point of this knot\NC \NR
-\NC right_x		\NC number \NC X coordinate of the postcontrol point of this knot\NC \NR
-\NC right_y		\NC number \NC Y coordinate of the postcontrol point of this knot\NC \NR
+\NC x_coord		\NC number \NC $x$ coordinate of this knot\NC \NR
+\NC y_coord		\NC number \NC $y$ coordinate of this knot\NC \NR
+\NC left_x		\NC number \NC $x$ coordinate of the precontrol point of this knot\NC \NR
+\NC left_y		\NC number \NC $y$ coordinate of the precontrol point of this knot\NC \NR
+\NC right_x		\NC number \NC $x$ coordinate of the postcontrol point of this knot\NC \NR
+\NC right_y		\NC number \NC $y$ coordinate of the postcontrol point of this knot\NC \NR
 \stoptabulate
 
 There is one special case: pens that are (possibly transformed)
