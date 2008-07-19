@@ -1,0 +1,20 @@
+#!/bin/sh
+a=$1
+shift
+cd /opt/tex/metapost/svn/mplib/tags
+if  test -d $a ; then
+  find $a -name \*~ -exec rm \{\} \;
+  rm -rf $a/build $a/build-win
+  ln -s $a mplib-$a
+  tar cvj --exclude=.svn -f ../../mplib-$a-src.tar.bz2 mplib-$a/*
+  cd mplib-$a
+  ./build.sh "$@"
+  ./build.cross "$@"
+  zip -j ../../../mplib-$a-win32-mingw.zip build-win/texk/web2c/mpdir/mpost.exe
+  cd build/texk/web2c/mpdir
+  strip mpost
+  tar cjvf ../../../../../../../mplib-$a-linux2.6-i386.tar.bz2 mpost
+  cd ../../../../..
+  rm -rf $a/build $a/build-win
+  rm mplib-$a
+fi
