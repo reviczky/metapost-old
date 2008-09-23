@@ -1,7 +1,7 @@
 % $Id: mfplain.mp,v 1.9 2005/04/28 06:45:21 taco Exp $
 % Public domain.
 
-% This is the plain MetaPost base that's look like what's described
+% This is the plain MetaPost base that looks like what's described
 % in The METAFONTbook.
 string base_name, base_version; base_name="mfplain"; base_version="0.99";
 
