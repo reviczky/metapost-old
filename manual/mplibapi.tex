@@ -161,6 +161,9 @@ those that apply in only one of those cases.
 \NC char *         \NC banner           \NC NULL  \NC string to use instead of default banner\NC \NR
 \NC int            \NC print_found_names\NC 0     \NC controls whether the asked name or the actual found 
                                                       name of the file is used in messages\NC \NR
+\NC int        \NC file_line_error_style\NC 0     \NC when this option is nonzero, the library will use \type{file:line:error}
+                                                      style formatting for error messages that occur while reading
+                                                      from input files\NC \NR
 \NC char *         \NC command_line     \NC NULL  \NC input file name and rest of command line;
                                                       only used by \type{mp_run} interface\NC \NR
 \NC int            \NC interaction      \NC 0     \NC explicit \type{mp_interaction_mode} (see below)\NC \NR
