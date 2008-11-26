@@ -13,7 +13,7 @@
 \documentclass{article} % article is NOT the original style
 \usepackage[nofancy]{svninfo}% Access VCS information.
 \svnInfo $Id$
-\newcommand*{\mpversion}{1.005}
+\newcommand*{\mpversion}{1.100}
 
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -1909,22 +1909,45 @@ For a way to typeset \emph{variable} text as labels, see the
 \texttt{TEX} utility routine described on p.\ \pageref{dTEX}.
 
 Here is how \TeX\ material gets translated into a form MetaPost
-understands: The MetaPost processor skips over {\tt
-btex}\index{btex?\texttt{btex}} \ldots\ {\tt
-etex}\index{etex?\texttt{etex}} blocks and depends on a preprocessor to
-translate them into low level MetaPost commands.  If the main file is
-{\tt fig.mp}, the translated \TeX\ material is placed in a file named
-{\tt fig.mpx}\index{files!mpx?{\tt mpx}}.  This is normally done
-silently without any user intervention but it could fail if one of the
-{\tt btex} $\ldots$ {\tt etex} blocks contains an erroneous
-\TeX\index{TeX?\TeX!errors} command.  Then the erroneous \TeX\ input is
+understands: MetaPost stores all {\tt btex}\index{btex?\texttt{btex}}
+\ldots\ {\tt etex}\index{etex?\texttt{etex}} blocks in a temporary
+file and then runs \TeX\ on that file.  If the environment variable
+\ttindex{MPTEXPRE} is set to the name of an existing file, its content
+will be prepended to the output file for processing by \TeX.  You can
+use this to include \LaTeX\ preambles, for instance.  The \ttt{TEX}
+macro described on p.\ \pageref{dTEX} provides another way to handle
+this.
+
+Once the \TeX\ run is finished, MetaPost translates the resulting DVI
+file into low level MetaPost commands that are then read instead of
+the {\tt btex} \ldots\ {\tt etex} blocks.  If the main file is {\tt
+fig.mp}, the translated \TeX\ material is placed in a file named {\tt
+fig.mpx}\index{files!mpx?{\tt mpx}}.
+
+The conversion normally runs silently without any user intervention
+but it could fail, for instance if one of the {\tt btex} \ldots {\tt
+etex} blocks contains an erroneous
+\TeX\index{TeX?\TeX!errors} command.  In that case, the \TeX\ input is
 saved in the file {\tt mpxerr.tex}\index{mpxerr.tex?\texttt{mpxerr.tex}}
-and the error messages appear in {\tt
+and the \TeX\ error messages appear in {\tt
 mpxerr.log}\index{mpxerr.log?\texttt{mpxerr.log}}.
 
-The preprocessor for \TeX\ labels {\it does\/} understand virtual
+The DVI to MetaPost conversion route {\it does\/} understand virtual
 fonts, so you can use your normal \TeX\ font switching commands inside
 the label.
+
+
+\label{Dmakempx}
+In MetaPost versions before 1.100, the \TeX\ label preprocessing was
+handled by an external program that was called upon automatically by
+MetaPost. On Web2C-based systems, the preprocessor was normally named
+\ttindex{makempx}, which called the utility \ttindex{mpto} for the
+creation of the \TeX\ input file and the utility \ttindex{dvitomp} for
+the conversion to low level MetaPost. In the current MetaPost version,
+the work of this program is now done internally. However, if the
+environment varabile \ttindex{MAKEMPX} is set, this external program 
+will be executed instead of the internal code.
+
 
 \label{Dverbatimtex}
 \TeX\ macro definitions or any other auxiliary \TeX\ commands can be
@@ -2000,16 +2023,6 @@ widely-used Dvips processor is in a file \ttt{dvips.texi}, included in
 most distributions, and is available online at
 \url{http://tug.org/texinfohtml/dvips.html}, among many other places and
 formats.
-
-\label{Dmakempx}
-On Web2C-based systems, the preprocessor is named \ttindex{makempx},
-which calls another utility \ttindex{mpto}; the Web2C documentation
-describes them in more detail.  We'll mention one feature here, though:
-if the environment variable \ttindex{MPTEXPRE} is set to the name of an
-existing file, {\tt makempx} will prepend it to the output.  You can use
-this to include \LaTeX\ preambles, for instance.  The \ttt{TEX}
-macro described on p.\ \pageref{dTEX} provides another way to handle this.
-
 
 \subsection{Font map files}
 \label{Sfontmapfile}\label{Sfontmapline}
